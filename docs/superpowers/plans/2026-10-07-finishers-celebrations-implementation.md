@@ -448,7 +448,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `benny_gantz/independence_flag`; proves a large animated prop can remain within safe UI zones.
 
-- [ ] Follow the template; assert the flag never covers both fighters or the central timer at review markers.
+- [x] Follow the template; assert the flag never covers both fighters or the central timer at review markers.
 - [ ] Commit and push `Add Benny Gantz flag finisher`; then record and push its hash.
 
 ---

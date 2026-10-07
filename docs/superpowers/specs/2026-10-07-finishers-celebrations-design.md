@@ -413,7 +413,7 @@ Update this section in the same commit that completes each item.
 - [x] Bennet — `startup_exit`: laptop launch, pixel impact, EXIT SUCCESS pose/confetti and original arcade audio; real MAX hold and both-side desktop/phone review completed.
 - [x] Bibi — `family_business`: two Sarah sonic staggers, Yair final assist and family throne celebration; both-side desktop/phone review completed.
 - [x] Yair Lapid — `prime_time_rush`: five crosses, final uppercut, combo count, short impact cues and gloves-up celebration; both-side desktop/phone review completed.
-- [ ] Benny Gantz — `independence_flag`
+- [x] Benny Gantz — `independence_flag`: full flag strike, tall body and planted-flag salute; both-side desktop/phone review completed.
 - [ ] Avigdor Lieberman — `oil_barrel_48`
 - [ ] Mansour Abbas — `coalition_cashstorm`
 - [ ] Gadi Eisenkot — `bazooka_command`
@@ -443,6 +443,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Bibi delivered in `c35b8b7` | Reviewed assets, runtime and mobile framing before push | Lapid `prime_time_rush` |
 | 2026-10-07 | Task 10 Lapid rapid boxing combo | 28/28 Godot and 10/10 Python; six unique hits, five nonlethal staggers, ordered captions, pause/miss/cleanup and both sides at HP 1/10; twelve final desktop/phone captures inspected | Push delivery and record hash; Gantz flag sequence next |
 | 2026-10-07 | Lapid delivered in `1ce769a` | Reviewed rapid impacts and corrected pose scale before push | Gantz `independence_flag` |
+| 2026-10-07 | Task 11 Gantz independence flag | 29/29 Godot and 10/10 Python; one KO, windup pause, height 1.96, grounding, miss/cleanup; eight desktop/phone strike/salute captures inspected on both sides | Push delivery and record hash; Lieberman oil barrel next |
 
 Lapid scale ruling: head-to-foot body height excludes raised gloves (uppercut 600 px, victory 606 px). All glove pixels remain visible in the atlas. Brief blue impact cues are reused from the existing pixel effect for the five crosses; final uppercut uses its camera impact and caption without a lingering floating effect. Celebration flashes are suppressed in reduced motion.
 

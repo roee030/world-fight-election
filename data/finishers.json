@@ -703,15 +703,99 @@
     "benny_gantz": {
       "fighter_id": "benny_gantz",
       "finisher_id": "independence_flag",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "independence_flag_victory"
+      "duration": 3.4,
+      "camera_preset": "wide_stage",
+      "celebration_id": "independence_flag_victory",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.45,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/benny_gantz/poses/flag-kit.png",
+          "region": [
+            930,
+            0,
+            600,
+            724
+          ],
+          "figure_height_px": 624,
+          "foot_baseline": 710
+        },
+        {
+          "at": 0.45,
+          "type": "caption",
+          "text": "INDEPENDENCE DAY",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 1.1,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.15,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/benny_gantz/poses/flag-strike.png",
+          "figure_height_px": 739,
+          "foot_baseline": 979
+        },
+        {
+          "at": 1.15,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 1.65,
+          "type": "hit",
+          "id": "independence_flag_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 1.65,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 1.65,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.7,
+          "type": "spawn_prop",
+          "id": "impact_confetti",
+          "asset": "res://assets/finishers/benny_gantz/poses/flag-kit.png",
+          "region": [
+            1530,
+            0,
+            642,
+            724
+          ],
+          "pixel_scale": 0.0022,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.3,
+            0.2
+          ]
+        },
+        {
+          "at": 2.6,
+          "type": "celebration_start"
+        }
+      ]
     },
     "avigdor": {
       "fighter_id": "avigdor",
@@ -1010,11 +1094,80 @@
       "camera_preset": "victory_low"
     },
     "independence_flag_victory": {
+      "fighter_id": "benny_gantz",
       "celebration_id": "independence_flag_victory",
-      "implemented": false,
-      "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "implemented": true,
+      "duration": 2,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/benny_gantz/poses/flag-kit.png",
+          "region": [
+            930,
+            0,
+            600,
+            724
+          ],
+          "figure_height_px": 624,
+          "foot_baseline": 710
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "STAND TALL",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 0.1,
+          "type": "spawn_prop",
+          "id": "independence_confetti",
+          "asset": "res://assets/finishers/benny_gantz/poses/flag-kit.png",
+          "region": [
+            1530,
+            0,
+            642,
+            724
+          ],
+          "pixel_scale": 0.0028,
+          "anchor": "attacker",
+          "position": [
+            0,
+            2.1,
+            -0.2
+          ]
+        },
+        {
+          "at": 0.2,
+          "type": "move_actor",
+          "id": "independence_confetti",
+          "anchor": "attacker",
+          "position": [
+            0,
+            1.1,
+            -0.2
+          ],
+          "duration": 1.5
+        },
+        {
+          "at": 1.9,
+          "type": "result_marker"
+        }
+      ]
     },
     "oil_barrel_48_victory": {
       "celebration_id": "oil_barrel_48_victory",
