@@ -28,6 +28,8 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Special | `L` / `3` |
 | Pause / back | `Esc` |
 
+Finisher controls: once a fighter's sequence is delivered, hold `L` / `3` or touch `MAX` for 0.55 seconds at match point with full Special Energy and the rival at 15% health or less. `FINISH READY` indicates eligibility. A shorter tap keeps the normal Special. Releasing during pause cancels the pending hold on resume without launching an attack. Current finisher catalog entries are disabled while their art and timelines are being built.
+
 ## Run the project
 
 1. Install Godot 4.7 or newer.

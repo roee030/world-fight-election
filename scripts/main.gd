@@ -1,8 +1,18 @@
 extends Node3D
 
+signal finisher_requested(attacker: GameFighter, defender: GameFighter, definition: Dictionary)
+
 const GameFighterScript = preload("res://scripts/fighter.gd")
 const MatchState = preload("res://scripts/finishers/match_state.gd")
 var match_state: int = MatchState.Value.ROUND_INTRO
+const FinisherRules = preload("res://scripts/finishers/finisher_rules.gd")
+const SpecialHold = preload("res://scripts/finishers/special_hold.gd")
+var _special_hold = SpecialHold.new()
+var _input_held := {}
+var _special_was_held := false
+var _special_release_pending := false
+var _special_cancel_after_pause := false
+var _finisher_catalog: RefCounted
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
@@ -110,6 +120,9 @@ const STAGES := [
 
 
 func _ready() -> void:
+	if ResourceLoader.exists("res://scripts/finishers/finisher_catalog.gd"):
+		_finisher_catalog = load("res://scripts/finishers/finisher_catalog.gd").new()
+		_finisher_catalog.load_default()
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = true
 	randomize()
@@ -172,6 +185,10 @@ func _physics_process(_delta: float) -> void:
 		_attack_key_held["light"] = Input.is_key_pressed(KEY_J) or Input.is_key_pressed(KEY_1)
 		_attack_key_held["heavy"] = Input.is_key_pressed(KEY_K) or Input.is_key_pressed(KEY_2)
 		_attack_key_held["special"] = Input.is_key_pressed(KEY_L) or Input.is_key_pressed(KEY_3)
+		if paused and _special_hold.active and not (Input.is_key_pressed(KEY_L) or Input.is_key_pressed(KEY_3) or _input_held.get("special", false)):
+			_special_cancel_after_pause = true
+		_special_was_held = Input.is_key_pressed(KEY_L) or Input.is_key_pressed(KEY_3) or _input_held.get("special", false)
+		_input_down["special"] = false
 		return
 	var axis := 0.0
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): axis -= 1.0
@@ -185,7 +202,10 @@ func _physics_process(_delta: float) -> void:
 			depth_axis = -stick.axis.y
 	var light := _consume("light", KEY_J, KEY_1)
 	var heavy := _consume("heavy", KEY_K, KEY_2)
-	var special := _consume("special", KEY_L, KEY_3)
+	var special_action := _sample_special_input(_delta)
+	var special := special_action == "special"
+	if special_action == "finisher":
+		finisher_requested.emit(player, enemy, _current_finisher_definition())
 	player.set_controls(
 		axis,
 		Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP) or _input_down.get("jump", false) or (stick != null and stick.axis.y < -0.62),
@@ -206,6 +226,78 @@ func _consume(action: String, key: Key, alt_key: Key) -> bool:
 	_attack_key_held[action] = held
 	_input_down[action] = false
 	return pressed
+
+
+func _current_finisher_definition() -> Dictionary:
+	if _finisher_catalog == null or not is_instance_valid(player):
+		return {}
+	return _finisher_catalog.definition_for(player.character_id)
+
+
+func _on_touch_action_down(action: String) -> void:
+	_input_down[action] = true
+	_input_held[action] = true
+
+
+func _on_touch_action_up(action: String) -> void:
+	_input_held[action] = false
+	if action == "special":
+		_special_release_pending = true
+		if paused:
+			_special_cancel_after_pause = true
+	if action == "block":
+		_input_down[action] = false
+
+
+func _sample_special_input(delta: float) -> String:
+	var held: bool = Input.is_key_pressed(KEY_L) or Input.is_key_pressed(KEY_3) or _input_held.get("special", false)
+	var pressed: bool = bool(_input_down.get("special", false)) or (held and not _special_was_held)
+	var released := _special_release_pending or (_special_was_held and not held)
+	_special_release_pending = false
+	_input_down["special"] = false
+	_special_was_held = held
+	if _special_cancel_after_pause:
+		_special_cancel_after_pause = false
+		_cancel_special_hold()
+		return "none"
+	return _update_special_hold(delta, pressed, released)
+
+
+func _finisher_eligible() -> bool:
+	if not fight_live or not round_ready or not is_instance_valid(player) or not is_instance_valid(enemy):
+		return false
+	var dx := enemy.position.x - player.position.x
+	return FinisherRules.is_eligible({
+		"state": MatchState.Value.FIGHTING if match_state == MatchState.Value.FINISHER_PROMPT else match_state,
+		"paused": paused, "match_point": FinisherRules.match_point_for(0, player_rounds, enemy_rounds),
+		"health_ratio": enemy.health / enemy.max_health(), "meter": player.meter,
+		"distance": player.position.distance_to(enemy.position), "facing_correct": dx * player.facing > 0.0,
+		"grounded": player.is_on_floor() and enemy.is_on_floor(),
+		"actionable": player.busy <= 0.0 and enemy.busy <= 0.0 and player.stun <= 0.0 and enemy.stun <= 0.0 and player.knockdown_time <= 0.0 and enemy.knockdown_time <= 0.0 and player.recovery_time <= 0.0 and enemy.recovery_time <= 0.0 and not player.round_over and not enemy.round_over
+	}, _current_finisher_definition())
+
+
+func _update_special_hold(delta: float, pressed: bool, released: bool) -> String:
+	var eligible := _finisher_eligible()
+	var result: String = _special_hold.update(delta, pressed, released, eligible)
+	if _special_hold.active:
+		match_state = MatchState.Value.FINISHER_PROMPT
+	elif match_state == MatchState.Value.FINISHER_PROMPT:
+		match_state = MatchState.Value.FIGHTING
+	if is_instance_valid(player_meter_label):
+		if _special_hold.active:
+			player_meter_label.text = "FINISH %d%%" % int(100.0 * _special_hold.elapsed / _special_hold.threshold)
+		elif eligible:
+			player_meter_label.text = "FINISH READY · HOLD MAX"
+		else:
+			player_meter_label.text = "SPECIAL ENERGY · %d%%" % int(player.meter) if is_instance_valid(player) else "SPECIAL ENERGY"
+	return result
+
+
+func _cancel_special_hold() -> void:
+	_special_hold.cancel()
+	if match_state == MatchState.Value.FINISHER_PROMPT:
+		match_state = MatchState.Value.FIGHTING
 
 
 func _build_arena() -> void:
@@ -409,9 +501,11 @@ func _build_hud() -> void:
 	player_meter_bar = _bar(top, Rect2(104, 82, 286, 9), Color("#e4b950"), 100)
 	enemy_meter_bar = _bar(top, Rect2(874, 82, 286, 9), Color("#e4b950"), 100)
 	enemy_meter_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_meter_label = _label(top, "SPECIAL  0%", Rect2(104, 92, 150, 14), 8, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_LEFT)
+	player_meter_label = _label(top, "SPECIAL ENERGY  0%", Rect2(112, 88, 286, 24), 12, Color("#fff1bf"), HORIZONTAL_ALIGNMENT_LEFT)
+	player_meter_label.add_theme_color_override("font_outline_color", Color("#121c22"))
+	player_meter_label.add_theme_constant_override("outline_size", 3)
 	player_meter_label.name = "PlayerSpecialLabel"
-	enemy_meter_label = _label(top, "SPECIAL  0%", Rect2(1010, 92, 150, 14), 8, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_RIGHT)
+	enemy_meter_label = _label(top, "SPECIAL ENERGY  0%", Rect2(884, 88, 276, 24), 12, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_RIGHT)
 	enemy_meter_label.name = "EnemySpecialLabel"
 
 	var timer_medallion := _panel(top, Rect2(576, 3, 112, 91), Color("#172431"))
@@ -474,10 +568,14 @@ func _build_touch_controls() -> void:
 	for spec in specs:
 		var b := _button(hud_root, spec.title, Rect2(spec.pos.x, spec.pos.y, 72 if spec.action != "block" else 94, 72 if spec.action != "block" else 52), spec.color, 15)
 		b.visible = DisplayServer.is_touchscreen_available()
-		b.button_down.connect(func(): _input_down[spec.action] = true)
-		b.button_up.connect(func(): if spec.action == "block": _input_down[spec.action] = false)
+		b.button_down.connect(func():
+			_on_touch_action_down(spec.action)
+		)
+		b.button_up.connect(func():
+			_on_touch_action_up(spec.action)
+		)
 		b.pressed.connect(func():
-			if spec.action in ["light", "heavy", "special"]:
+			if spec.action in ["light", "heavy"]:
 				_input_down[spec.action] = true
 		)
 		buttons[spec.action] = b
@@ -1006,6 +1104,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 func _start_round() -> void:
 	if not fight_live or not is_instance_valid(player) or not is_instance_valid(enemy): return
 	match_state = MatchState.Value.ROUND_INTRO
+	_cancel_special_hold()
 	round_ready = false
 	player.reset_round(-1.85, player.max_health())
 	enemy.reset_round(1.85, enemy.max_health())
@@ -1134,7 +1233,7 @@ func _on_meter_changed(who: int, value: float) -> void:
 	var bar := player_meter_bar if who == 0 else enemy_meter_bar
 	var label := player_meter_label if who == 0 else enemy_meter_label
 	bar.value = value
-	label.text = "SPECIAL  READY" if value >= 100.0 else "SPECIAL  %d%%" % roundi(value)
+	label.text = "SPECIAL ENERGY  READY" if value >= 100.0 else "SPECIAL ENERGY  %d%%" % roundi(value)
 	label.add_theme_color_override("font_color", Color("#ffe18c") if value >= 100.0 else Color("#d8c184"))
 
 
@@ -1149,6 +1248,7 @@ func _on_defeated(who: int) -> void:
 func _end_round(reason: String) -> void:
 	if not fight_live or intermission > 0: return
 	match_state = MatchState.Value.KO_HOLD
+	_cancel_special_hold()
 	round_ready = false
 	if is_instance_valid(player): player.round_over = true
 	if is_instance_valid(enemy): enemy.round_over = true

@@ -401,7 +401,7 @@ Update this section in the same commit that completes each item.
 ### Shared foundation
 
 - [x] Match state and eligibility — 2026-10-07: pure boundary rules and round-flow state tracking; 16 Godot tests passed.
-- [ ] Hold input and HUD prompt
+- [x] Hold input and HUD prompt — Task 3: keyboard/touch hold, quick-tap release latch, 0.55 boundary and readable energy/finish prompt; desktop/phone captures inspected.
 - [x] Catalog and validation — Task 2: 13 disabled entries and separate celebration objects, strict schema/resource/link validation, copy isolation and asset validator.
 - [ ] Timeline director
 - [ ] Pause and cleanup
@@ -432,6 +432,9 @@ Update this section in the same commit that completes each item.
 |---|---|---|---|
 | 2026-10-07 | Implementation plan published; task 1 rules and match-state tracking implemented | Eligibility test observed failing before implementation, then passing; full Godot suite 16/16 | Catalog and roster stubs (task 2); no fighter finisher marked complete yet |
 | 2026-10-07 | Task 2 catalog and roster scaffolding | Catalog/roster RED→GREEN; 10 Python tests passed; reviewer regressions reject unfinished celebrations and late portraits | Task 3 input; fighters remain disabled until final art and sequence review |
+| 2026-10-07 | Task 2 pushed as `bb6f85e`; Task 3 Special hold input and HUD | Tap/hold and real host routing RED→GREEN; quick touch release regression; desktop/phone HUD review | Task 4 timeline; no delivered fighter sequences yet |
+
+Pause input clarification: confirmation time freezes while paused. Releasing Special while paused cancels that pending confirmation on resume without firing Special; holding throughout preserves elapsed confirmation time.
 
 Execution ruling: this managed worktree has a detached HEAD. Preserve it and publish using `git push origin HEAD:main` after integrating remote updates normally. No forced pushes.
 
