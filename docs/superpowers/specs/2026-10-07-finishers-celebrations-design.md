@@ -405,7 +405,7 @@ Update this section in the same commit that completes each item.
 - [x] Catalog and validation — Task 2: 13 disabled entries and separate celebration objects, strict schema/resource/link validation, copy isolation and asset validator.
 - [x] Timeline director — Tasks 4–5 complete: locks, authored hit deduplication, separate celebration and one result handoff.
 - [x] Pause and cleanup — director/actor/audio pause and camera restoration; no temporary actors after result/cancel.
-- [ ] Fighter Lab support
+- [x] Fighter Lab support — Task 6: selectors, hit/miss/pause, replay scrub, frame step, speed/density settings, floor/safe frame and validation output.
 - [x] Camera, lightbox, sound and result handoff — Task 7: perspective/orthographic camera presets, props/atlas regions, authored poses through existing fighter geometry, captions/clocks, bounded effects and capture tool.
 
 ### Fighters
@@ -436,6 +436,9 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 3 pushed as `c62ba2e`; Task 4 deterministic timeline | RED→GREEN: timestamp order, frame hitches, pause, zero delta, deduplication and deep copies; 22 Godot tests passed with current foundation | Task 5 director and match handoff |
 | 2026-10-07 | Task 4 pushed as `391e3aa`; Task 5 match director and fighter APIs | Fighter/director/match RED→GREEN; real match timer freeze, pause, single KO/result, camera restore and cleanup; fixture screen inspected | Task 6 Finisher Lab; fighter assets still pending |
 | 2026-10-07 | Task 5 pushed as `7200190`; Task 7 shared presentation | Perspective camera and authored art RED→GREEN; original frames/camera restored; temporary system preview inspected | Task 6 Lab delivery and Bennet art review |
+| 2026-10-07 | Task 7 pushed as `e6d154d`; Task 6 Finisher Lab | 25/25 Godot and 10/10 Python; planned/real/miss/scrub/pause tests; 1280×720 Lab inspected | Bennet vertical slice (Task 8) |
+
+Lab guide note: cyan shows the actual collision capsule. Hurt/guard guides are explicitly labeled proxies because ordinary combat uses facing, distance and guard booleans rather than separate shape nodes.
 
 Execution order ruling: Task 7 presentation support is delivered before Task 6 because the Lab needs the same opening-miss switch and atlas rendering used by real sequences. No duplicate preview renderer is introduced.
 
