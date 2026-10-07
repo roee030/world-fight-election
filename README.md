@@ -40,6 +40,10 @@ godot --path .
 
 The project disables Blender import in `project.godot`; gameplay uses the sprite pipeline and does not require Blender.
 
+## Play on a phone
+
+Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
+
 ## Project structure
 
 | Path | Purpose |

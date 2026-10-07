@@ -30,6 +30,8 @@ var pause_root: Control
 var result_root: Control
 var player_health_bar: ProgressBar
 var enemy_health_bar: ProgressBar
+var player_health_glow: ColorRect
+var enemy_health_glow: ColorRect
 var player_recoverable_bar: ProgressBar
 var enemy_recoverable_bar: ProgressBar
 var player_meter_bar: ProgressBar
@@ -336,16 +338,16 @@ func _build_ui() -> void:
 
 
 func _build_hud() -> void:
-	var shadow := _panel(hud_root, Rect2(12, 12, 1256, 98), Color(0.0, 0.0, 0.0, 0.42))
+	var shadow := _panel(hud_root, Rect2(12, 12, 1256, 110), Color(0.0, 0.0, 0.0, 0.48))
 	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var top := _panel(hud_root, Rect2(8, 6, 1264, 98), Color(0.012, 0.021, 0.034, 0.86))
+	var top := _panel(hud_root, Rect2(8, 6, 1264, 110), Color(0.008, 0.014, 0.024, 0.92))
 	top.name = "CombatHUDFrame"
 	_panel(top, Rect2(0, 0, 1264, 3), Color("#e4bd6a"))
-	_panel(top, Rect2(0, 3, 4, 95), Color("#35cfca"))
-	_panel(top, Rect2(1260, 3, 4, 95), Color("#df5968"))
-	var left_wing := _panel(top, Rect2(96, 36, 462, 4), Color(0.85, 0.70, 0.36, 0.65))
+	_panel(top, Rect2(0, 3, 4, 107), Color("#35cfca"))
+	_panel(top, Rect2(1260, 3, 4, 107), Color("#df5968"))
+	var left_wing := _panel(top, Rect2(96, 35, 468, 4), Color(0.93, 0.77, 0.39, 0.88))
 	left_wing.name = "LeftHealthWing"
-	var right_wing := _panel(top, Rect2(706, 36, 462, 4), Color(0.85, 0.70, 0.36, 0.65))
+	var right_wing := _panel(top, Rect2(700, 35, 468, 4), Color(0.93, 0.77, 0.39, 0.88))
 	right_wing.name = "RightHealthWing"
 
 	var player_portrait_frame := _panel(top, Rect2(12, 10, 76, 78), Color("#102b33"))
@@ -381,45 +383,49 @@ func _build_hud() -> void:
 	right_name.name = "EnemyName"
 	_label(top, "PLAYER 1", Rect2(486, 8, 66, 18), 8, Color("#65d8d3"), HORIZONTAL_ALIGNMENT_RIGHT)
 	_label(top, "CPU", Rect2(712, 8, 66, 18), 8, Color("#ed8e98"), HORIZONTAL_ALIGNMENT_LEFT)
-	_panel(top, Rect2(96, 41, 462, 29), Color("#071019"))
-	_panel(top, Rect2(706, 41, 462, 29), Color("#071019"))
-	player_recoverable_bar = _bar(top, Rect2(104, 47, 446, 16), Color("#7b693e"))
+	_panel(top, Rect2(96, 39, 468, 38), Color("#05090f"))
+	_panel(top, Rect2(700, 39, 468, 38), Color("#05090f"))
+	player_recoverable_bar = _bar(top, Rect2(104, 45, 452, 26), Color("#9b7839"))
 	player_recoverable_bar.name = "PlayerRecoverableHealth"
-	enemy_recoverable_bar = _bar(top, Rect2(714, 47, 446, 16), Color("#7b693e"))
+	enemy_recoverable_bar = _bar(top, Rect2(708, 45, 452, 26), Color("#9b7839"))
 	enemy_recoverable_bar.name = "EnemyRecoverableHealth"
 	enemy_recoverable_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_health_bar = _bar(top, Rect2(104, 47, 446, 16), Color("#34d5d0"))
-	enemy_health_bar = _bar(top, Rect2(714, 47, 446, 16), Color("#e15a6a"))
+	player_health_bar = _bar(top, Rect2(104, 45, 452, 26), Color("#27cfd0"))
+	enemy_health_bar = _bar(top, Rect2(708, 45, 452, 26), Color("#e14c62"))
 	enemy_health_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
+	player_health_glow = _wash(top, Rect2(108, 48, 444, 3), Color(0.83, 1.0, 1.0, 0.72))
+	player_health_glow.name = "PlayerHealthGlow"
+	enemy_health_glow = _wash(top, Rect2(712, 48, 444, 3), Color(1.0, 0.83, 0.86, 0.72))
+	enemy_health_glow.name = "EnemyHealthGlow"
 	for i in range(1, 10):
-		var left_cut := _panel(top, Rect2(104 + i * 44, 47, 2, 16), Color(0.02, 0.06, 0.08, 0.62))
+		var left_cut := _panel(top, Rect2(104 + i * 45, 45, 2, 26), Color(0.01, 0.03, 0.05, 0.58))
 		left_cut.name = "PlayerHealthCut%d" % i
 		left_cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var right_cut := _panel(top, Rect2(714 + i * 44, 47, 2, 16), Color(0.09, 0.025, 0.035, 0.62))
+		var right_cut := _panel(top, Rect2(708 + i * 45, 45, 2, 26), Color(0.08, 0.015, 0.025, 0.58))
 		right_cut.name = "EnemyHealthCut%d" % i
 		right_cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player_meter_bar = _bar(top, Rect2(104, 76, 268, 5), Color("#d4b967"), 100)
-	enemy_meter_bar = _bar(top, Rect2(892, 76, 268, 5), Color("#d4b967"), 100)
+	player_meter_bar = _bar(top, Rect2(104, 82, 286, 9), Color("#e4b950"), 100)
+	enemy_meter_bar = _bar(top, Rect2(874, 82, 286, 9), Color("#e4b950"), 100)
 	enemy_meter_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_meter_label = _label(top, "SPECIAL  0%", Rect2(104, 80, 150, 14), 8, Color("#d8c184"), HORIZONTAL_ALIGNMENT_LEFT)
+	player_meter_label = _label(top, "SPECIAL  0%", Rect2(104, 92, 150, 14), 8, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_LEFT)
 	player_meter_label.name = "PlayerSpecialLabel"
-	enemy_meter_label = _label(top, "SPECIAL  0%", Rect2(995, 80, 115, 14), 8, Color("#d8c184"), HORIZONTAL_ALIGNMENT_RIGHT)
+	enemy_meter_label = _label(top, "SPECIAL  0%", Rect2(1010, 92, 150, 14), 8, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_RIGHT)
 	enemy_meter_label.name = "EnemySpecialLabel"
 
-	var timer_medallion := _panel(top, Rect2(576, 4, 112, 82), Color("#172431"))
+	var timer_medallion := _panel(top, Rect2(576, 3, 112, 91), Color("#172431"))
 	timer_medallion.name = "TimerMedallion"
 	_panel(timer_medallion, Rect2(7, 5, 98, 70), Color("#080f18"))
 	timer_label = _label(top, "60", Rect2(588, 8, 88, 54), 43, Color("#ffe9ba"), HORIZONTAL_ALIGNMENT_CENTER)
-	round_label = _label(top, "ROUND 1", Rect2(542, 80, 180, 16), 9, Color("#c6cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
+	round_label = _label(top, "ROUND 1", Rect2(542, 93, 180, 16), 9, Color("#c6cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
 
 	var player_markers := Control.new()
 	player_markers.name = "PlayerRoundMarkers"
-	player_markers.position = Vector2(392, 73)
+	player_markers.position = Vector2(408, 84)
 	player_markers.size = Vector2(70, 18)
 	top.add_child(player_markers)
 	var enemy_markers := Control.new()
 	enemy_markers.name = "EnemyRoundMarkers"
-	enemy_markers.position = Vector2(802, 73)
+	enemy_markers.position = Vector2(786, 84)
 	enemy_markers.size = Vector2(70, 18)
 	top.add_child(enemy_markers)
 	for i in range(2):
@@ -430,8 +436,11 @@ func _build_hud() -> void:
 		enemy_marker.name = "Round%d" % (i + 1)
 		enemy_round_markers.append(enemy_marker)
 
-	var pause_btn := _button(top, "Ⅱ", Rect2(1122, 70, 38, 22), "#253847", 12)
+	var pause_btn := _button(top, "Ⅱ", Rect2(1168, 82, 36, 25), "#253847", 12)
 	pause_btn.pressed.connect(_toggle_pause)
+	var fullscreen_btn := _button(top, "⛶", Rect2(1210, 82, 36, 25), "#253847", 14)
+	fullscreen_btn.name = "FullscreenButton"
+	fullscreen_btn.pressed.connect(_toggle_fullscreen)
 	var side_score := _label(top, "0  —  0", Rect2(582, 64, 100, 16), 9, Color("#9daab0"), HORIZONTAL_ALIGNMENT_CENTER)
 	side_score.name = "Score"
 	message_label = _label(hud_root, "", Rect2(280, 144, 720, 78), 32, Color("#f0f4f3"), HORIZONTAL_ALIGNMENT_CENTER)
@@ -506,6 +515,10 @@ func _build_menu() -> void:
 	_label(action_panel, "J/K/L ATTACK   ESC PAUSE", Rect2(0, 428, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
+	var fullscreen_btn := _button(menu_root, "⛶", Rect2(1212, 24, 44, 40), "#233440", 20)
+	fullscreen_btn.name = "FullscreenButton"
+	fullscreen_btn.tooltip_text = "FULL SCREEN"
+	fullscreen_btn.pressed.connect(_toggle_fullscreen)
 
 
 func _build_select() -> void:
@@ -995,6 +1008,10 @@ func _start_round() -> void:
 	enemy.reset_round(1.85, enemy.max_health())
 	player_health_bar.max_value = player.max_health()
 	enemy_health_bar.max_value = enemy.max_health()
+	player_health_glow.position.x = 108.0
+	player_health_glow.size.x = 444.0
+	enemy_health_glow.position.x = 712.0
+	enemy_health_glow.size.x = 444.0
 	player_recoverable_bar.max_value = player.max_health()
 	player_recoverable_bar.value = player.max_health()
 	enemy_recoverable_bar.max_value = enemy.max_health()
@@ -1031,6 +1048,12 @@ func _on_health_changed(who: int, value: float) -> void:
 	else:
 		enemy_recover_delay = 0.32
 	var ratio := value / maxf(1.0, bar.max_value)
+	if who == 0:
+		player_health_glow.position.x = 108.0
+		player_health_glow.size.x = 444.0 * ratio
+	else:
+		enemy_health_glow.size.x = 444.0 * ratio
+		enemy_health_glow.position.x = 1156.0 - enemy_health_glow.size.x
 	var fill := bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if fill != null:
 		fill.bg_color = Color("#38d3ce") if ratio > 0.55 and who == 0 else (Color("#df5968") if ratio > 0.55 else (Color("#e1b957") if ratio > 0.25 else Color("#f03f47")))
@@ -1231,6 +1254,11 @@ func _toggle_pause() -> void:
 	paused = not paused
 	pause_root.visible = paused
 	get_tree().paused = paused
+
+
+func _toggle_fullscreen() -> void:
+	var mode := DisplayServer.window_get_mode()
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
 func _return_to_menu() -> void:

@@ -381,6 +381,10 @@ func _try_hit() -> void:
 	attack_hit = true
 	var blocked := rival.input_block and rival.stun <= 0.0 and rival.is_on_floor()
 	if blocked:
+		# Guard absorbs most of the strike, but it must still deal visible chip
+		# damage. Previously this branch only charged the attacker's meter, so a
+		# guarding CPU looked completely immune and its HP bar never moved.
+		rival.receive_hit(float(move.damage), attack_facing, attack_kind)
 		meter = minf(100.0, meter + 11.0)
 		meter_changed.emit(who, meter)
 		rival.stun = maxf(rival.stun, 0.18)

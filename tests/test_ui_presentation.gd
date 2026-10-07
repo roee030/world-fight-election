@@ -20,6 +20,8 @@ func _run() -> void:
 		return _fail("main menu action panel is missing")
 	if action_panel.find_children("*", "Button", true, false).size() != 3:
 		return _fail("main menu must expose exactly three actions")
+	if main.menu_root.get_node_or_null("FullscreenButton") == null:
+		return _fail("main menu has no fullscreen control for phone browsers")
 	if not main.menu_root.find_children("*", "ScrollContainer", true, false).is_empty():
 		return _fail("main menu still contains a selectable roster strip")
 	if main.menu_root.get_node_or_null("HeroLineup") != null:
@@ -44,8 +46,16 @@ func _run() -> void:
 	var frame: Node = main.hud_root.get_node_or_null("CombatHUDFrame")
 	if frame == null:
 		return _fail("combat HUD frame is missing")
-	if frame.size.y > 104.0:
+	if frame.size.y > 112.0:
 		return _fail("combat HUD is not thin enough")
+	if main.player_health_bar.size.y < 24.0 or main.enemy_health_bar.size.y < 24.0:
+		return _fail("combat health bars are too thin to read like the supplied fighting-game reference")
+	if main.player_meter_bar.size.y < 8.0 or main.enemy_meter_bar.size.y < 8.0:
+		return _fail("special meters are too thin to distinguish from the health bars")
+	if frame.get_node_or_null("PlayerHealthGlow") == null or frame.get_node_or_null("EnemyHealthGlow") == null:
+		return _fail("combat HUD is missing the bright inner health highlights")
+	if frame.get_node_or_null("FullscreenButton") == null:
+		return _fail("combat HUD has no fullscreen control for phone browsers")
 	for node_name in ["PlayerPortrait", "EnemyPortrait", "TimerMedallion", "PlayerRoundMarkers", "EnemyRoundMarkers", "PlayerRecoverableHealth", "EnemyRecoverableHealth", "LeftHealthWing", "RightHealthWing"]:
 		if frame.get_node_or_null(node_name) == null:
 			return _fail("combat HUD is missing %s" % node_name)
