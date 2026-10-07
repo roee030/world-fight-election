@@ -440,6 +440,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 6 pushed as `0516ef0`; Task 8 Bennet vertical slice | 26/26 Godot and 10/10 Python; real MAX hold, laptop timing, pause, single KO/result, miss and cleanup; ten desktop/phone captures reviewed including reversed side | Push delivery, record hash, integrate Bibi guest actors |
 | 2026-10-07 | Bennet delivered in `8e3538d` | Verified before push; mirrored actor anchors included | Bibi `family_business` assets prepared; runtime integration and review pending |
 | 2026-10-07 | Task 9 Bibi family business | 27/27 Godot and 10/10 Python; both sides at HP 1/10, nonlethal staggers, pause, one KO/result and cleanup; twelve desktop/phone captures inspected | Push delivery and record hash; Lapid rapid combo next |
+| 2026-10-07 | Bibi delivered in `c35b8b7` | Reviewed assets, runtime and mobile framing before push | Lapid `prime_time_rush` |
 
 Bibi art uses two transparent painted atlases generated from the family reference and existing Bibi sprite. The photo is not included in game assets. Sarah's sonic attacks use visible musical waves and original electronic cues; recorded vocals are not part of this delivery. The family throne tableau is an authored cinematic pose grounded through the existing fighter geometry.
 

@@ -418,7 +418,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 - [x] Follow the Fighter Delivery Template; use the supplied photo only as image-generation reference.
 - [x] Assert two non-final sound-wave hits, one Yair final hit, guest safe-frame positions and throne celebration order.
 - [x] Verify Sarah, Yair and Bibi share the game's painted caricature style and contain no pasted photo regions.
-- [ ] Commit and push `Add Bibi family business finisher`; then record and push its hash.
+- [x] Commit and push `Add Bibi family business finisher` (`c35b8b7`); then record and push its hash.
 
 ---
 
