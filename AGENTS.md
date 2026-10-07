@@ -1,6 +1,6 @@
 # Agent onboarding
 
-Read `README.md`, `docs/character-pipeline.md` and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
+Read `README.md`, `docs/character-pipeline.md`, `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md` and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
 
 ## Product goal
 

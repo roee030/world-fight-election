@@ -1,5 +1,9 @@
 # Finishers and celebrations — design plan
 
+> Superseded by the detailed approved system design at
+> `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`.
+> Keep implementation progress and per-fighter commit notes in that document.
+
 Status: design only. Do not implement until the base hit, health, round and animation tests are stable.
 
 ## Lessons from the supplied tutorial
