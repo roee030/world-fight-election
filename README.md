@@ -1,0 +1,115 @@
+# World Fight: Election Edition
+
+משחק קרבות סאטירי מקורי, אופליין, שנבנה ב־Godot 4 כמשחק 2.5D עם לוחמים מצוירים מבוססי ספרייטים.
+
+This repository is the source of truth for the game. New contributors and agents should read this file and [`AGENTS.md`](AGENTS.md) before changing code or art.
+
+## Current game
+
+- 13 playable fighters: Bennet, Avigdor Lieberman, Bibi, Yair Golan, Aryeh Deri, Yair Lapid, Mansour Abbas, Benny Gantz, Itamar Ben-Gvir, Bezalel Smotrich, Gadi Eisenkot, Donald Trump and Joint List.
+- Single Fight with one player choice and a random CPU rival.
+- Four-fight campaign, best-of-three rounds, health, hit stun, guard, combos and a charged special meter.
+- Five stages, including the Knesset exterior, Knesset chamber and three studio arenas.
+- Keyboard and touch controls.
+- Fighter Sprite Lab for inspecting every animation outside a match.
+
+The lower gold bar in the combat HUD is **Special Energy**. It fills when attacks connect. At 100%, the special attack is available.
+
+## Controls
+
+| Action | Keyboard |
+|---|---|
+| Move | `A` / `D` or arrow keys |
+| Jump | `W` or Up |
+| Guard | `S` / `H` |
+| Crouch | `C` |
+| Light attack | `J` / `1` |
+| Heavy attack | `K` / `2` |
+| Special | `L` / `3` |
+| Pause / back | `Esc` |
+
+## Run the project
+
+1. Install Godot 4.7 or newer.
+2. Import `project.godot` in Godot.
+3. Run the main scene: `scenes/main.tscn`.
+
+```powershell
+godot --path .
+```
+
+The project disables Blender import in `project.godot`; gameplay uses the sprite pipeline and does not require Blender.
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `scripts/main.gd` | Screen flow, stages, HUD, rounds, pause and result presentation |
+| `scripts/fighter.gd` | Movement, attacks, damage, AI, health, special meter and reaction states |
+| `scripts/fighter_visual.gd` | Fighter height, grounding, sprite clips and shadow setup |
+| `scripts/character_debug.gd` | Fighter Sprite Lab |
+| `scripts/opponent_selector.gd` | Random rival selection |
+| `assets/characters/*-card.png` | Canonical full character artwork |
+| `assets/characters/portraits/` | Face-focused selection and HUD portraits |
+| `assets/characters/sprites/` | Normalized transparent combat frames |
+| `assets/stages/` | Full-frame stage backplates |
+| `assets/ui/main-hero-*.png` | Two title-art candidates |
+| `tools/slice_sprite_sheets.py` | Sprite extraction and normalization |
+| `tools/build_portraits.py` | Rebuilds face-focused roster portraits |
+| `tests/` | Headless Godot and Python regression tests |
+| `docs/` | Art pipeline, combat plans and future design work |
+
+## Character art contract
+
+Every playable fighter must have:
+
+1. A canonical `assets/characters/<id>-card.png` character illustration.
+2. A generated `assets/characters/portraits/<id>.png` upper-body portrait.
+3. Twelve normalized transparent frames in `assets/characters/sprites/<id>-0.png` through `<id>-11.png`.
+4. Geometry metadata in `FighterVisual.FIGHTER_GEOMETRY`.
+5. Entries in `FIGHTER_DATA` and `PLAYABLE_IDS`.
+
+Do not paste a photo onto a generic 3D body. The game uses coherent, complete fighter artwork and sprite animation. See [`docs/character-pipeline.md`](docs/character-pipeline.md).
+
+## Rebuild derived art
+
+```powershell
+python tools/build_portraits.py
+python tools/slice_sprite_sheets.py
+```
+
+After rebuilding PNGs, let Godot finish importing before running visual tests.
+
+## Tests
+
+```powershell
+python -m unittest tests.test_slice_sprite_sheets
+
+Get-ChildItem tests/test_*.gd | ForEach-Object {
+  godot --headless --path . --script ("res://tests/" + $_.Name)
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+```
+
+Regression coverage checks roster completeness, random opponent selection, sprite geometry, real hit damage, reaction clips, grounded shadows, pause behavior and presentation structure.
+
+## Current design direction
+
+- Full-screen cinematic title art with a small floating text menu.
+- Fighter selection shows all fighters at once with face-focused portraits.
+- Thin fighting-game HUD with portraits, segmented health, round markers, timer and a clearly named special meter.
+- Results and pause screens preserve the arena behind cinematic overlays.
+- Per-stage visual alignment keeps feet on the visible floor.
+
+The finisher and post-match celebration systems are designed but intentionally not implemented yet. See [`docs/finisher-celebration-plan.md`](docs/finisher-celebration-plan.md).
+
+## Asset and repository policy
+
+- Keep source code, curated game assets, design documents and tests in Git.
+- Keep Godot caches, local exports, portable Blender downloads, temporary renders and the raw third-party character pack out of Git.
+- Third-party licenses retained under `assets/characters/rigged/source/` must remain with their corresponding assets.
+- Review generated artwork for clean anatomy, readable silhouette, transparent edges and correct ground contact before integration.
+
+## Status
+
+The game is playable and under active visual and combat polish. The current priority is consistent character presentation, readable hit feedback, robust pause behavior, stage grounding and data-driven finishing moves.

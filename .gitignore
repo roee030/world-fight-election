@@ -1,0 +1,15 @@
+.godot/
+.godot-user/
+.playwright-mcp/
+export/
+output/
+tmp/
+tools/blender-portable/
+tools/godot-portable/
+tools/*.zip
+Universal Base Characters*/
+__pycache__/
+*.pyc
+*.import
+*.tmp
+*.blend1
