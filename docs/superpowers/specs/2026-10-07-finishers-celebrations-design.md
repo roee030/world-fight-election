@@ -438,6 +438,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 5 pushed as `7200190`; Task 7 shared presentation | Perspective camera and authored art RED→GREEN; original frames/camera restored; temporary system preview inspected | Task 6 Lab delivery and Bennet art review |
 | 2026-10-07 | Task 7 pushed as `e6d154d`; Task 6 Finisher Lab | 25/25 Godot and 10/10 Python; planned/real/miss/scrub/pause tests; 1280×720 Lab inspected | Bennet vertical slice (Task 8) |
 | 2026-10-07 | Task 6 pushed as `0516ef0`; Task 8 Bennet vertical slice | 26/26 Godot and 10/10 Python; real MAX hold, laptop timing, pause, single KO/result, miss and cleanup; ten desktop/phone captures reviewed including reversed side | Push delivery, record hash, integrate Bibi guest actors |
+| 2026-10-07 | Bennet delivered in `8e3538d` | Verified before push; mirrored actor anchors included | Bibi `family_business` assets prepared; runtime integration and review pending |
 
 Lab guide note: cyan shows the actual collision capsule. Hurt/guard guides are explicitly labeled proxies because ordinary combat uses facing, distance and guard booleans rather than separate shape nodes.
 
