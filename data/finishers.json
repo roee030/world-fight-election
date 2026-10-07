@@ -346,15 +346,359 @@
     "yair_lapid": {
       "fighter_id": "yair_lapid",
       "finisher_id": "prime_time_rush",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
       "duration": 3.2,
       "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "prime_time_rush_victory"
+      "celebration_id": "prime_time_rush_victory",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.57,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 658,
+          "foot_baseline": 707
+        },
+        {
+          "at": 0.65,
+          "type": "hit",
+          "id": "prime_time_cross_1",
+          "damage": 1,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 0.65,
+          "type": "caption",
+          "text": "1 HIT COMBO",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.65,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 0.65,
+          "type": "spawn_prop",
+          "id": "boxing_impact_1",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0008,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.35,
+            0.3
+          ]
+        },
+        {
+          "at": 0.77,
+          "type": "cleanup"
+        },
+        {
+          "at": 0.82,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 658,
+          "foot_baseline": 707
+        },
+        {
+          "at": 0.9,
+          "type": "hit",
+          "id": "prime_time_cross_2",
+          "damage": 1,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 0.9,
+          "type": "caption",
+          "text": "2 HIT COMBO",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.9,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 0.9,
+          "type": "spawn_prop",
+          "id": "boxing_impact_2",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0008,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.35,
+            0.3
+          ]
+        },
+        {
+          "at": 1.02,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.07,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 658,
+          "foot_baseline": 707
+        },
+        {
+          "at": 1.15,
+          "type": "hit",
+          "id": "prime_time_cross_3",
+          "damage": 1,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.15,
+          "type": "caption",
+          "text": "3 HIT COMBO",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 1.15,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.15,
+          "type": "spawn_prop",
+          "id": "boxing_impact_3",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0008,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.35,
+            0.3
+          ]
+        },
+        {
+          "at": 1.27,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.32,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 658,
+          "foot_baseline": 707
+        },
+        {
+          "at": 1.4,
+          "type": "hit",
+          "id": "prime_time_cross_4",
+          "damage": 1,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.4,
+          "type": "caption",
+          "text": "4 HIT COMBO",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 1.4,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.4,
+          "type": "spawn_prop",
+          "id": "boxing_impact_4",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0008,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.35,
+            0.3
+          ]
+        },
+        {
+          "at": 1.52,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.57,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 658,
+          "foot_baseline": 707
+        },
+        {
+          "at": 1.65,
+          "type": "hit",
+          "id": "prime_time_cross_5",
+          "damage": 1,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.65,
+          "type": "caption",
+          "text": "5 HIT COMBO",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 1.65,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.65,
+          "type": "spawn_prop",
+          "id": "boxing_impact_5",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0008,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.35,
+            0.3
+          ]
+        },
+        {
+          "at": 1.77,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.92,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            850,
+            0,
+            630,
+            724
+          ],
+          "figure_height_px": 600,
+          "foot_baseline": 708
+        },
+        {
+          "at": 1.92,
+          "type": "camera_preset",
+          "preset": "close_side"
+        },
+        {
+          "at": 2.15,
+          "type": "hit",
+          "id": "prime_time_uppercut_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.15,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 2.15,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.15,
+          "type": "caption",
+          "text": "6 HIT UPPERCUT",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.7,
+          "type": "celebration_start"
+        }
+      ]
     },
     "benny_gantz": {
       "fighter_id": "benny_gantz",
@@ -610,10 +954,60 @@
     },
     "prime_time_rush_victory": {
       "celebration_id": "prime_time_rush_victory",
-      "implemented": false,
-      "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "fighter_id": "yair_lapid",
+      "implemented": true,
+      "duration": 2,
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_lapid/poses/boxing-kit.png",
+          "region": [
+            1480,
+            0,
+            692,
+            724
+          ],
+          "figure_height_px": 606,
+          "foot_baseline": 709
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "PRIME TIME",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 0.2,
+          "type": "screen_flash"
+        },
+        {
+          "at": 0.6,
+          "type": "screen_flash"
+        },
+        {
+          "at": 1,
+          "type": "screen_flash"
+        },
+        {
+          "at": 1.8,
+          "type": "result_marker"
+        }
+      ],
+      "camera_preset": "victory_low"
     },
     "independence_flag_victory": {
       "celebration_id": "independence_flag_victory",

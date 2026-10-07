@@ -412,7 +412,7 @@ Update this section in the same commit that completes each item.
 
 - [x] Bennet — `startup_exit`: laptop launch, pixel impact, EXIT SUCCESS pose/confetti and original arcade audio; real MAX hold and both-side desktop/phone review completed.
 - [x] Bibi — `family_business`: two Sarah sonic staggers, Yair final assist and family throne celebration; both-side desktop/phone review completed.
-- [ ] Yair Lapid — `prime_time_rush`
+- [x] Yair Lapid — `prime_time_rush`: five crosses, final uppercut, combo count, short impact cues and gloves-up celebration; both-side desktop/phone review completed.
 - [ ] Benny Gantz — `independence_flag`
 - [ ] Avigdor Lieberman — `oil_barrel_48`
 - [ ] Mansour Abbas — `coalition_cashstorm`
@@ -441,6 +441,9 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Bennet delivered in `8e3538d` | Verified before push; mirrored actor anchors included | Bibi `family_business` assets prepared; runtime integration and review pending |
 | 2026-10-07 | Task 9 Bibi family business | 27/27 Godot and 10/10 Python; both sides at HP 1/10, nonlethal staggers, pause, one KO/result and cleanup; twelve desktop/phone captures inspected | Push delivery and record hash; Lapid rapid combo next |
 | 2026-10-07 | Bibi delivered in `c35b8b7` | Reviewed assets, runtime and mobile framing before push | Lapid `prime_time_rush` |
+| 2026-10-07 | Task 10 Lapid rapid boxing combo | 28/28 Godot and 10/10 Python; six unique hits, five nonlethal staggers, ordered captions, pause/miss/cleanup and both sides at HP 1/10; twelve final desktop/phone captures inspected | Push delivery and record hash; Gantz flag sequence next |
+
+Lapid scale ruling: head-to-foot body height excludes raised gloves (uppercut 600 px, victory 606 px). All glove pixels remain visible in the atlas. Brief blue impact cues are reused from the existing pixel effect for the five crosses; final uppercut uses its camera impact and caption without a lingering floating effect. Celebration flashes are suppressed in reduced motion.
 
 Bibi art uses two transparent painted atlases generated from the family reference and existing Bibi sprite. The photo is not included in game assets. Sarah's sonic attacks use visible musical waves and original electronic cues; recorded vocals are not part of this delivery. The family throne tableau is an authored cinematic pose grounded through the existing fighter geometry.
 

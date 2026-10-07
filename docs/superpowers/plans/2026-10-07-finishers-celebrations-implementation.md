@@ -432,7 +432,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `yair_lapid/prime_time_rush`; proves six ordered hit events and time-slow presentation.
 
-- [ ] Follow the template; assert five stagger hit IDs, one uppercut final ID, monotonic combo numbers and one result.
+- [x] Follow the template; assert five stagger hit IDs, one uppercut final ID, monotonic combo numbers and one result.
 - [ ] Commit and push `Add Yair Lapid boxing rush finisher`; then record and push its hash.
 
 ---

@@ -28,6 +28,8 @@ Use this contract for every fighter added to World Fight.
 
 ## Integration checklist
 
+For additional cinematic poses, `figure_height_px` measures head-to-foot body height. Exclude raised hands, weapons, flags and other accessories from that measurement; keep the entire pose in its atlas region. `foot_baseline` still marks the boots within the region. This preserves body scale when switching to an uppercut or victory pose.
+
 1. Save the sheet as `assets/characters/sprite-sheets/new-roster/<id>-sheet.png`.
 2. Add `<id>` to `FIGHTER_GEOMETRY` in `scripts/fighter_visual.gd` with `height_m`, `pixel_scale` and `ground_offset_m`.
 3. Add `<id>` to `TWELVE_FRAME_IDS`.
