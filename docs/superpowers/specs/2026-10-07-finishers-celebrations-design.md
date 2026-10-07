@@ -442,6 +442,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 9 Bibi family business | 27/27 Godot and 10/10 Python; both sides at HP 1/10, nonlethal staggers, pause, one KO/result and cleanup; twelve desktop/phone captures inspected | Push delivery and record hash; Lapid rapid combo next |
 | 2026-10-07 | Bibi delivered in `c35b8b7` | Reviewed assets, runtime and mobile framing before push | Lapid `prime_time_rush` |
 | 2026-10-07 | Task 10 Lapid rapid boxing combo | 28/28 Godot and 10/10 Python; six unique hits, five nonlethal staggers, ordered captions, pause/miss/cleanup and both sides at HP 1/10; twelve final desktop/phone captures inspected | Push delivery and record hash; Gantz flag sequence next |
+| 2026-10-07 | Lapid delivered in `1ce769a` | Reviewed rapid impacts and corrected pose scale before push | Gantz `independence_flag` |
 
 Lapid scale ruling: head-to-foot body height excludes raised gloves (uppercut 600 px, victory 606 px). All glove pixels remain visible in the atlas. Brief blue impact cues are reused from the existing pixel effect for the five crosses; final uppercut uses its camera impact and caption without a lingering floating effect. Celebration flashes are suppressed in reduced motion.
 
