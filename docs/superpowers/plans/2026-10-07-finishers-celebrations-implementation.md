@@ -17,13 +17,16 @@
 - Eligibility requires match point, defender health ratio `<= 0.15`, attacker meter `>= 100`, correct facing/range, grounded actionable fighters, and match state `FIGHTING`.
 - The match state sequence is `ROUND_INTRO → FIGHTING → FINISHER_PROMPT → FINISHER_CINEMATIC → KO_HOLD → CELEBRATION → RESULT`.
 - Fighter-specific story logic belongs in `data/finishers.json`; do not add per-fighter branches to `fighter.gd` or `main.gd`.
+- Finish Attack and Celebration timelines are separate catalog objects joined by `celebration_id`; a celebration is never embedded as an implicit tail of the attack timeline.
 - Each timeline `hit` has a unique event ID and may execute once.
 - Pause freezes match timer, AI, timeline time, actors, camera motion, effects and sound progression.
+- Reduced motion replaces repeated camera/effect/actor motion with the authored final tableau while preserving hit order, timing ownership and the single result marker.
 - Use generated painted sprite assets; never paste photographs into the arena.
 - The supplied Sarah/Yair photograph is a generation reference only and is not committed unless its license is verified.
 - All required actors stay within the 16:9 safe frame; grounded actors declare and respect a foot baseline.
 - Mobile reduced density allows at most 12 visible support actors and must preserve the defining action.
 - Each fighter task ends with focused tests, the full test suite, desktop and landscape-phone capture review, a pushed implementation commit, then a pushed documentation record containing the implementation commit hash.
+- Review captures are temporary evidence under ignored `output/finisher-review/` and must never be staged or committed.
 - Work directly on `main` because the user requested incremental pushes after every completed fighter. Before each task, require a clean working tree and pull only when the remote has advanced.
 
 ## Review Focus
@@ -33,6 +36,18 @@
 - **Defender defeated by unrelated damage during an eligibility hold:** prompt cancels and ordinary KO flow wins; Task 5 adds the race regression.
 - **Missing or corrupt asset in an implemented catalog entry:** validation fails before a match begins and Lab shows the exact path; Task 2 adds missing-resource and wrong-type tests.
 - **Phone loses focus or rotates during a cinematic:** timeline pauses with the tree and resumes inside the safe frame; Task 21 adds visibility/resize checks to the published Web build.
+
+## Self-review record
+
+Self-reviewed against the approved design and current `main.gd`, `fighter.gd`, `character_debug.gd` and test layout on 2026-10-07. The review resolved these gaps before implementation:
+
+- The catalog contract now explicitly stores separate attack and celebration timelines and validates their `celebration_id` link.
+- Catalog reads return deep copies so runtime consumption cannot mutate the loaded source definitions.
+- Timeline consumption uses stable source indices while hit deduplication uses authored hit IDs, including same-time events and pause/resume.
+- The Fighter Lab task now includes every required scenario, overlay, speed and mobile/reduced-motion preview.
+- Presentation tests now cover sound pause, all allowed event families, reduced motion and cleanup.
+- Visual captures are temporary evidence and cannot enter Git.
+- The per-fighter table below is the operational delivery ledger and must be updated after each fighter.
 
 ## File Structure
 
@@ -44,7 +59,7 @@
 - `scripts/finishers/finisher_timeline.gd` — ordered time advancement and one-shot event consumption.
 - `scripts/finishers/finisher_actor.gd` — temporary sprite/prop actor with grounding and cleanup.
 - `scripts/finishers/finisher_director.gd` — match-facing cinematic coordinator and event executor.
-- `data/finishers.json` — all 13 definitions; entries remain `"implemented": false` until their own delivery task.
+- `data/finishers.json` — all 13 attack definitions plus their separately keyed celebration definitions; entries remain `"implemented": false` until their own delivery task.
 
 ### Existing files modified by the foundation
 
@@ -71,6 +86,26 @@
 ### Fighter assets
 
 Each fighter task owns `assets/finishers/<fighter_id>/` with `actors/`, `props/`, `effects/`, `celebration/` and `preview.png` as required by the approved spec.
+
+## Per-fighter delivery tracker
+
+Update one row after each fighter's focused/full tests and visual inspection. `Implementation commit` records the pushed code/assets commit; `Record commit` records the subsequent pushed documentation commit that adds the implementation hash and review notes. Use `Not started`, `In progress`, `Blocked` or `Complete` only.
+
+| Order | Fighter | `fighter_id` | `finisher_id` | Status | Tests | Lab | Desktop | Phone | Implementation commit | Record commit / notes |
+|---:|---|---|---|---|---|---|---|---|---|---|
+| 1 | Bennet | `bennet` | `startup_exit` | Not started | — | — | — | — | — | — |
+| 2 | Bibi | `bibi` | `family_business` | Not started | — | — | — | — | — | — |
+| 3 | Yair Lapid | `yair_lapid` | `prime_time_rush` | Not started | — | — | — | — | — | — |
+| 4 | Benny Gantz | `benny_gantz` | `independence_flag` | Not started | — | — | — | — | — | — |
+| 5 | Avigdor Lieberman | `avigdor` | `oil_barrel_48` | Not started | — | — | — | — | — | — |
+| 6 | Mansour Abbas | `mansour_abbas` | `coalition_cashstorm` | Not started | — | — | — | — | — | — |
+| 7 | Gadi Eisenkot | `gadi_eisenkot` | `bazooka_command` | Not started | — | — | — | — | — | — |
+| 8 | Yair Golan | `yair_golan` | `m16_burst` | Not started | — | — | — | — | — | — |
+| 9 | Itamar Ben-Gvir | `itamar_ben_gvir` | `crocodile_release` | Not started | — | — | — | — | — | — |
+| 10 | Bezalel Smotrich | `bezalel_smotrich` | `cattle_charge` | Not started | — | — | — | — | — | — |
+| 11 | Aryeh Deri | `aryeh_deri` | `campaign_entourage` | Not started | — | — | — | — | — | — |
+| 12 | Joint List | `joint_list` | `two_headed_chaos_squad` | Not started | — | — | — | — | — | — |
+| 13 | Donald Trump | `trump` | `b2_flyover` | Not started | — | — | — | — | — | — |
 
 ---
 
@@ -123,15 +158,17 @@ Commit message: `Add match state and finisher eligibility rules`. Push `main`, t
 
 **Interfaces:**
 - Produces: `FinisherCatalog.load_default() -> bool`.
-- Produces: `FinisherCatalog.definition_for(fighter_id: String) -> Dictionary`.
+- Produces: `FinisherCatalog.definition_for(fighter_id: String) -> Dictionary`, returning a deep copy.
+- Produces: `FinisherCatalog.celebration_for(celebration_id: String) -> Dictionary`, returning a deep copy.
 - Produces: `FinisherCatalog.validate_definition(fighter_id: String, definition: Dictionary) -> PackedStringArray`.
+- Produces: `FinisherCatalog.validate_celebration(celebration_id: String, definition: Dictionary) -> PackedStringArray`.
 - Produces: `FinisherCatalog.validate_roster(fighter_ids: Array[String]) -> PackedStringArray`.
 - Produces: `FinisherCatalog.is_implemented(fighter_id: String) -> bool`.
 - Consumes: `main.gd.PLAYABLE_IDS` only in tests; runtime catalog remains independent.
 
 - [ ] **Step 1: Write failing catalog and roster tests**
 
-Assert all 13 exact `fighter_id` and `finisher_id` pairs from the spec, monotonic event times, allowed event types, unique hit IDs, final hit before celebration, exactly one result marker for implemented entries, and clear errors for missing resources and wrong JSON types.
+Assert all 13 exact `fighter_id` and `finisher_id` pairs from the spec, a valid `celebration_id` link, monotonic event times, allowed event and camera-preset values, unique hit IDs, one portrait lightbox, final hit before celebration handoff, celebration duration `1.8–2.8`, exactly one result marker for implemented entries, and clear errors for missing resources and wrong JSON types. Mutate a returned definition and assert a second lookup is unchanged.
 
 - [ ] **Step 2: Run both tests and verify RED**
 
@@ -139,7 +176,7 @@ Expected: missing catalog implementation and JSON.
 
 - [ ] **Step 3: Implement the loader and add 13 non-runtime stubs**
 
-Every entry contains fixed trigger values and `"implemented": false`. Stubs may contain approved metadata but cannot become eligible at runtime.
+Every attack entry contains fixed trigger values, a `celebration_id` and `"implemented": false`; every referenced celebration has its own timeline object. Stubs may contain approved metadata but cannot become eligible at runtime.
 
 - [ ] **Step 4: Implement `validate_finisher_assets.py`**
 
@@ -204,17 +241,17 @@ Commit message: `Add finisher hold input and HUD prompt`. Push implementation an
 - Produces: `FinisherTimeline.advance(delta: float) -> Array[Dictionary]`.
 - Produces: `FinisherTimeline.set_paused(paused: bool) -> void`.
 - Produces: `FinisherTimeline.cancel() -> void`.
-- Produces: `FinisherTimeline.is_finished() -> bool`, `elapsed() -> float`, `consumed_event_ids() -> PackedStringArray`.
+- Produces: `FinisherTimeline.is_finished() -> bool`, `elapsed() -> float`, `current_event_key() -> String`, `consumed_hit_ids() -> PackedStringArray`.
 
 - [ ] **Step 1: Write failing order, hitch, pause and cancellation tests**
 
-Include two events sharing a timestamp, a single large delta crossing several events, pause on a hit timestamp, repeated zero-delta advances and cancellation cleanup. Assert each event ID is emitted once in source order.
+Include two events sharing a timestamp, a single large delta crossing several events, pause on a hit timestamp, repeated zero-delta advances and cancellation cleanup. Assert each source index is emitted once in source order and each authored hit ID is consumed once. `current_event_key()` uses the hit ID when present and otherwise a stable `<type>:<source-index>` key.
 
 - [ ] **Step 2: Run the test and verify RED**
 
 - [ ] **Step 3: Implement ordered one-shot advancement**
 
-Duplicate the input definition so runtime consumption cannot mutate catalog data.
+Deep-duplicate the input definition. Track general event consumption by source index and hit deduplication by authored hit ID so runtime advancement cannot mutate catalog data or drop same-time events.
 
 - [ ] **Step 4: Run the focused test and full Godot suite**
 
@@ -245,7 +282,7 @@ Commit message: `Add deterministic finisher timeline`. Push implementation and f
 
 - [ ] **Step 1: Write failing director and end-to-end match tests**
 
-Use a small in-test definition with one prop, one hit, celebration and result marker. Assert locks, timer freeze, one defeat, one result, cleanup, missed opening recovery and unrelated-KO hold cancellation.
+Use a small in-test attack definition linked to a separate celebration definition. Assert locks, meter spend at confirmed start, timer freeze, one defeat, one result, cleanup, missed-opening recovery and unrelated-KO hold cancellation. Simulate a rejected first authored hit before any damage and assert the director cancels, restores camera/control and resumes ordinary combat without a result.
 
 - [ ] **Step 2: Run tests and verify RED**
 
@@ -255,7 +292,7 @@ Authored hit IDs are stored per sequence and cleared on reset. Ordinary `receive
 
 - [ ] **Step 4: Implement actor and director event dispatch**
 
-Unknown events cancel safely and emit a diagnostic; they never continue with partial damage.
+Dispatch `fighter_clip`, `spawn_actor`, `spawn_prop`, `move_actor`, `launch_prop`, `hit`, `defender_reaction` and `cleanup` through shared handlers. Unknown events cancel safely and emit a diagnostic; they never continue with partial damage.
 
 - [ ] **Step 5: Wire main state, timer, pause and result handoff**
 
@@ -284,13 +321,13 @@ Commit message: `Integrate finisher director with match flow`. Push implementati
 
 - [ ] **Step 1: Write failing Lab control and shared-data tests**
 
-Assert character/outcome selection, speed values `0.25`, `0.5`, `1.0`, frame stepping while paused, event ID display, safe-frame/ground overlays and catalog error display.
+Assert attacker/defender and eligible/hit/miss/pause-resume scenario selection, speed values `0.25`, `0.5`, `1.0`, frame stepping while paused, stable event-key display, ground/safe-frame plus collision/hurt/guard/attack-bound overlays, mobile density, reduced motion and catalog error display.
 
 - [ ] **Step 2: Run and verify RED**
 
 - [ ] **Step 3: Add the Finisher Lab mode**
 
-The Lab must not copy timeline logic or use a separate definition format.
+The Lab must not copy timeline logic or use a separate definition format. Its toggles call the same director settings used by the match runtime.
 
 - [ ] **Step 4: Run tests and inspect the Lab at 1280×720**
 
@@ -309,12 +346,13 @@ Commit message: `Add finisher playground to Fighter Lab`. Push implementation an
 - Modify: `scripts/main.gd:339-487, 1066-1136`
 
 **Interfaces:**
-- Produces director handlers for `portrait_lightbox`, five named camera presets, `caption`, `screen_flash`, `camera_impact`, `sound`, `celebration_start`, `result_marker`, `cleanup`.
+- Produces director handlers covering every allowed event type: `portrait_lightbox`, `fighter_clip`, `spawn_actor`, `spawn_prop`, `move_actor`, `launch_prop`, `caption`, `sound`, `camera_preset`, `camera_impact`, `screen_flash`, `hit`, `defender_reaction`, `celebration_start`, `result_marker`, `cleanup`.
+- Produces: `FinisherDirector.set_reduced_motion(value: bool) -> void` and `set_effect_density(value: String) -> void` for `desktop` or `mobile`.
 - Produces: `capture_finisher.gd --fighter=<id> --phase=<finisher|celebration> --density=<desktop|mobile>` through project settings or environment arguments accepted by the script.
 
 - [ ] **Step 1: Write failing event-handler and safe-frame tests**
 
-Assert one lightbox per sequence, camera restore after cancel/result, impact cap on mobile, result marker order and no orphan actors.
+Assert one lightbox per sequence, camera restore after cancel/result, paused audio resumes at the same cue position, impact/actor caps on mobile, reduced motion reaches the same final hit and result marker through a stable tableau, result marker order and no orphan actors.
 
 - [ ] **Step 2: Run and verify RED**
 
@@ -340,11 +378,11 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 4. Add assets under `assets/finishers/<fighter_id>/` and set `implemented=true` with the exact timeline.
 5. Run catalog, roster, director and match integration tests.
 6. Preview hit, miss, pause and celebration in Fighter Lab.
-7. Render `output/finisher-<fighter_id>-desktop.png` and `output/finisher-<fighter_id>-mobile.png`; inspect safe frame, grounding and clarity.
+7. Render finisher and celebration captures for desktop and landscape phone under ignored `output/finisher-review/<fighter_id>/`; inspect safe frame, grounding and clarity and confirm `git status` does not list the captures.
 8. Run the full Godot suite and Python suite.
-9. Mark the fighter checkbox complete and add date/visual notes.
+9. Mark the fighter checkbox complete in the spec and update the matching delivery-tracker row in this plan with date, test result and visual notes.
 10. Commit with the message specified below and push `main`.
-11. Capture the implementation hash with `git rev-parse HEAD`; append it to the spec delivery record, commit `Record <fighter> finisher delivery`, and push again.
+11. Capture the implementation hash with `git rev-parse HEAD`; append it to the spec delivery record and this plan's tracker, commit `Record <fighter> finisher delivery`, and push again.
 
 ---
 
@@ -593,7 +631,7 @@ Run all `tests/test_*.gd` serially with unique logs, `python -m unittest`, `git 
 
 - [ ] **Step 5: Capture every finisher and celebration**
 
-Produce 26 desktop captures and 26 landscape-phone captures. Review clipping, grounding, required text, effect density and result handoff.
+Produce 26 desktop captures and 26 landscape-phone captures under ignored `output/finisher-review/release/`. Review clipping, grounding, required text, effect density and result handoff, then confirm none are staged.
 
 - [ ] **Step 6: Push release documentation**
 
