@@ -1,0 +1,266 @@
+{
+  "finishers": {
+    "bennet": {
+      "fighter_id": "bennet",
+      "finisher_id": "startup_exit",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "exit_success"
+    },
+    "bibi": {
+      "fighter_id": "bibi",
+      "finisher_id": "family_business",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "family_business_victory"
+    },
+    "yair_lapid": {
+      "fighter_id": "yair_lapid",
+      "finisher_id": "prime_time_rush",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "prime_time_rush_victory"
+    },
+    "benny_gantz": {
+      "fighter_id": "benny_gantz",
+      "finisher_id": "independence_flag",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "independence_flag_victory"
+    },
+    "avigdor": {
+      "fighter_id": "avigdor",
+      "finisher_id": "oil_barrel_48",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "oil_barrel_48_victory"
+    },
+    "mansour_abbas": {
+      "fighter_id": "mansour_abbas",
+      "finisher_id": "coalition_cashstorm",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "coalition_cashstorm_victory"
+    },
+    "gadi_eisenkot": {
+      "fighter_id": "gadi_eisenkot",
+      "finisher_id": "bazooka_command",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "bazooka_command_victory"
+    },
+    "yair_golan": {
+      "fighter_id": "yair_golan",
+      "finisher_id": "m16_burst",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "m16_burst_victory"
+    },
+    "itamar_ben_gvir": {
+      "fighter_id": "itamar_ben_gvir",
+      "finisher_id": "crocodile_release",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "crocodile_release_victory"
+    },
+    "bezalel_smotrich": {
+      "fighter_id": "bezalel_smotrich",
+      "finisher_id": "cattle_charge",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "cattle_charge_victory"
+    },
+    "aryeh_deri": {
+      "fighter_id": "aryeh_deri",
+      "finisher_id": "campaign_entourage",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "campaign_entourage_victory"
+    },
+    "joint_list": {
+      "fighter_id": "joint_list",
+      "finisher_id": "two_headed_chaos_squad",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "two_headed_chaos_squad_victory"
+    },
+    "trump": {
+      "fighter_id": "trump",
+      "finisher_id": "b2_flyover",
+      "implemented": false,
+      "meter_cost": 100,
+      "trigger_health_ratio": 0.15,
+      "hold_seconds": 0.55,
+      "activation_range": 1.75,
+      "duration": 3.2,
+      "camera_preset": "close_side",
+      "events": [],
+      "celebration_id": "b2_flyover_victory"
+    }
+  },
+  "celebrations": {
+    "exit_success": {
+      "celebration_id": "exit_success",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "family_business_victory": {
+      "celebration_id": "family_business_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "prime_time_rush_victory": {
+      "celebration_id": "prime_time_rush_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "independence_flag_victory": {
+      "celebration_id": "independence_flag_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "oil_barrel_48_victory": {
+      "celebration_id": "oil_barrel_48_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "coalition_cashstorm_victory": {
+      "celebration_id": "coalition_cashstorm_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "bazooka_command_victory": {
+      "celebration_id": "bazooka_command_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "m16_burst_victory": {
+      "celebration_id": "m16_burst_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "crocodile_release_victory": {
+      "celebration_id": "crocodile_release_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "cattle_charge_victory": {
+      "celebration_id": "cattle_charge_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "campaign_entourage_victory": {
+      "celebration_id": "campaign_entourage_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "two_headed_chaos_squad_victory": {
+      "celebration_id": "two_headed_chaos_squad_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    },
+    "b2_flyover_victory": {
+      "celebration_id": "b2_flyover_victory",
+      "implemented": false,
+      "duration": 2.0,
+      "camera_preset": "victory_low",
+      "events": []
+    }
+  }
+}

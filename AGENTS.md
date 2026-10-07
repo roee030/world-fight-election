@@ -47,6 +47,8 @@ Never claim a visual or behavior fix without automated evidence and a screen ins
 
 ## Current roadmap
 
+Finisher implementation is tracked in `docs/superpowers/plans/2026-10-07-finishers-celebrations-implementation.md` and its approved spec. Catalog entries and celebrations are separate objects in `data/finishers.json`; `implemented=false` entries must never activate. Update the spec delivery record and push each completed task and fighter. Run Python tests with `python -m unittest discover -s tests -p 'test_*.py'` (bare unittest discovers no tests).
+
 1. Finish presentation polish across menu, selection, pause, HUD and result screens.
 2. Tune hit range and feedback in the Sprite Lab/playground.
 3. Move fighter timing, bounds and scale values into editable data files.

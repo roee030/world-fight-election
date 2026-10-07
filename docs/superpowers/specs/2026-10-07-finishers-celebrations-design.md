@@ -402,7 +402,7 @@ Update this section in the same commit that completes each item.
 
 - [x] Match state and eligibility — 2026-10-07: pure boundary rules and round-flow state tracking; 16 Godot tests passed.
 - [ ] Hold input and HUD prompt
-- [ ] Catalog and validation
+- [x] Catalog and validation — Task 2: 13 disabled entries and separate celebration objects, strict schema/resource/link validation, copy isolation and asset validator.
 - [ ] Timeline director
 - [ ] Pause and cleanup
 - [ ] Fighter Lab support
@@ -431,6 +431,7 @@ Update this section in the same commit that completes each item.
 | Date | Delivery | Verification | Next step |
 |---|---|---|---|
 | 2026-10-07 | Implementation plan published; task 1 rules and match-state tracking implemented | Eligibility test observed failing before implementation, then passing; full Godot suite 16/16 | Catalog and roster stubs (task 2); no fighter finisher marked complete yet |
+| 2026-10-07 | Task 2 catalog and roster scaffolding | Catalog/roster RED→GREEN; 10 Python tests passed; reviewer regressions reject unfinished celebrations and late portraits | Task 3 input; fighters remain disabled until final art and sequence review |
 
 Execution ruling: this managed worktree has a detached HEAD. Preserve it and publish using `git push origin HEAD:main` after integrating remote updates normally. No forced pushes.
 
