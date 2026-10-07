@@ -15,5 +15,5 @@ Replace the split roster menu with cinematic title art and floating actions, mak
 - [x] Mark the lower HUD bar as Special Energy and show percentage and readiness.
 - [x] Prevent timers and round transitions from advancing while paused.
 - [x] Add regression coverage for damage, hit reaction, shadow, pause, stage alignment and UI structure.
-- [ ] Run the full headless suite and visual screen review.
-- [ ] Commit and push the complete project to the new GitHub repository.
+- [x] Run the full headless suite and visual screen review.
+- [x] Commit and push the complete project to the new GitHub repository.
