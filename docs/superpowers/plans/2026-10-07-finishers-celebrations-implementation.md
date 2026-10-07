@@ -415,9 +415,9 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces implemented entry `bibi/family_business` and validates multiple guest actors plus a multi-character celebration.
 
-- [ ] Follow the Fighter Delivery Template; use the supplied photo only as image-generation reference.
-- [ ] Assert two non-final sound-wave hits, one Yair final hit, guest safe-frame positions and throne celebration order.
-- [ ] Verify Sarah, Yair and Bibi share the game's painted caricature style and contain no pasted photo regions.
+- [x] Follow the Fighter Delivery Template; use the supplied photo only as image-generation reference.
+- [x] Assert two non-final sound-wave hits, one Yair final hit, guest safe-frame positions and throne celebration order.
+- [x] Verify Sarah, Yair and Bibi share the game's painted caricature style and contain no pasted photo regions.
 - [ ] Commit and push `Add Bibi family business finisher`; then record and push its hash.
 
 ---

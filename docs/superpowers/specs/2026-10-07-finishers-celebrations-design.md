@@ -411,7 +411,7 @@ Update this section in the same commit that completes each item.
 ### Fighters
 
 - [x] Bennet — `startup_exit`: laptop launch, pixel impact, EXIT SUCCESS pose/confetti and original arcade audio; real MAX hold and both-side desktop/phone review completed.
-- [ ] Bibi — `family_business`
+- [x] Bibi — `family_business`: two Sarah sonic staggers, Yair final assist and family throne celebration; both-side desktop/phone review completed.
 - [ ] Yair Lapid — `prime_time_rush`
 - [ ] Benny Gantz — `independence_flag`
 - [ ] Avigdor Lieberman — `oil_barrel_48`
@@ -439,6 +439,9 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 7 pushed as `e6d154d`; Task 6 Finisher Lab | 25/25 Godot and 10/10 Python; planned/real/miss/scrub/pause tests; 1280×720 Lab inspected | Bennet vertical slice (Task 8) |
 | 2026-10-07 | Task 6 pushed as `0516ef0`; Task 8 Bennet vertical slice | 26/26 Godot and 10/10 Python; real MAX hold, laptop timing, pause, single KO/result, miss and cleanup; ten desktop/phone captures reviewed including reversed side | Push delivery, record hash, integrate Bibi guest actors |
 | 2026-10-07 | Bennet delivered in `8e3538d` | Verified before push; mirrored actor anchors included | Bibi `family_business` assets prepared; runtime integration and review pending |
+| 2026-10-07 | Task 9 Bibi family business | 27/27 Godot and 10/10 Python; both sides at HP 1/10, nonlethal staggers, pause, one KO/result and cleanup; twelve desktop/phone captures inspected | Push delivery and record hash; Lapid rapid combo next |
+
+Bibi art uses two transparent painted atlases generated from the family reference and existing Bibi sprite. The photo is not included in game assets. Sarah's sonic attacks use visible musical waves and original electronic cues; recorded vocals are not part of this delivery. The family throne tableau is an authored cinematic pose grounded through the existing fighter geometry.
 
 Lab guide note: cyan shows the actual collision capsule. Hurt/guard guides are explicitly labeled proxies because ordinary combat uses facing, distance and guard booleans rather than separate shape nodes.
 

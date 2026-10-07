@@ -147,15 +147,201 @@
     "bibi": {
       "fighter_id": "bibi",
       "finisher_id": "family_business",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "family_business_victory"
+      "duration": 4.2,
+      "camera_preset": "wide_stage",
+      "celebration_id": "family_business_victory",
+      "events": [
+        {
+          "at": 0.0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.4,
+          "type": "spawn_actor",
+          "id": "sarah",
+          "asset": "res://assets/finishers/bibi/actors/family-assists.png",
+          "region": [
+            0,
+            0,
+            710,
+            725
+          ],
+          "pixel_scale": 0.0026,
+          "grounded": true,
+          "foot_baseline": 694,
+          "anchor": "attacker",
+          "position": [
+            -1.3,
+            0,
+            -0.15
+          ]
+        },
+        {
+          "at": 0.8,
+          "type": "spawn_prop",
+          "id": "sound_wave_one",
+          "asset": "res://assets/finishers/bibi/celebration/family-tableau.png",
+          "region": [
+            1340,
+            0,
+            747,
+            753
+          ],
+          "pixel_scale": 0.0011,
+          "anchor": "attacker",
+          "position": [
+            -0.8,
+            1.35,
+            0.2
+          ]
+        },
+        {
+          "at": 0.8,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/boot.wav"
+        },
+        {
+          "at": 0.9,
+          "type": "launch_prop",
+          "id": "sound_wave_one",
+          "target": "defender",
+          "duration": 0.35
+        },
+        {
+          "at": 1.25,
+          "type": "hit",
+          "id": "family_voice_one",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.25,
+          "type": "camera_impact",
+          "strength": 0.1
+        },
+        {
+          "at": 1.5,
+          "type": "spawn_prop",
+          "id": "sound_wave_two",
+          "asset": "res://assets/finishers/bibi/celebration/family-tableau.png",
+          "region": [
+            1340,
+            0,
+            747,
+            753
+          ],
+          "pixel_scale": 0.0013,
+          "anchor": "attacker",
+          "position": [
+            -0.8,
+            1.35,
+            0.25
+          ]
+        },
+        {
+          "at": 1.5,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/boot.wav"
+        },
+        {
+          "at": 1.6,
+          "type": "launch_prop",
+          "id": "sound_wave_two",
+          "target": "defender",
+          "duration": 0.35
+        },
+        {
+          "at": 1.95,
+          "type": "hit",
+          "id": "family_voice_two",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.95,
+          "type": "camera_impact",
+          "strength": 0.1
+        },
+        {
+          "at": 2.2,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.25,
+          "type": "spawn_actor",
+          "id": "yair_assist",
+          "asset": "res://assets/finishers/bibi/actors/family-assists.png",
+          "region": [
+            710,
+            0,
+            815,
+            725
+          ],
+          "pixel_scale": 0.0027,
+          "grounded": true,
+          "foot_baseline": 703,
+          "anchor": "attacker",
+          "position": [
+            -0.4,
+            0,
+            0.25
+          ]
+        },
+        {
+          "at": 2.35,
+          "type": "move_actor",
+          "id": "yair_assist",
+          "anchor": "attacker",
+          "position": [
+            0.95,
+            0,
+            0.25
+          ],
+          "duration": 0.6
+        },
+        {
+          "at": 2.95,
+          "type": "hit",
+          "id": "family_business_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.95,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 2.95,
+          "type": "screen_flash"
+        },
+        {
+          "at": 2.95,
+          "type": "caption",
+          "text": "FAMILY BUSINESS",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.95,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 3.6,
+          "type": "celebration_start"
+        }
+      ]
     },
     "yair_lapid": {
       "fighter_id": "yair_lapid",
@@ -379,10 +565,48 @@
     },
     "family_business_victory": {
       "celebration_id": "family_business_victory",
-      "implemented": false,
+      "fighter_id": "bibi",
+      "implemented": true,
       "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0.0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/bibi/celebration/family-tableau.png",
+          "region": [
+            0,
+            0,
+            1340,
+            753
+          ],
+          "figure_height_px": 688,
+          "foot_baseline": 716
+        },
+        {
+          "at": 0.0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "THE ROYAL FAMILY",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 1.9,
+          "type": "result_marker"
+        }
+      ],
+      "camera_preset": "wide_stage"
     },
     "prime_time_rush_victory": {
       "celebration_id": "prime_time_rush_victory",

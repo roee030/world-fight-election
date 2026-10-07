@@ -13,6 +13,9 @@ func _run() -> void:
 		return
 	lab.preview_finisher("bibi", "hit")
 	var preview = lab.finisher_lab
+	# Test the planned guard with an explicit fixture, independent of delivery progress.
+	preview.catalog._definitions.bibi.implemented = false
+	lab.preview_finisher("bibi", "hit")
 	if not preview.catalog.errors.is_empty():
 		push_error("Finisher catalog invalid: " + "; ".join(preview.catalog.errors))
 		quit(1)
