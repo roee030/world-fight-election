@@ -13,6 +13,8 @@ var _special_was_held := false
 var _special_release_pending := false
 var _special_cancel_after_pause := false
 var _finisher_catalog: RefCounted
+const FinisherDirectorScript = preload("res://scripts/finishers/finisher_director.gd")
+var _finisher_director: Node
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
@@ -127,18 +129,30 @@ func _ready() -> void:
 	visible = true
 	randomize()
 	_build_arena()
+	_finisher_director = FinisherDirectorScript.new()
+	add_child(_finisher_director)
+	_finisher_director.configure(self, _arena, _fight_camera)
+	finisher_requested.connect(_try_begin_finisher)
+	_finisher_director.final_hit.connect(_on_finisher_final_hit)
+	_finisher_director.celebration_started.connect(func(_id): match_state = MatchState.Value.CELEBRATION)
+	_finisher_director.result_ready.connect(func(winner): _show_result(winner == 0))
+	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_build_ui()
 	_create_audio()
 	_show_menu()
 
 
 func _process(delta: float) -> void:
-	if is_instance_valid(_fight_camera):
+	if is_instance_valid(_finisher_director) and _finisher_director.active:
+		if not paused:
+			_finisher_director.advance(delta)
+		return
+	if is_instance_valid(_fight_camera) and not paused:
 		camera_shake = maxf(0.0, camera_shake - delta * 1.8)
 		var t := float(Time.get_ticks_msec())
 		var kick := camera_shake
 		_fight_camera.position = camera_home + Vector3(sin(t * 0.079) * kick, sin(t * 0.113) * kick * 0.55, 0)
-	if fight_live and not paused:
+	if fight_live and not paused and match_state in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT]:
 		round_clock = maxf(0.0, round_clock - delta)
 		timer_label.text = "%02d" % ceili(round_clock)
 		_update_recoverable_health(delta)
@@ -180,6 +194,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	if is_instance_valid(_finisher_director) and _finisher_director.active:
+		return
 	if not fight_live or paused or player == null or not round_ready:
 		# Sample held keys outside combat too, so resuming never creates an attack.
 		_attack_key_held["light"] = Input.is_key_pressed(KEY_J) or Input.is_key_pressed(KEY_1)
@@ -206,6 +222,8 @@ func _physics_process(_delta: float) -> void:
 	var special := special_action == "special"
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
+		if _finisher_director.active:
+			return
 	player.set_controls(
 		axis,
 		Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP) or _input_down.get("jump", false) or (stick != null and stick.axis.y < -0.62),
@@ -298,6 +316,43 @@ func _cancel_special_hold() -> void:
 	_special_hold.cancel()
 	if match_state == MatchState.Value.FINISHER_PROMPT:
 		match_state = MatchState.Value.FIGHTING
+
+
+func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definition: Dictionary) -> bool:
+	if not _finisher_eligible() or attacker != player or defender != enemy:
+		return false
+	if not _finisher_director.begin(attacker, defender, definition):
+		return false
+	match_state = MatchState.Value.FINISHER_CINEMATIC
+	round_ready = false
+	message_label.visible = false
+	_input_down.clear()
+	return true
+
+
+func _on_finisher_final_hit(who: int) -> void:
+	if match_state != MatchState.Value.FINISHER_CINEMATIC:
+		return
+	match_state = MatchState.Value.KO_HOLD
+	if who == 0:
+		enemy_rounds += 1
+	else:
+		player_rounds += 1
+	_update_scores()
+
+
+func _on_finisher_cancelled(_reason: String) -> void:
+	if not fight_live:
+		return
+	if is_instance_valid(enemy) and enemy.health <= 0.0:
+		_show_result(true)
+	elif is_instance_valid(player) and player.health <= 0.0:
+		_show_result(false)
+	else:
+		match_state = MatchState.Value.FIGHTING
+		round_ready = true
+		_cancel_special_hold()
+		_input_down.clear()
 
 
 func _build_arena() -> void:
@@ -1016,6 +1071,9 @@ func _bar(parent: Control, rect: Rect2, color: Color, maximum: float = 112.0) ->
 
 
 func _show_menu() -> void:
+	if is_instance_valid(_finisher_director):
+		_finisher_director.cancel()
+	_cancel_special_hold()
 	fight_live = false
 	paused = false
 	hud_root.visible = false
@@ -1238,6 +1296,8 @@ func _on_meter_changed(who: int, value: float) -> void:
 
 
 func _on_defeated(who: int) -> void:
+	if match_state in [MatchState.Value.FINISHER_CINEMATIC, MatchState.Value.KO_HOLD, MatchState.Value.CELEBRATION] and _finisher_director.active:
+		return
 	if not fight_live or intermission > 0: return
 	if who == 0: enemy_rounds += 1
 	else: player_rounds += 1
@@ -1358,6 +1418,8 @@ func _continue_from_result() -> void:
 func _toggle_pause() -> void:
 	if not fight_live: return
 	paused = not paused
+	if is_instance_valid(_finisher_director):
+		_finisher_director.set_paused(paused)
 	pause_root.visible = paused
 	get_tree().paused = paused
 

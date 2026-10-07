@@ -67,6 +67,75 @@ var _body_mesh: Node3D
 var _animation_paused := false
 var _collider: CollisionShape3D
 var _standing_capsule: CapsuleShape3D
+var cinematic_locked := false
+var _authored_hit_ids := {}
+
+
+func enter_cinematic_lock(anchor: Vector3, facing_value: float) -> void:
+	cinematic_locked = true
+	_authored_hit_ids.clear()
+	position = anchor
+	facing = 1.0 if facing_value >= 0.0 else -1.0
+	velocity = Vector3.ZERO
+	input_axis = 0.0
+	input_depth = 0.0
+	input_jump = false
+	input_block = false
+	input_crouch = false
+	attack_request = ""
+	buffered_attack = ""
+	buffer_time = 0.0
+	attack_kind = ""
+	attack_time = 0.0
+	busy = 0.0
+	stun = 0.0
+	hit_stop = 0.0
+	knockdown_time = 0.0
+	recovery_time = 0.0
+	getup_pending = false
+	if not _visual.is_empty():
+		_visual.sprite.flip_h = facing < 0.0
+		_visual.sprite.rotation.z = 0.0
+		_visual.sprite.position.y = float(_visual.ground_y)
+		_visual.motion.freeze_motion(true)
+		_visual.sprite.play("idle")
+
+
+func apply_authored_hit(event_id: String, damage: float, direction: float, reaction: String) -> bool:
+	if not cinematic_locked or event_id.is_empty() or _authored_hit_ids.has(event_id) or health <= 0.0 or damage <= 0.0:
+		return false
+	_authored_hit_ids[event_id] = true
+	health = maxf(0.0, health - damage)
+	velocity = Vector3.ZERO
+	if not _visual.is_empty():
+		facing = -signf(direction)
+		_visual.sprite.flip_h = facing < 0.0
+		var clip := "knockdown" if reaction == "finish_fall" or health <= 0.0 else "hit"
+		_visual.sprite.play(clip)
+		if health <= 0.0:
+			_visual.sprite.frame = _visual.sprite.sprite_frames.get_frame_count(clip) - 1
+			_visual.sprite.pause()
+	health_changed.emit(who, health)
+	if health <= 0.0:
+		round_over = true
+		defeated.emit(who)
+	return true
+
+
+func exit_cinematic_lock() -> void:
+	cinematic_locked = false
+	velocity = Vector3.ZERO
+	attack_request = ""
+	buffered_attack = ""
+	buffer_time = 0.0
+	input_axis = 0.0
+	input_depth = 0.0
+	input_jump = false
+	input_block = false
+	if not _visual.is_empty():
+		_visual.motion.freeze_motion(false)
+		if health > 0.0:
+			_visual.sprite.play("idle")
 
 
 func setup(id: String, player_index: int, cpu: bool, level: int = 1) -> void:
@@ -115,6 +184,8 @@ func max_health() -> float:
 
 
 func set_controls(axis: float, jump: bool, block: bool, crouch: bool, requested_attack: String, depth: float = 0.0) -> void:
+	if cinematic_locked:
+		return
 	input_axis = clampf(axis, -1.0, 1.0)
 	input_depth = clampf(depth, -1.0, 1.0)
 	input_jump = jump
@@ -125,6 +196,8 @@ func set_controls(axis: float, jump: bool, block: bool, crouch: bool, requested_
 
 
 func _physics_process(delta: float) -> void:
+	if cinematic_locked:
+		return
 	if rival == null or round_over:
 		velocity.x = move_toward(velocity.x, 0.0, 12.0 * delta)
 		if not is_on_floor(): velocity.y -= 22.0 * delta
@@ -414,6 +487,8 @@ func _try_hit() -> void:
 
 
 func receive_hit(damage: float, direction: float, kind: String) -> void:
+	if cinematic_locked:
+		return
 	if invulnerable > 0.0 or round_over or knockdown_time > 0.0 or recovery_time > 0.0: return
 	var blocked := input_block and stun <= 0.0 and is_on_floor()
 	if blocked:
@@ -459,6 +534,8 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 
 
 func reset_round(position_x: float, health_value: float = 100.0) -> void:
+	exit_cinematic_lock()
+	_authored_hit_ids.clear()
 	position = Vector3(position_x, 0.0, 0.0)
 	velocity = Vector3.ZERO
 	health = health_value
