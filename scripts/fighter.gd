@@ -487,7 +487,9 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	combo_count = 0
 	buffered_attack = ""
 	buffer_time = 0.0
-	invulnerable = 1.1
+	# round_over already protects both fighters during the announcer intro. Keeping
+	# a second invulnerability timer here made the first attacks after FIGHT! miss.
+	invulnerable = 0.0
 	input_block = false
 	input_crouch = false
 	input_axis = 0.0

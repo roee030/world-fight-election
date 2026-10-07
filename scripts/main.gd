@@ -30,6 +30,8 @@ var pause_root: Control
 var result_root: Control
 var player_health_bar: ProgressBar
 var enemy_health_bar: ProgressBar
+var player_recoverable_bar: ProgressBar
+var enemy_recoverable_bar: ProgressBar
 var player_meter_bar: ProgressBar
 var enemy_meter_bar: ProgressBar
 var player_meter_label: Label
@@ -68,6 +70,8 @@ var _sounds := {}
 var _art_cache := {}
 var _last_second := -1
 var round_ready := false
+var player_recover_delay := 0.0
+var enemy_recover_delay := 0.0
 var _opponent_selector := OpponentSelectorScript.new()
 
 const BOUTS := [
@@ -94,7 +98,7 @@ const FIGHTER_DATA := {
 const PLAYABLE_IDS := ["bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid", "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich", "gadi_eisenkot", "trump", "joint_list"]
 const STAGES := [
 	{"id": "knesset_exterior", "name": "KNESSET • OUTSIDE", "subtitle": "Jerusalem · Night session", "image": "res://assets/stages/knesset-exterior-arena.png", "kind": "knesset_outside", "accent": "#cda760", "base": "#1a2634"},
-	{"id": "knesset_chamber", "name": "KNESSET • CHAMBER", "subtitle": "Inside the debating hall", "image": "res://assets/stages/knesset-chamber-arena.png", "kind": "knesset_inside", "accent": "#e2bd63", "base": "#392b22", "backdrop_y": 0.78, "backdrop_scale": 1.18},
+	{"id": "knesset_chamber", "name": "KNESSET • CHAMBER", "subtitle": "Inside the debating hall", "image": "res://assets/stages/knesset-chamber-arena.png", "kind": "knesset_inside", "accent": "#e2bd63", "base": "#392b22", "backdrop_y": 0.78, "backdrop_scale": 1.18, "camera_target_y": 1.42},
 	{"id": "patriots_studio", "name": "THE PATRIOTS", "subtitle": "Live studio · Red alert", "image": "res://assets/stages/patriots-studio-arena.png", "kind": "studio", "accent": "#42cafa", "base": "#102033"},
 	{"id": "friday_studio", "name": "FRIDAY STUDIO", "subtitle": "Prime time · Jerusalem", "image": "res://assets/stages/friday-studio-arena.png", "kind": "studio", "accent": "#e5b944", "base": "#132238"},
 	{"id": "hatzinor_studio", "name": "THE PIPELINE", "subtitle": "The Hatzinor newsroom", "image": "res://assets/stages/hatzinor-studio-arena.png", "kind": "studio", "accent": "#3ccafa", "base": "#101a2c"}
@@ -120,6 +124,7 @@ func _process(delta: float) -> void:
 	if fight_live and not paused:
 		round_clock = maxf(0.0, round_clock - delta)
 		timer_label.text = "%02d" % ceili(round_clock)
+		_update_recoverable_health(delta)
 		if round_clock <= 0.0:
 			_end_round("time")
 	if intermission > 0 and not paused:
@@ -246,6 +251,7 @@ func _build_stage(stage_id: String = "") -> void:
 	var old_backdrop := _fight_camera.get_node_or_null("FullFrameStageBackdrop")
 	if old_backdrop != null: old_backdrop.free()
 	var stage := _stage_data(stage_id if stage_id != "" else selected_stage_id)
+	_fight_camera.look_at(Vector3(0, float(stage.get("camera_target_y", 1.15)), 0), Vector3.UP)
 	# The supplied stage art already contains the environment, floor and lighting.
 	# Keep it as a single camera-facing backplate so invented walls, studio desks,
 	# columns and crowd meshes cannot cover half the reference image.
@@ -377,11 +383,11 @@ func _build_hud() -> void:
 	_label(top, "CPU", Rect2(712, 8, 66, 18), 8, Color("#ed8e98"), HORIZONTAL_ALIGNMENT_LEFT)
 	_panel(top, Rect2(96, 41, 462, 29), Color("#071019"))
 	_panel(top, Rect2(706, 41, 462, 29), Color("#071019"))
-	var player_recoverable := _bar(top, Rect2(104, 47, 446, 16), Color("#d6b968"))
-	player_recoverable.name = "PlayerRecoverableHealth"
-	var enemy_recoverable := _bar(top, Rect2(714, 47, 446, 16), Color("#d6b968"))
-	enemy_recoverable.name = "EnemyRecoverableHealth"
-	enemy_recoverable.fill_mode = ProgressBar.FILL_END_TO_BEGIN
+	player_recoverable_bar = _bar(top, Rect2(104, 47, 446, 16), Color("#7b693e"))
+	player_recoverable_bar.name = "PlayerRecoverableHealth"
+	enemy_recoverable_bar = _bar(top, Rect2(714, 47, 446, 16), Color("#7b693e"))
+	enemy_recoverable_bar.name = "EnemyRecoverableHealth"
+	enemy_recoverable_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
 	player_health_bar = _bar(top, Rect2(104, 47, 446, 16), Color("#34d5d0"))
 	enemy_health_bar = _bar(top, Rect2(714, 47, 446, 16), Color("#e15a6a"))
 	enemy_health_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
@@ -507,58 +513,58 @@ func _build_select() -> void:
 	select_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(select_root)
 	_panel(select_root, Rect2(0, 0, 1280, 720), Color("#080e16"))
-	_panel(select_root, Rect2(0, 0, 640, 720), Color(0.035, 0.15, 0.19, 0.30))
-	_panel(select_root, Rect2(640, 0, 640, 720), Color(0.22, 0.045, 0.075, 0.30))
-	_label(select_root, "SELECT YOUR FIGHTER", Rect2(48, 24, 700, 47), 30, Color("#f4f0e7"), HORIZONTAL_ALIGNMENT_LEFT)
-	_label(select_root, "CHOOSE ONE FIGHTER  ·  THE CPU IS REVEALED IN THE ARENA", Rect2(51, 69, 690, 22), 11, Color("#99afb7"), HORIZONTAL_ALIGNMENT_LEFT)
+	_wash(select_root, Rect2(0, 0, 640, 720), Color(0.025, 0.16, 0.21, 0.32))
+	_wash(select_root, Rect2(640, 0, 640, 720), Color(0.25, 0.035, 0.075, 0.30))
+	_label(select_root, "SELECT YOUR FIGHTER", Rect2(340, 18, 600, 44), 29, Color("#f4f0e7"), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(select_root, "PLAYER 1 SELECTION  ·  CPU RIVAL IS RANDOM", Rect2(390, 58, 500, 20), 10, Color("#a9b7bc"), HORIZONTAL_ALIGNMENT_CENTER)
 	# The player chooses one fighter. The CPU stays concealed until the arena loads.
 	select_portrait = TextureRect.new()
 	select_portrait.texture = _fighter_art("bennet")
 	select_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	select_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	select_portrait.position = Vector2(0, 110); select_portrait.size = Vector2(365, 510)
+	select_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	select_portrait.position = Vector2(0, 76); select_portrait.size = Vector2(500, 544)
 	select_root.add_child(select_portrait)
 	var right_art := TextureRect.new()
 	right_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	right_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	right_art.position = Vector2(915, 110); right_art.size = Vector2(365, 510); right_art.modulate = Color(0.22, 0.25, 0.30, 1)
+	right_art.position = Vector2(780, 76); right_art.size = Vector2(500, 544); right_art.modulate = Color(0.22, 0.25, 0.30, 1)
 	select_root.add_child(right_art)
-	_panel(select_root, Rect2(0, 110, 365, 510), Color(0.035, 0.12, 0.15, 0.46))
-	_panel(select_root, Rect2(915, 110, 365, 510), Color(0.18, 0.035, 0.06, 0.50))
-	_panel(select_root, Rect2(363, 110, 554, 510), Color(0.018, 0.028, 0.043, 0.96))
-	_panel(select_root, Rect2(363, 110, 3, 510), Color("#46c9c5"))
-	_panel(select_root, Rect2(914, 110, 3, 510), Color("#d85c68"))
-	select_name_label = _label(select_root, "BENNET", Rect2(28, 530, 310, 48), 30, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_LEFT)
-	select_style_label = _label(select_root, "THE FOUNDER  /  COMBO STRIKER", Rect2(30, 578, 315, 24), 11, Color("#76ded8"), HORIZONTAL_ALIGNMENT_LEFT)
-	var mystery_mark := _label(select_root, "?", Rect2(948, 185, 300, 275), 160, Color("#e7c27a"), HORIZONTAL_ALIGNMENT_CENTER)
+	_wash(select_root, Rect2(0, 76, 500, 544), Color(0.025, 0.10, 0.14, 0.30))
+	_wash(select_root, Rect2(780, 76, 500, 544), Color(0.18, 0.025, 0.055, 0.48))
+	select_name_label = _label(select_root, "BENNET", Rect2(34, 300, 410, 56), 39, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_LEFT)
+	select_style_label = _label(select_root, "THE FOUNDER  /  COMBO STRIKER", Rect2(36, 354, 410, 24), 11, Color("#76ded8"), HORIZONTAL_ALIGNMENT_LEFT)
+	var mystery_mark := _label(select_root, "?", Rect2(894, 128, 300, 220), 144, Color("#e7c27a"), HORIZONTAL_ALIGNMENT_CENTER)
 	mystery_mark.name = "MysteryCpuMark"
-	select_rival_name = _label(select_root, "RANDOM OPPONENT", Rect2(935, 530, 315, 48), 24, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_RIGHT)
-	select_rival_style = _label(select_root, "REVEALED IN THE ARENA", Rect2(935, 578, 315, 24), 11, Color("#f49b9d"), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_name = _label(select_root, "RANDOM OPPONENT", Rect2(830, 300, 410, 56), 27, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_style = _label(select_root, "REVEALED IN THE ARENA", Rect2(830, 354, 410, 24), 11, Color("#f49b9d"), HORIZONTAL_ALIGNMENT_RIGHT)
 	select_rival_portrait = right_art
-	select_stats_label = _label(select_root, "STYLE  ·  Close-range pressure\nSIGNATURE  ·  Founder’s Rush", Rect2(385, 126, 510, 52), 12, Color("#c6d1d2"), HORIZONTAL_ALIGNMENT_CENTER)
-	_label(select_root, "CHOOSE YOUR FIGHTER", Rect2(385, 184, 510, 26), 12, Color("#d9b566"), HORIZONTAL_ALIGNMENT_CENTER)
+	select_stats_label = _label(select_root, "STYLE  ·  Close-range pressure\nSIGNATURE  ·  Founder’s Rush", Rect2(430, 92, 420, 52), 11, Color("#c6d1d2"), HORIZONTAL_ALIGNMENT_CENTER)
+	var roster_back := _panel(select_root, Rect2(286, 398, 708, 208), Color(0.010, 0.019, 0.031, 0.94))
+	roster_back.name = "RosterDock"
+	_panel(roster_back, Rect2(0, 0, 708, 3), Color("#d8b562"))
+	_label(select_root, "FIGHTER ROSTER", Rect2(490, 402, 300, 22), 10, Color("#e2c374"), HORIZONTAL_ALIGNMENT_CENTER)
 	var roster_grid := GridContainer.new()
 	roster_grid.name = "RosterGrid"
-	roster_grid.position = Vector2(385, 218)
-	roster_grid.size = Vector2(510, 300)
-	roster_grid.columns = 5
-	roster_grid.add_theme_constant_override("h_separation", 8)
-	roster_grid.add_theme_constant_override("v_separation", 8)
+	roster_grid.position = Vector2(308, 430)
+	roster_grid.size = Vector2(664, 168)
+	roster_grid.columns = 7
+	roster_grid.add_theme_constant_override("h_separation", 6)
+	roster_grid.add_theme_constant_override("v_separation", 6)
 	select_root.add_child(roster_grid)
 	for i in range(PLAYABLE_IDS.size()):
 		var fighter_id: String = PLAYABLE_IDS[i]
-		var tile := _button(roster_grid, "", Rect2(0, 0, 94, 88), "#172632", 18)
-		tile.custom_minimum_size = Vector2(94, 88)
+		var tile := _button(roster_grid, "", Rect2(0, 0, 88, 78), "#172632", 18)
+		tile.custom_minimum_size = Vector2(88, 78)
 		tile.name = "RosterTile_" + fighter_id
 		roster_tiles.append(tile)
 		var face := TextureRect.new()
 		face.texture = load(_fighter_thumbnail_path(fighter_id))
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		face.position = Vector2(4, 4); face.size = Vector2(86, 80); face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		face.position = Vector2(3, 3); face.size = Vector2(82, 72); face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(face)
 		tile.pressed.connect(func(id: String = fighter_id): _select_fighter(id))
-	_panel(select_root, Rect2(0, 628, 1280, 92), Color(0.012, 0.022, 0.034, 0.94))
+	_panel(select_root, Rect2(0, 628, 1280, 92), Color(0.012, 0.022, 0.034, 0.96))
 	var back := _button(select_root, "BACK", Rect2(48, 647, 150, 48), "#263844", 14)
 	back.pressed.connect(_show_menu)
 	var confirm := _button(select_root, "CONFIRM FIGHT", Rect2(1002, 642, 230, 56), "#a4793b", 16)
@@ -989,13 +995,12 @@ func _start_round() -> void:
 	enemy.reset_round(1.85, enemy.max_health())
 	player_health_bar.max_value = player.max_health()
 	enemy_health_bar.max_value = enemy.max_health()
-	var hud_frame := hud_root.get_node("CombatHUDFrame")
-	var player_recoverable := hud_frame.get_node("PlayerRecoverableHealth") as ProgressBar
-	var enemy_recoverable := hud_frame.get_node("EnemyRecoverableHealth") as ProgressBar
-	player_recoverable.max_value = player.max_health()
-	player_recoverable.value = player.max_health()
-	enemy_recoverable.max_value = enemy.max_health()
-	enemy_recoverable.value = enemy.max_health()
+	player_recoverable_bar.max_value = player.max_health()
+	player_recoverable_bar.value = player.max_health()
+	enemy_recoverable_bar.max_value = enemy.max_health()
+	enemy_recoverable_bar.value = enemy.max_health()
+	player_recover_delay = 0.0
+	enemy_recover_delay = 0.0
 	# Keep both fighters in their opening stances until the announcer finishes.
 	player.round_over = true
 	enemy.round_over = true
@@ -1021,12 +1026,25 @@ func _start_round() -> void:
 func _on_health_changed(who: int, value: float) -> void:
 	var bar := player_health_bar if who == 0 else enemy_health_bar
 	bar.value = value
+	if who == 0:
+		player_recover_delay = 0.32
+	else:
+		enemy_recover_delay = 0.32
 	var ratio := value / maxf(1.0, bar.max_value)
 	var fill := bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if fill != null:
 		fill.bg_color = Color("#38d3ce") if ratio > 0.55 and who == 0 else (Color("#df5968") if ratio > 0.55 else (Color("#e1b957") if ratio > 0.25 else Color("#f03f47")))
 	if round_ready:
 		_spawn_hit_flash(who)
+
+
+func _update_recoverable_health(delta: float) -> void:
+	player_recover_delay = maxf(0.0, player_recover_delay - delta)
+	enemy_recover_delay = maxf(0.0, enemy_recover_delay - delta)
+	if player_recover_delay <= 0.0 and is_instance_valid(player_recoverable_bar):
+		player_recoverable_bar.value = move_toward(player_recoverable_bar.value, player_health_bar.value, player_recoverable_bar.max_value * 1.35 * delta)
+	if enemy_recover_delay <= 0.0 and is_instance_valid(enemy_recoverable_bar):
+		enemy_recoverable_bar.value = move_toward(enemy_recoverable_bar.value, enemy_health_bar.value, enemy_recoverable_bar.max_value * 1.35 * delta)
 
 
 func _on_combo_changed(who: int, hits: int) -> void:

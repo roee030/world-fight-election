@@ -33,8 +33,8 @@ func _run() -> void:
 	var roster_grid := main.select_root.get_node_or_null("RosterGrid") as GridContainer
 	if roster_grid == null:
 		return _fail("fighter select has no fixed roster grid")
-	if roster_grid.columns != 5 or roster_grid.get_child_count() != main.PLAYABLE_IDS.size():
-		return _fail("all fighters are not visible in the 5-column grid")
+	if roster_grid.columns != 7 or roster_grid.get_child_count() != main.PLAYABLE_IDS.size():
+		return _fail("all fighters are not visible in the wide two-row grid")
 	if not main.select_root.find_children("*", "ScrollContainer", true, false).is_empty():
 		return _fail("fighter select roster still scrolls")
 	for id in main.PLAYABLE_IDS:

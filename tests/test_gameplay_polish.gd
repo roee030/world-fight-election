@@ -43,6 +43,23 @@ func _run() -> void:
 	var chamber: Dictionary = main._stage_data("knesset_chamber")
 	if float(chamber.get("backdrop_y", 0.0)) <= 0.0:
 		return _fail("Knesset chamber has no floor-line alignment correction")
+	if float(chamber.get("camera_target_y", 1.15)) <= 1.15:
+		return _fail("Knesset chamber does not lower fighters in screen space")
+	main._setup_bout("bennet", "avigdor", 1, "HUD DAMAGE QA")
+	await process_frame
+	main.round_ready = true
+	main.enemy.round_over = false
+	var hud_health_before: float = main.enemy.health
+	main.enemy.receive_hit(14.0, -1.0, "heavy")
+	if main.enemy_health_bar.value >= hud_health_before:
+		return _fail("enemy HUD health did not decrease with enemy health")
+	if main.enemy_recoverable_bar.value <= main.enemy_health_bar.value:
+		return _fail("recoverable damage layer does not preserve the recent damage slice")
+	var recoverable_before: float = main.enemy_recoverable_bar.value
+	main.enemy_recover_delay = 0.0
+	main._update_recoverable_health(0.5)
+	if main.enemy_recoverable_bar.value >= recoverable_before:
+		return _fail("recoverable damage layer never drains, making health look full")
 	main.fight_live = true
 	main._toggle_pause()
 	if not main.paused or not paused or not main.pause_root.visible:
