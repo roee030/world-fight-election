@@ -4,6 +4,8 @@
 **Status:** Design approved with character direction corrections; implementation has not started.  
 **Source material:** The supplied fighting-game tutorial transcript, `docs/finisher-celebration-plan.md`, the current Godot combat implementation, and the user-approved character list in this document.
 
+**Implementation plan:** `docs/superpowers/plans/2026-10-07-finishers-celebrations-implementation.md`
+
 ## Purpose
 
 Add a reliable, data-driven Finish Attack and post-match Celebration system to all 13 playable fighters. Each sequence must feel specific to its fighter while using one shared runtime, one validation path and one testing contract. Finishers must extend the real combat state machine rather than play as detached videos or bypass health, collision and round resolution.
