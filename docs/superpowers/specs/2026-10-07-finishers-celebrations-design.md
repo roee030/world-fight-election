@@ -400,7 +400,7 @@ Update this section in the same commit that completes each item.
 
 ### Shared foundation
 
-- [ ] Match state and eligibility
+- [x] Match state and eligibility — 2026-10-07: pure boundary rules and round-flow state tracking; 16 Godot tests passed.
 - [ ] Hold input and HUD prompt
 - [ ] Catalog and validation
 - [ ] Timeline director
@@ -425,5 +425,13 @@ Update this section in the same commit that completes each item.
 - [ ] Donald Trump — `b2_flyover`
 
 ## Definition of complete
+
+## Delivery records
+
+| Date | Delivery | Verification | Next step |
+|---|---|---|---|
+| 2026-10-07 | Implementation plan published; task 1 rules and match-state tracking implemented | Eligibility test observed failing before implementation, then passing; full Godot suite 16/16 | Catalog and roster stubs (task 2); no fighter finisher marked complete yet |
+
+Execution ruling: this managed worktree has a detached HEAD. Preserve it and publish using `git push origin HEAD:main` after integrating remote updates normally. No forced pushes.
 
 The feature is complete when all 13 finishers and celebrations satisfy the data contract, pass shared and per-fighter tests, have reviewed desktop and phone captures, preserve ordinary Special behavior, pause correctly, resolve the match once and are deployed successfully through GitHub Pages.

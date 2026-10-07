@@ -1,6 +1,8 @@
 extends Node3D
 
 const GameFighterScript = preload("res://scripts/fighter.gd")
+const MatchState = preload("res://scripts/finishers/match_state.gd")
+var match_state: int = MatchState.Value.ROUND_INTRO
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
@@ -1003,6 +1005,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 
 func _start_round() -> void:
 	if not fight_live or not is_instance_valid(player) or not is_instance_valid(enemy): return
+	match_state = MatchState.Value.ROUND_INTRO
 	round_ready = false
 	player.reset_round(-1.85, player.max_health())
 	enemy.reset_round(1.85, enemy.max_health())
@@ -1036,6 +1039,7 @@ func _start_round() -> void:
 	await get_tree().create_timer(0.65, false).timeout
 	if fight_live: message_label.visible = false
 	round_ready = true
+	match_state = MatchState.Value.FIGHTING
 	if is_instance_valid(player): player.round_over = false
 	if is_instance_valid(enemy): enemy.round_over = false
 
@@ -1144,6 +1148,7 @@ func _on_defeated(who: int) -> void:
 
 func _end_round(reason: String) -> void:
 	if not fight_live or intermission > 0: return
+	match_state = MatchState.Value.KO_HOLD
 	round_ready = false
 	if is_instance_valid(player): player.round_over = true
 	if is_instance_valid(enemy): enemy.round_over = true
@@ -1183,6 +1188,7 @@ func _update_scores() -> void:
 
 
 func _show_result(won: bool) -> void:
+	match_state = MatchState.Value.RESULT
 	fight_live = false
 	hud_root.visible = false
 	result_root.visible = true
