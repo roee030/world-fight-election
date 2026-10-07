@@ -20,6 +20,11 @@ func configure(data: Dictionary) -> bool:
 		var texture = ResourceLoader.load(str(path)) if ResourceLoader.exists(str(path)) else null
 		if not texture is Texture2D:
 			return false
+		if data.get("region") is Array and data.region.size() == 4:
+			var cropped := AtlasTexture.new()
+			cropped.atlas = texture
+			cropped.region = Rect2(float(data.region[0]), float(data.region[1]), float(data.region[2]), float(data.region[3]))
+			texture = cropped
 		_frames.append(texture)
 	if _frames.is_empty():
 		return false

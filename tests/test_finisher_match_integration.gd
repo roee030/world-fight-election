@@ -29,7 +29,11 @@ func _run() -> void:
 	main.player_rounds = 1
 	main.match_state = main.MatchState.Value.FIGHTING
 	main.round_ready = true
-	assert(main._try_begin_finisher(main.player, main.enemy, main._current_finisher_definition()))
+	main.buttons.special.emit_signal("button_down")
+	main._physics_process(0.0)
+	assert(main.match_state == main.MatchState.Value.FINISHER_PROMPT)
+	main._physics_process(0.55)
+	assert(main._finisher_director.active, "real MAX hold triggers the match director")
 	var clock: float = main.round_clock
 	main._process(0.2)
 	assert(main.round_clock == clock)

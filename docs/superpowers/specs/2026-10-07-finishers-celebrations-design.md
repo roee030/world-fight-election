@@ -406,7 +406,7 @@ Update this section in the same commit that completes each item.
 - [x] Timeline director — Tasks 4–5 complete: locks, authored hit deduplication, separate celebration and one result handoff.
 - [x] Pause and cleanup — director/actor/audio pause and camera restoration; no temporary actors after result/cancel.
 - [ ] Fighter Lab support
-- [ ] Camera, lightbox, sound and result handoff
+- [x] Camera, lightbox, sound and result handoff — Task 7: perspective/orthographic camera presets, props/atlas regions, authored poses through existing fighter geometry, captions/clocks, bounded effects and capture tool.
 
 ### Fighters
 
@@ -435,6 +435,11 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Task 2 pushed as `bb6f85e`; Task 3 Special hold input and HUD | Tap/hold and real host routing RED→GREEN; quick touch release regression; desktop/phone HUD review | Task 4 timeline; no delivered fighter sequences yet |
 | 2026-10-07 | Task 3 pushed as `c62ba2e`; Task 4 deterministic timeline | RED→GREEN: timestamp order, frame hitches, pause, zero delta, deduplication and deep copies; 22 Godot tests passed with current foundation | Task 5 director and match handoff |
 | 2026-10-07 | Task 4 pushed as `391e3aa`; Task 5 match director and fighter APIs | Fighter/director/match RED→GREEN; real match timer freeze, pause, single KO/result, camera restore and cleanup; fixture screen inspected | Task 6 Finisher Lab; fighter assets still pending |
+| 2026-10-07 | Task 5 pushed as `7200190`; Task 7 shared presentation | Perspective camera and authored art RED→GREEN; original frames/camera restored; temporary system preview inspected | Task 6 Lab delivery and Bennet art review |
+
+Execution order ruling: Task 7 presentation support is delivered before Task 6 because the Lab needs the same opening-miss switch and atlas rendering used by real sequences. No duplicate preview renderer is introduced.
+
+Atlas contract: actor and fighter-pose events may include `region: [x,y,width,height]`. Fighter poses declare `figure_height_px` and `foot_baseline`; the existing `FighterVisual` height, pixel scale and floor correction calculate their placement. Source PNGs remain intact.
 
 Pause input clarification: confirmation time freezes while paused. Releasing Special while paused cancels that pending confirmation on resume without firing Special; holding throughout preserves elapsed confirmation time.
 

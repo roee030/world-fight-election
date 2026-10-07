@@ -15,11 +15,15 @@ var active := false
 var diagnostic := ""
 var reduced_motion := false
 var effect_density := "desktop"
+var force_opening_miss := false
 var _host: Node
 var _arena: Node3D
 var _camera: Camera3D
 var _camera_transform := Transform3D.IDENTITY
 var _camera_size := 1.0
+var _camera_fov := 30.0
+var _camera_mode := "wide_stage"
+var _fighter_art: Dictionary = {}
 var _attacker: GameFighter
 var _defender: GameFighter
 var _definition: Dictionary
@@ -59,6 +63,7 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary)
 	if _camera:
 		_camera_transform = _camera.transform
 		_camera_size = _camera.size
+		_camera_fov = _camera.fov
 	var direction := 1.0 if defender.position.x >= attacker.position.x else -1.0
 	var midpoint := clampf((attacker.position.x + defender.position.x) * 0.5, -3.8, 3.8)
 	attacker.enter_cinematic_lock(Vector3(midpoint - direction * 0.8, 0, 0), direction)
@@ -80,6 +85,9 @@ func _celebration(id: String) -> Dictionary:
 func advance(delta: float) -> void:
 	if not active or _paused: return
 	for actor in _actors.values(): actor.advance(delta)
+	if _camera_mode == "projectile_track" and _camera and not _actors.is_empty():
+		var tracked: Node3D = _actors.values().back()
+		_camera.position.x = clampf(tracked.position.x * 0.3, -1.0, 1.0)
 	for node in _lifetimes.keys():
 		_lifetimes[node] -= delta
 		if _lifetimes[node] <= 0:
@@ -105,6 +113,9 @@ func _dispatch(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"hit":
 			if _celebrating or _final: return
+			if _hit_ids.is_empty() and force_opening_miss:
+				_fail("Opening missed")
+				return
 			var id := str(event.get("id", ""))
 			if id.is_empty():
 				_fail("Authored hit has no event ID")
@@ -152,6 +163,10 @@ func _dispatch(event: Dictionary) -> void:
 				_fail("Missing or invalid transparent actor resource: " + str(event.get("asset", "")))
 				return
 			_arena.add_child(actor)
+			if event.get("anchor", "") == "attacker":
+				actor.position += _attacker.position
+			elif event.get("anchor", "") == "defender":
+				actor.position += _defender.position
 			actor.reduced_motion = reduced_motion
 			_actors[id] = actor
 		"move_actor", "launch_prop":
@@ -165,6 +180,10 @@ func _dispatch(event: Dictionary) -> void:
 		"fighter_clip", "defender_reaction":
 			var fighter := _defender if event.get("target", "attacker") == "defender" or event.type == "defender_reaction" else _attacker
 			if not fighter._visual.is_empty():
+				if event.has("asset"):
+					if not _set_fighter_art(fighter, event):
+						_fail("Invalid authored fighter pose")
+					return
 				var clip := str(event.get("clip", event.get("reaction", "idle")))
 				if fighter._visual.sprite.sprite_frames.has_animation(clip): fighter._visual.sprite.play(clip)
 				fighter._visual.motion.play_state(clip, false, float(event.get("duration", 0.0)))
@@ -176,6 +195,8 @@ func _dispatch(event: Dictionary) -> void:
 			_caption(_attacker.character_id.to_upper(), true)
 		"caption":
 			var label := _caption(str(event.get("text", "")), false)
+			if event.get("ui_position") is Array and event.ui_position.size() == 2:
+				label.position = Vector2(event.ui_position[0], event.ui_position[1])
 			if event.has("clock_from"):
 				_clocks.append({"label": label, "from": float(event.clock_from), "to": float(event.get("clock_to", 0)), "elapsed": 0.0, "duration": float(event.get("duration", 1))})
 		"sound":
@@ -203,12 +224,55 @@ func _dispatch(event: Dictionary) -> void:
 
 func _camera_preset(preset: String) -> void:
 	if not _camera: return
+	_camera_mode = preset
+	_camera.transform = _camera_transform
 	match preset:
-		"close_side": _camera.size = _camera_size * 0.85
-		"wide_stage", "overhead_pass": _camera.size = _camera_size * 1.12
-		"projectile_track": _camera.size = _camera_size
-		"victory_low": _camera.size = _camera_size * 0.92
+		"close_side":
+			_camera.size = _camera_size * 0.85
+			_camera.fov = _camera_fov * 0.88
+		"wide_stage", "overhead_pass":
+			_camera.size = _camera_size * 1.12
+			_camera.fov = _camera_fov * 1.12
+			if preset == "overhead_pass":
+				_camera.position.y += 1.0
+				_camera.look_at(Vector3(0, 0.9, 0), Vector3.UP)
+		"projectile_track":
+			_camera.size = _camera_size
+			_camera.fov = _camera_fov
+		"victory_low":
+			_camera.size = _camera_size * 0.92
+			_camera.fov = _camera_fov * 0.95
+			if _camera.projection == Camera3D.PROJECTION_PERSPECTIVE:
+				_camera.position.y -= 0.25
+				_camera.look_at(Vector3(0, 1.0, 0), Vector3.UP)
 		_: _fail("Unknown camera preset: " + preset)
+
+func _set_fighter_art(fighter: GameFighter, event: Dictionary) -> bool:
+	var texture = ResourceLoader.load(str(event.asset))
+	if not texture is Texture2D:
+		return false
+	if event.get("region") is Array and event.region.size() == 4:
+		var crop := AtlasTexture.new()
+		crop.atlas = texture
+		crop.region = Rect2(event.region[0], event.region[1], event.region[2], event.region[3])
+		texture = crop
+	var sprite: AnimatedSprite3D = fighter._visual.sprite
+	if not _fighter_art.has(fighter):
+		_fighter_art[fighter] = {"frames": sprite.sprite_frames, "pixel_size": sprite.pixel_size, "position": sprite.position}
+	var frames := SpriteFrames.new()
+	frames.add_animation("authored")
+	frames.set_animation_loop("authored", false)
+	frames.add_frame("authored", texture)
+	sprite.sprite_frames = frames
+	var geometry: Dictionary = fighter._visual.geometry.duplicate(true)
+	geometry.frame_height_px = texture.get_height()
+	geometry.figure_height_px = float(event.get("figure_height_px", texture.get_height()))
+	geometry.foot_baseline_px = float(event.get("foot_baseline", texture.get_height()))
+	geometry.pixel_size = float(geometry.height_m) * float(geometry.pixel_scale) / maxf(1.0, geometry.figure_height_px)
+	sprite.pixel_size = geometry.pixel_size
+	sprite.position.y = FighterVisual.ground_y_from_geometry(geometry)
+	sprite.play("authored")
+	return true
 
 func _caption(text: String, portrait: bool, flash: bool = false) -> Label:
 	var layer := CanvasLayer.new()
@@ -221,6 +285,9 @@ func _caption(text: String, portrait: bool, flash: bool = false) -> Label:
 	label.size = Vector2(500, 80)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 38 if portrait else 26)
+	label.add_theme_color_override("font_color", Color("#fff0c2"))
+	label.add_theme_color_override("font_outline_color", Color("#07101d"))
+	label.add_theme_constant_override("outline_size", 6)
 	layer.add_child(label)
 	if portrait:
 		var path := "res://assets/characters/portraits/%s.png" % _attacker.character_id
@@ -257,6 +324,14 @@ func consumed_hit_ids() -> PackedStringArray: return _hit_ids.duplicate()
 func current_event_key() -> String: return timeline.current_event_key()
 
 func _cleanup_presentation() -> void:
+	for fighter in _fighter_art:
+		if is_instance_valid(fighter):
+			var saved: Dictionary = _fighter_art[fighter]
+			fighter._visual.sprite.sprite_frames = saved.frames
+			fighter._visual.sprite.pixel_size = saved.pixel_size
+			fighter._visual.sprite.position = saved.position
+			fighter._visual.sprite.play("idle")
+	_fighter_art.clear()
 	for actor in _actors.values(): actor.free()
 	_actors.clear()
 	for node in _presentation:
@@ -276,6 +351,7 @@ func cancel() -> void:
 	if was_active and is_instance_valid(_camera):
 		_camera.transform = _camera_transform
 		_camera.size = _camera_size
+		_camera.fov = _camera_fov
 
 func _exit_tree() -> void:
 	if active: cancel()
