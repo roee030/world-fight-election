@@ -397,8 +397,8 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Consumes all shared foundation interfaces. Produces implemented entry `bennet/startup_exit` and proves the thrown-prop path.
 
-- [ ] Follow the Fighter Delivery Template with assertions for one portrait, laptop spawn/launch, unique final hit, celebration and result marker.
-- [ ] Verify the laptop remains readable at mobile density and never covers either face before impact.
+- [x] Follow the Fighter Delivery Template with assertions for one portrait, laptop spawn/launch, unique final hit, celebration and result marker.
+- [x] Verify the laptop remains readable at mobile density and never covers either face before impact; both attacker sides reviewed.
 - [ ] Commit and push `Add Bennet startup exit finisher`; then record and push its hash.
 
 ---

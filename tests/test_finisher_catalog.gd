@@ -10,12 +10,14 @@ func _init() -> void:
 	var catalog = load(PATH).new()
 	assert(catalog.load_default())
 	var original: Dictionary = catalog.definition_for("bennet")
+	var original_count: int = original.events.size()
 	original.events.append({"at": 99})
-	assert(catalog.definition_for("bennet").events.is_empty())
+	assert(catalog.definition_for("bennet").events.size() == original_count)
 	var good: Dictionary = catalog.definition_for("bennet")
 	good.implemented = true
 	good.duration = 3.2
 	good.events = [{"at": 0.0, "type": "portrait_lightbox"}, {"at": 1.0, "type": "hit", "id": "final", "damage": 999, "final": true}, {"at": 2.0, "type": "celebration_start"}]
+	catalog._celebrations[good.celebration_id].implemented = false
 	assert(not catalog.validate_definition("bennet", good).is_empty(), "unfinished celebration must block implementation")
 	var paired: Dictionary = catalog.celebration_for(good.celebration_id)
 	paired.implemented = true

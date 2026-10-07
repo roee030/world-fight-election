@@ -4,7 +4,7 @@
 > `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`.
 > Keep implementation progress and per-fighter commit notes in that document.
 
-Status: design only. Do not implement until the base hit, health, round and animation tests are stable.
+Status: shared foundation implemented after the core combat tests passed. Per-fighter delivery and verification are tracked in the approved design linked above. This older document remains a design reference, not the current task ledger.
 
 ## Lessons from the supplied tutorial
 

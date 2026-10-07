@@ -158,7 +158,13 @@ func _dispatch(event: Dictionary) -> void:
 				return
 			if effect_density == "mobile" and _actors.size() >= 12: return
 			var actor := ActorScript.new()
-			if not actor.configure(event):
+			var actor_data := event.duplicate(true)
+			if event.get("anchor", "") in ["attacker", "defender"]:
+				var offset := ActorScript.vector_from(event.get("position", [0, 0, 0]))
+				offset.x *= _attacker.facing
+				actor_data.position = offset
+				actor_data.facing = float(event.get("facing", 1.0)) * _attacker.facing
+			if not actor.configure(actor_data):
 				actor.free()
 				_fail("Missing or invalid transparent actor resource: " + str(event.get("asset", "")))
 				return
@@ -175,7 +181,10 @@ func _dispatch(event: Dictionary) -> void:
 				_fail("Motion references missing actor: " + id)
 				return
 			var target := ActorScript.vector_from(event.get("position", [0, 0, 0]))
-			if event.get("target", "") == "defender": target = _defender.position + Vector3(0, 1, 0)
+			if event.get("anchor", "") in ["attacker", "defender"]:
+				target.x *= _attacker.facing
+				target += _attacker.position if event.anchor == "attacker" else _defender.position
+			elif event.get("target", "") == "defender": target = _defender.position + Vector3(0, 1, 0)
 			_actors[id].move_to(target, float(event.get("duration", 0.3)), reduced_motion)
 		"fighter_clip", "defender_reaction":
 			var fighter := _defender if event.get("target", "attacker") == "defender" or event.type == "defender_reaction" else _attacker

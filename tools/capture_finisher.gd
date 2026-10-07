@@ -20,6 +20,9 @@ func _run() -> void:
 	main.message_label.visible = false
 	main.player.meter = 100.0
 	main.enemy.health = 10.0
+	if options.get("side", "left") == "right":
+		main.player.position.x = 0.6
+		main.enemy.position.x = -0.6
 	var definition: Dictionary = main._current_finisher_definition()
 	if options.get("fixture", "false") == "true":
 		definition = {"implemented": true, "meter_cost": 100, "duration": 1.2, "camera_preset": "close_side", "celebration_id": "fixture", "events": [{"at": 0.0, "type": "portrait_lightbox"}, {"at": 0.8, "type": "hit", "id": "finish", "final": true, "damage": 999, "reaction": "finish_fall"}, {"at": 1.2, "type": "celebration_start"}]}
@@ -42,6 +45,7 @@ func _run() -> void:
 	for frame in range(4): await process_frame
 	await RenderingServer.frame_post_draw
 	var path := "res://output/finisher-review/%s-%s-%s.png" % [options.fighter, options.phase, options.density]
+	if options.get("side", "left") == "right": path = path.replace(".png", "-right.png")
 	root.get_texture().get_image().save_png(path)
 	print("CAPTURE: " + path)
 	main.free()

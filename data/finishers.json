@@ -3,14 +3,145 @@
     "bennet": {
       "fighter_id": "bennet",
       "finisher_id": "startup_exit",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
       "duration": 3.2,
       "camera_preset": "close_side",
-      "events": [],
+      "events": [
+        {
+          "at": 0.0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "spawn_prop",
+          "id": "open_laptop",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            768,
+            0,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0015,
+          "anchor": "attacker",
+          "position": [
+            0.3,
+            1.05,
+            0.2
+          ]
+        },
+        {
+          "at": 0.35,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/boot.wav"
+        },
+        {
+          "at": 0.7,
+          "type": "cleanup"
+        },
+        {
+          "at": 0.75,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/bennet/celebration/pose-kit.png",
+          "region": [
+            0,
+            0,
+            1030,
+            887
+          ],
+          "figure_height_px": 834,
+          "foot_baseline": 869
+        },
+        {
+          "at": 0.9,
+          "type": "spawn_prop",
+          "id": "laptop",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            0,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0018,
+          "anchor": "attacker",
+          "position": [
+            0.5,
+            1.1,
+            0.2
+          ]
+        },
+        {
+          "at": 1.1,
+          "type": "launch_prop",
+          "id": "laptop",
+          "target": "defender",
+          "duration": 0.45
+        },
+        {
+          "at": 1.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 1.55,
+          "type": "hit",
+          "id": "startup_exit_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 1.55,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 1.55,
+          "type": "spawn_prop",
+          "id": "pixel_impact",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0022,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.0,
+            0.3
+          ]
+        },
+        {
+          "at": 1.55,
+          "type": "caption",
+          "text": "SYSTEM ERROR",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 1.55,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.0,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.25,
+          "type": "celebration_start"
+        }
+      ],
       "celebration_id": "exit_success"
     },
     "bibi": {
@@ -173,10 +304,78 @@
   "celebrations": {
     "exit_success": {
       "celebration_id": "exit_success",
-      "implemented": false,
+      "implemented": true,
       "duration": 2.0,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0.0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/bennet/celebration/pose-kit.png",
+          "region": [
+            1030,
+            0,
+            744,
+            887
+          ],
+          "figure_height_px": 820,
+          "foot_baseline": 853
+        },
+        {
+          "at": 0.0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "EXIT SUCCESS",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 0.15,
+          "type": "spawn_prop",
+          "id": "pixel_confetti",
+          "asset": "res://assets/finishers/bennet/props/laptop-kit.png",
+          "region": [
+            768,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0032,
+          "anchor": "attacker",
+          "position": [
+            0,
+            1.6,
+            -0.2
+          ]
+        },
+        {
+          "at": 0.4,
+          "type": "move_actor",
+          "id": "pixel_confetti",
+          "position": [
+            0,
+            2.1,
+            -0.2
+          ],
+          "duration": 1.2,
+          "anchor": "attacker"
+        },
+        {
+          "at": 1.8,
+          "type": "result_marker"
+        }
+      ]
     },
     "family_business_victory": {
       "celebration_id": "family_business_victory",
