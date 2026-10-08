@@ -456,6 +456,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 16 Ben-Gvir crocodile release | 34/34 Godot and 10/10 Python; three grounded actors, two staggers, third final, result/cleanup and Fight Lab route; desktop/phone/right-side captures inspected and lineup occlusion corrected | Push delivery and record hash; Smotrich cattle next |
 | 2026-10-08 | Ben-Gvir delivered in `bcbe25a` | Automated and visual evidence recorded before push | Deri `campaign_entourage` while Smotrich art halo is corrected |
 | 2026-10-08 | Task 18 Deri campaign entourage | 35/35 Godot and 10/10 Python; two staggers, one final sign, cleanup before a nonviolent prayer celebration and Fight Lab route; corrected 33-pixel atlas crop reviewed on desktop/phone/right side | Push delivery and record hash; Smotrich art correction and remaining fighters next |
+| 2026-10-08 | Deri delivered in `fec02b0` | Automated and visual evidence recorded before push | Repair Smotrich cattle art, then Joint List and Trump |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 
