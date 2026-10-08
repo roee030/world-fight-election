@@ -17,3 +17,15 @@ Replace the split roster menu with cinematic title art and floating actions, mak
 - [x] Add regression coverage for damage, hit reaction, shadow, pause, stage alignment and UI structure.
 - [x] Run the full headless suite and visual screen review.
 - [x] Commit and push the complete project to the new GitHub repository.
+
+## 2026-10-08 result, mobile and Chrome correction
+
+- [x] Move `YOU WIN / YOU LOSE` and result actions into a compact left corner card so the live celebration remains visible.
+- [x] Play normal match celebrations at 55% speed in the match and Fighter Lab.
+- [x] Lock the defeated fighter on the final knockdown frame for ordinary KOs and celebration playback.
+- [x] Make an eligible phone `MAX` tap launch the finisher immediately; keep a non-eligible tap as the 55-energy special attack.
+- [x] Refine the phone joystick with directional guides and align the `MAX`, `CROSS`, `JAB`, `SP` and `GUARD` cluster to the supplied reference.
+- [x] Keep the segmented cyan/red health HUD, central timer and explicitly labelled gold `SPECIAL ENERGY` bars.
+- [x] Add a Chrome-only HTML start menu backed by a Godot JavaScript bridge so startup actions remain available even when Chrome fails to display the canvas controls.
+- [x] Add regression coverage for celebration speed and visibility, lethal knockdown, touch MAX behavior and the patched Chrome shell.
+- [x] Inspect new HUD and result captures at 1280×720.

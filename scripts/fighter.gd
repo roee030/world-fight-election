@@ -101,6 +101,18 @@ func enter_cinematic_lock(anchor: Vector3, facing_value: float) -> void:
 		_visual.sprite.play("idle")
 
 
+func enter_defeated_cinematic_lock(anchor: Vector3, facing_value: float) -> void:
+	enter_cinematic_lock(anchor, facing_value)
+	round_over = true
+	knockdown_time = 999.0
+	if not _visual.is_empty():
+		_visual.motion.play_state("knockdown", false)
+		_visual.motion.freeze_motion(true)
+		_visual.sprite.play("knockdown")
+		_visual.sprite.frame = _visual.sprite.sprite_frames.get_frame_count("knockdown") - 1
+		_visual.sprite.pause()
+
+
 func apply_authored_hit(event_id: String, damage: float, direction: float, reaction: String) -> bool:
 	if not cinematic_locked or event_id.is_empty() or _authored_hit_ids.has(event_id) or health <= 0.0 or damage <= 0.0:
 		return false
@@ -510,6 +522,13 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 		buffer_time = 0.0
 		attack_request = ""
 	health = maxf(0.0, health - damage)
+	var defeated_now := health <= 0.0
+	if defeated_now:
+		round_over = true
+		knockdown_time = 999.0
+		getup_pending = false
+		stun = 999.0
+		busy = 999.0
 	velocity.x = direction * (0.75 if blocked else (2.3 if kind == "light" else 2.85))
 	if not blocked:
 		facing = -signf(direction)
@@ -528,9 +547,14 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 	# Switch to hit/fall art immediately, before either fighter's hit-stop can
 	# freeze the victim on the last frame of a punch.
 	_animate()
+	if defeated_now and not _visual.is_empty():
+		_visual.motion.play_state("knockdown", false)
+		_visual.sprite.play("knockdown")
+		_visual.sprite.frame = _visual.sprite.sprite_frames.get_frame_count("knockdown") - 1
+		_visual.sprite.pause()
 	invulnerable = 0.12
 	health_changed.emit(who, health)
-	if health <= 0.0: defeated.emit(who)
+	if defeated_now: defeated.emit(who)
 
 
 func reset_round(position_x: float, health_value: float = 100.0) -> void:

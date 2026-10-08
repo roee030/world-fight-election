@@ -31,6 +31,7 @@ var overlay: Control
 var _updating_scrub := false
 var live_mode := false
 var _live_attack_request := ""
+var celebration_preview := false
 
 func _ready() -> void:
 	add_child(arena)
@@ -129,6 +130,7 @@ func preview(fighter_id: String, scenario: String) -> void:
 	director.cancel()
 	director.diagnostic = ""
 	live_mode = false
+	celebration_preview = false
 	selected = fighter_id if IDS.has(fighter_id) else IDS[0]
 	outcome = scenario if ["eligible", "hit", "miss", "pause-resume"].has(scenario) else "eligible"
 	camera.current = true
@@ -168,6 +170,7 @@ func start_live_test(fighter_id: String) -> void:
 	director.cancel()
 	director.diagnostic = ""
 	live_mode = true
+	celebration_preview = false
 	selected = fighter_id if IDS.has(fighter_id) else IDS[0]
 	for fighter in [attacker, defender]:
 		if is_instance_valid(fighter): fighter.free()
@@ -210,6 +213,7 @@ func preview_celebration(fighter_id: String) -> bool:
 	var celebration_id := str(definition.get("celebration_id", ""))
 	var started := director.begin_celebration(attacker, defender, celebration_id)
 	if started:
+		celebration_preview = true
 		set_paused(false)
 		status.text = "WIN CELEBRATION — %s" % selected.to_upper()
 		event_label.text = "WINNER POSE • RESULT-SCREEN VISIBILITY QA"
@@ -241,7 +245,8 @@ func _physics_process(_delta: float) -> void:
 func _process(delta: float) -> void:
 	if not visible: return
 	if not paused and director.active:
-		director.advance(delta * speed); elapsed += delta * speed
+		var playback_delta := delta * speed * (0.55 if celebration_preview else 1.0)
+		director.advance(playback_delta); elapsed += playback_delta
 	elif live_mode and is_instance_valid(attacker) and is_instance_valid(defender):
 		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if defender.health <= 15.0 and attacker.meter >= 100.0 else "LIVE COMBAT"]
 	_update_display()

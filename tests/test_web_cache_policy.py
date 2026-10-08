@@ -32,6 +32,9 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("self.clients.claim()", worker)
             self.assertIn("calc(100dvh * 16 / 9)", patched_html)
             self.assertIn("justify-content:center", patched_html)
+            self.assertIn("chrome-start-menu", patched_html)
+            self.assertIn("START FIGHT", patched_html)
+            self.assertIn("worldFightMenuAction", patched_html)
 
 
 if __name__ == "__main__":

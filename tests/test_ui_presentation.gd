@@ -83,6 +83,12 @@ func _run() -> void:
 		return _fail("result presentation hides the arena")
 	if main.result_root.get_node("ResultContent/ResultTitle").get_theme_font_size("font_size") > 90:
 		return _fail("result title covers too much of the winner celebration")
+	var result_content: Control = main.result_root.get_node("ResultContent") as Control
+	if result_content.position.x > 80.0 or result_content.size.x > 480.0:
+		return _fail("result text still occupies the center of the winner celebration")
+	var corner_card: Panel = main.result_root.get_node_or_null("ResultCornerCard") as Panel
+	if corner_card == null or corner_card.position.x > 80.0 or corner_card.size.x > 500.0:
+		return _fail("result screen has no compact corner card")
 	main._show_result(true)
 	if result_art.texture == null:
 		return _fail("victory result does not populate winner artwork")

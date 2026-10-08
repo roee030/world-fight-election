@@ -28,6 +28,11 @@ func _run() -> void:
 		return _fail("a live player attack against guard caused no chip damage")
 	if not is_equal_approx(main.enemy_health_bar.value, main.enemy.health):
 		return _fail("enemy HUD health did not follow live combat damage")
+	main.enemy.input_block = false
+	main.enemy.health = 1.0
+	main.enemy.receive_hit(7.0, 1.0, "light")
+	if main.enemy._visual.sprite.animation != "knockdown" or main.enemy._visual.sprite.is_playing():
+		return _fail("the final blow did not leave the defeated fighter fallen on the floor")
 	main.free()
 	print("PASS: live combat damage")
 	quit(0)

@@ -49,6 +49,17 @@ func _run() -> void:
 	assert(main.player.attack_kind == "special", "tapping MAX with full energy did not start the special attack")
 	assert(main.player.meter == 45.0, "MAX special did not spend its documented 55 energy")
 	assert(main.message_label.visible and main.message_label.text.contains("MAX"), "MAX touch has no visible confirmation")
+	main._finisher_director.cancel()
+	main.player.attack_kind = ""
+	main.player.busy = 0.0
+	main.player.meter = 100.0
+	main.player_rounds = 1
+	main.enemy.health = minf(15.0, main.enemy.max_health() * 0.15)
+	main.player.position = Vector3(-0.6, 0.0, 0.0)
+	main.enemy.position = Vector3(0.6, 0.0, 0.0)
+	main.player.facing = 1.0
+	main._on_touch_action_down("special")
+	assert(main._finisher_director.active, "eligible phone MAX tap did not launch the finisher")
 	assert(main.CONTROL_BINDINGS == {
 		"move": [KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT],
 		"jump": [KEY_W, KEY_UP],

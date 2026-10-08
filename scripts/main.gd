@@ -72,6 +72,7 @@ var message_label: Label
 var combo_label: Label
 var result_winner_art: TextureRect
 var result_accent: Panel
+var _web_menu_callback: JavaScriptObject
 var combo_label_time := 0.0
 var fight_live := false
 var paused := false
@@ -158,12 +159,14 @@ func _ready() -> void:
 	_build_ui()
 	_create_audio()
 	_show_menu()
+	_install_web_menu_bridge()
 
 
 func _process(delta: float) -> void:
 	if is_instance_valid(_finisher_director) and _finisher_director.active:
 		if not paused:
-			_finisher_director.advance(delta)
+			var sequence_delta := delta * 0.55 if match_state == MatchState.Value.RESULT and _finisher_director.is_celebrating() else delta
+			_finisher_director.advance(sequence_delta)
 		return
 	if is_instance_valid(_fight_camera) and not paused:
 		camera_shake = maxf(0.0, camera_shake - delta * 1.8)
@@ -275,8 +278,38 @@ func _current_finisher_definition() -> Dictionary:
 
 
 func _on_touch_action_down(action: String) -> void:
+	# Phone browsers can lose a pointer release event. Eligible MAX therefore
+	# launches on the tap instead of requiring a fragile press-and-hold gesture.
+	if action == "special" and is_instance_valid(player) and is_instance_valid(enemy) and _finisher_eligible():
+		_input_down[action] = false
+		_input_held[action] = false
+		_special_release_pending = false
+		finisher_requested.emit(player, enemy, _current_finisher_definition())
+		return
 	_input_down[action] = true
 	_input_held[action] = true
+
+
+func _install_web_menu_bridge() -> void:
+	if not OS.has_feature("web"):
+		return
+	_web_menu_callback = JavaScriptBridge.create_callback(_on_web_menu_action)
+	var window := JavaScriptBridge.get_interface("window")
+	if window != null:
+		window.worldFightMenuAction = _web_menu_callback
+		var pending = window.worldFightPendingAction
+		if pending != null and not str(pending).is_empty():
+			_on_web_menu_action([str(pending)])
+
+
+func _on_web_menu_action(arguments: Array) -> void:
+	if arguments.is_empty():
+		return
+	match str(arguments[0]):
+		"quick": _open_select("quick")
+		"campaign": _open_select("campaign")
+		"lab": get_tree().change_scene_to_file("res://scenes/character_debug.tscn")
+	JavaScriptBridge.eval("document.getElementById('chrome-start-menu')?.remove()")
 
 
 func _on_touch_action_up(action: String) -> void:
@@ -665,7 +698,7 @@ func _build_touch_controls() -> void:
 		{"action": "special", "title": "MAX", "pos": Vector2(958, 438), "size": Vector2(94, 94), "color": "#b56b27", "shape": "diamond"},
 		{"action": "heavy", "title": "CROSS", "pos": Vector2(1118, 466), "size": Vector2(94, 94), "color": "#b53f57", "shape": "diamond"},
 		{"action": "light", "title": "JAB", "pos": Vector2(1034, 536), "size": Vector2(94, 94), "color": "#239f9b", "shape": "diamond"},
-		{"action": "jump", "title": "JUMP", "pos": Vector2(1140, 560), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
+		{"action": "jump", "title": "SP", "pos": Vector2(1140, 560), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
 		{"action": "block", "title": "GUARD", "pos": Vector2(1098, 616), "size": Vector2(108, 74), "color": "#3e5968", "shape": "diamond"}
 	]
 	for spec in specs:
@@ -1005,13 +1038,13 @@ func _build_result() -> void:
 	result_root = Control.new()
 	result_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(result_root)
-	# Keep the arena and final pose visible behind a cinematic fight-result wash.
-	var result_darken := _panel(result_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.008, 0.015, 0.34))
+	# The live winner pose is the focus. Result copy stays in a compact corner
+	# card so authored celebrations remain readable from head to toe.
+	var result_darken := _panel(result_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.008, 0.015, 0.12))
 	result_darken.name = "ResultDarken"
-	_panel(result_root, Rect2(0, 246, 1280, 190), Color(0.010, 0.018, 0.030, 0.56))
-	_panel(result_root, Rect2(0, 240, 1280, 5), Color("#d6ad61"))
-	_panel(result_root, Rect2(0, 437, 1280, 4), Color(0.90, 0.31, 0.40, 0.82))
-	var backdrop_word := _label(result_root, "VICTORY", Rect2(-30, 238, 1340, 205), 128, Color(0.92, 0.76, 0.42, 0.08), HORIZONTAL_ALIGNMENT_CENTER)
+	var corner_card := _panel(result_root, Rect2(40, 112, 448, 244), Color(0.010, 0.018, 0.030, 0.72))
+	corner_card.name = "ResultCornerCard"
+	var backdrop_word := _label(result_root, "VICTORY", Rect2(46, 126, 430, 58), 43, Color(0.92, 0.76, 0.42, 0.09), HORIZONTAL_ALIGNMENT_LEFT)
 	backdrop_word.name = "ResultBackdropWord"
 	result_winner_art = TextureRect.new()
 	result_winner_art.name = "ResultWinnerArt"
@@ -1022,28 +1055,28 @@ func _build_result() -> void:
 	result_winner_art.modulate = Color(1, 1, 1, 0.42)
 	result_winner_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	result_root.add_child(result_winner_art)
-	result_accent = _panel(result_root, Rect2(160, 438, 960, 6), Color("#39cbc6"))
+	result_accent = _panel(result_root, Rect2(40, 112, 6, 244), Color("#39cbc6"))
 	result_accent.name = "ResultAccent"
 	var content := Control.new()
 	content.name = "ResultContent"
-	content.position = Vector2(120, 244)
-	content.size = Vector2(1040, 190)
+	content.position = Vector2(66, 132)
+	content.size = Vector2(396, 204)
 	result_root.add_child(content)
-	_label(content, "FINAL RESULT", Rect2(0, 0, 1040, 28), 12, Color("#d9b566"), HORIZONTAL_ALIGNMENT_CENTER)
-	var title := _label(content, "FIGHT OVER", Rect2(0, 14, 1040, 102), 88, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(content, "FINAL RESULT", Rect2(0, 0, 396, 24), 11, Color("#d9b566"), HORIZONTAL_ALIGNMENT_LEFT)
+	var title := _label(content, "FIGHT OVER", Rect2(0, 24, 396, 70), 56, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_LEFT)
 	title.name = "ResultTitle"
-	var winner_name := _label(content, "", Rect2(0, 112, 1040, 36), 23, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_CENTER)
+	var winner_name := _label(content, "", Rect2(0, 94, 396, 32), 21, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_LEFT)
 	winner_name.name = "WinnerName"
-	var detail := _label(content, "", Rect2(0, 148, 1040, 34), 14, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
+	var detail := _label(content, "", Rect2(0, 132, 396, 64), 13, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_LEFT)
 	detail.name = "ResultDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var next := _button(result_root, "CONTINUE", Rect2(438, 574, 196, 54), "#1d777a", 16)
+	var next := _button(result_root, "CONTINUE", Rect2(40, 620, 210, 54), "#1d777a", 16)
 	next.name = "ContinueButton"
 	next.pressed.connect(_continue_from_result)
-	var menu := _button(result_root, "RETURN TO MENU", Rect2(646, 574, 196, 54), "#3b4852", 13)
+	var menu := _button(result_root, "RETURN TO MENU", Rect2(262, 620, 210, 54), "#3b4852", 13)
 	menu.name = "ResultMenuButton"
 	menu.pressed.connect(_return_to_menu)
-	_label(result_root, "ENTER  /  CONTINUE", Rect2(440, 636, 400, 24), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(result_root, "ENTER  /  CONTINUE", Rect2(40, 682, 432, 22), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_LEFT)
 	result_root.visible = false
 
 

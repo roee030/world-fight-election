@@ -97,10 +97,13 @@ func begin_celebration(winner: GameFighter, loser: GameFighter, celebration_id: 
 		_camera_size = _camera.size
 		_camera_fov = _camera.fov
 	winner.enter_cinematic_lock(winner.position, winner.facing)
-	loser.enter_cinematic_lock(loser.position, loser.facing)
+	loser.enter_defeated_cinematic_lock(loser.position, loser.facing)
 	timeline.start(celebration)
 	celebration_started.emit(celebration_id)
 	return true
+
+func is_celebrating() -> bool:
+	return active and _celebrating
 
 func _celebration(id: String) -> Dictionary:
 	var source = catalog

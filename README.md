@@ -106,8 +106,10 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - Full-screen cinematic title art with a small floating text menu.
 - Fighter selection shows all fighters at once with face-focused portraits.
 - Angular fighting-game HUD with edge portraits, segmented cyan/red health, round markers, a central timer and a thin gold `SPECIAL ENERGY` meter. Phone controls use a large left joystick and a right-side diamond cluster matching the supplied console-fighter reference.
-- Results and pause screens preserve the arena behind cinematic overlays.
+- Results keep the live winner celebration visible behind a compact corner card; the defeated fighter stays down after the final blow and normal celebrations play at a readable 55% speed.
 - Per-stage visual alignment keeps feet on the visible floor.
+
+On phones, `MAX` launches an eligible finisher with one tap. Outside finisher conditions it remains the normal 55-energy special attack. Chrome web exports also include a lightweight HTML start menu that forwards Start Fight, Campaign and Fighter Lab to Godot, protecting the first screen from browser canvas-layout failures.
 
 The shared finisher and celebration system is complete for all 13 fighters: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. `LIVE VERSUS TEST` creates a production fighter and a selectable rival at 15% health with full Special Energy; use the normal keyboard controls or the lab action buttons, then `F` or `FINISH NOW` to validate the finisher against that rival. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 

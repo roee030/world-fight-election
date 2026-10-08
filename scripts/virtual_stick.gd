@@ -62,7 +62,17 @@ func _draw() -> void:
 	draw_circle(center, _radius + 18.0, Color(0.03, 0.06, 0.09, 0.55))
 	draw_arc(center, _radius + 18.0, 0.0, TAU, 64, Color(0.50, 0.70, 0.77, 0.52), 3.0, true)
 	draw_circle(center, _radius, Color(0.18, 0.27, 0.33, 0.38))
+	draw_arc(center, _radius * 0.72, 0.0, TAU, 48, Color(0.34, 0.49, 0.56, 0.28), 1.0, true)
+	draw_line(center + Vector2(-_radius, 0), center + Vector2(_radius, 0), Color(0.32, 0.47, 0.54, 0.20), 1.0)
+	draw_line(center + Vector2(0, -_radius), center + Vector2(0, _radius), Color(0.32, 0.47, 0.54, 0.20), 1.0)
+	var arrow_color := Color(0.60, 0.75, 0.79, 0.34)
+	for angle in [0.0, PI * 0.5, PI, PI * 1.5]:
+		var direction := Vector2.RIGHT.rotated(angle)
+		var side := direction.rotated(PI * 0.5)
+		var tip := center + direction * (_radius * 0.84)
+		draw_colored_polygon(PackedVector2Array([tip, tip - direction * 9.0 + side * 5.0, tip - direction * 9.0 - side * 5.0]), arrow_color)
 	var knob := center + axis * _radius * 0.72
 	draw_circle(knob, _radius * 0.43, Color(0.22, 0.75, 0.75, 0.82))
 	draw_arc(knob, _radius * 0.43, 0.0, TAU, 48, Color(0.85, 0.95, 0.96, 0.78), 2.0, true)
+	draw_circle(knob, 5.0, Color(0.10, 0.86, 0.88, 0.90))
 

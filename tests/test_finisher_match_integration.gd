@@ -30,10 +30,8 @@ func _run() -> void:
 	main.match_state = main.MatchState.Value.FIGHTING
 	main.round_ready = true
 	main.buttons.special.emit_signal("button_down")
-	main._physics_process(0.0)
-	assert(main.match_state == main.MatchState.Value.FINISHER_PROMPT)
-	main._physics_process(0.55)
-	assert(main._finisher_director.active, "real MAX hold triggers the match director")
+	assert(main.match_state == main.MatchState.Value.FINISHER_CINEMATIC)
+	assert(main._finisher_director.active, "real MAX tap triggers the match director")
 	var clock: float = main.round_clock
 	main._process(0.2)
 	assert(main.round_clock == clock)
