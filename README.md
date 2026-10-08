@@ -28,7 +28,7 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Special | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: once a fighter's sequence is delivered, hold `L` / `3` or touch `MAX` for 0.55 seconds at match point with full Special Energy and the rival at 15% health or less. `FINISH READY` indicates eligibility. A shorter tap keeps the normal Special. Releasing during pause cancels the pending hold on resume without launching an attack. Current finisher catalog entries are disabled while their art and timelines are being built.
+Finisher controls: hold `L` / `3` or touch `MAX` for 0.55 seconds at match point with full Special Energy and the rival at 15% health or less. `FINISH READY` indicates eligibility. A shorter tap keeps the normal Special. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration.
 
 ## Run the project
 
@@ -107,7 +107,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - Results and pause screens preserve the arena behind cinematic overlays.
 - Per-stage visual alignment keeps feet on the visible floor.
 
-The shared finisher and celebration system is implemented: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows all 13 fighters at once with a dedicated `FINISH` button for each, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. Fighter artwork is being delivered one fighter at a time; the authoritative checklist is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
+The shared finisher and celebration system is complete for all 13 fighters: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 
 ## Asset and repository policy
 

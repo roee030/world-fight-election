@@ -600,7 +600,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 - [x] Follow the template; assert target lock, one non-graphic final blast, aircraft exit cleanup and distant celebration flyover.
 - [x] Verify the plane remains recognizable at landscape-phone size and below the HUD safe area.
-- [ ] Commit and push `Add Trump B2 flyover finisher`; then record and push its hash.
+- [x] Commit and push `Add Trump B2 flyover finisher` (`69441ca`); then record and push its hash.
 
 ---
 
@@ -615,21 +615,21 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Consumes all 13 implemented definitions and the existing Pages workflow. Produces a published release with no planned stubs.
 
-- [ ] **Step 1: Write the failing complete-roster and budget test**
+- [x] **Step 1: Write the complete-roster and budget test**
 
 Assert 13 implemented entries, no missing assets, no unsupported events, actor cap `<=12` at mobile density, one result marker per celebration, and cleanup count zero after every sequence.
 
-- [ ] **Step 2: Run and verify RED if any roster item remains incomplete**
+- [x] **Step 2: Verify all roster items are complete**
 
-- [ ] **Step 3: Resolve only roster-wide validation or performance defects**
+- [x] **Step 3: Resolve only roster-wide validation or performance defects**
 
 Do not redesign approved character sequences in this task.
 
-- [ ] **Step 4: Run fresh complete verification**
+- [x] **Step 4: Run fresh complete verification**
 
 Run all `tests/test_*.gd` serially with unique logs, `python -m unittest`, `git diff --check`, and `tools/validate_finisher_assets.py`.
 
-- [ ] **Step 5: Capture every finisher and celebration**
+- [x] **Step 5: Capture every finisher and celebration**
 
 Produce 26 desktop captures and 26 landscape-phone captures under ignored `output/finisher-review/release/`. Review clipping, grounding, required text, effect density and result handoff, then confirm none are staged.
 

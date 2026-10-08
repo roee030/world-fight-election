@@ -9,7 +9,10 @@ func _run() -> void:
 		if arg.begins_with("--") and "=" in arg:
 			var parts := arg.substr(2).split("=", true, 1)
 			options[parts[0]] = parts[1]
-	DirAccess.make_dir_recursive_absolute("res://output/finisher-review")
+	var review_dir := "res://output/finisher-review"
+	if not str(options.get("folder", "")).is_empty():
+		review_dir += "/" + str(options.folder).validate_filename()
+	DirAccess.make_dir_recursive_absolute(review_dir)
 	var main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	main._setup_bout(options.fighter, "avigdor" if options.fighter != "avigdor" else "bennet", 1, "FINISHER REVIEW")
@@ -47,7 +50,7 @@ func _run() -> void:
 	# viewport is present. Force the pending draw after four settled frames so
 	# review captures remain deterministic in CI and local automation.
 	RenderingServer.force_draw(false)
-	var path := "res://output/finisher-review/%s-%s-%s.png" % [options.fighter, options.phase, options.density]
+	var path := "%s/%s-%s-%s.png" % [review_dir, options.fighter, options.phase, options.density]
 	if options.get("side", "left") == "right": path = path.replace(".png", "-right.png")
 	root.get_texture().get_image().save_png(path)
 	print("CAPTURE: " + path)

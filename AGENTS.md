@@ -47,9 +47,9 @@ Never claim a visual or behavior fix without automated evidence and a screen ins
 
 ## Current roadmap
 
-Finisher implementation is tracked in `docs/superpowers/plans/2026-10-07-finishers-celebrations-implementation.md` and its approved spec. Catalog entries and celebrations are separate objects in `data/finishers.json`; `implemented=false` entries must never activate. Update the spec delivery record and push each completed task and fighter. Run Python tests with `python -m unittest discover -s tests -p 'test_*.py'` (bare unittest discovers no tests).
+All 13 finishers and celebrations are implemented. Their delivery record is tracked in `docs/superpowers/plans/2026-10-07-finishers-celebrations-implementation.md` and the approved spec. Catalog entries and celebrations are separate objects in `data/finishers.json`; new `implemented=false` entries must never activate. Preserve one `FINISH` button per fighter in Fight Lab and keep the complete-roster visual-budget test green. Run Python tests with `python -m unittest discover -s tests -p 'test_*.py'` (bare unittest discovers no tests).
 
 1. Finish presentation polish across menu, selection, pause, HUD and result screens.
 2. Tune hit range and feedback in the Sprite Lab/playground.
 3. Move fighter timing, bounds and scale values into editable data files.
-4. Implement finishers and celebrations from `docs/finisher-celebration-plan.md` only after the core combat suite remains green.
+4. Polish the completed finisher roster without changing approved hit ownership, cleanup or celebration contracts.

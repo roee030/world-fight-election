@@ -18,7 +18,7 @@ func _init() -> void:
 		assert(definition.finisher_id == catalog.FINISHER_IDS[id])
 		assert(not catalog.celebration_for(definition.celebration_id).is_empty())
 		assert(catalog.validate_definition(id, definition).is_empty())
-	for id in ["bennet"]:
+	for id in roster:
 		assert(catalog.is_implemented(id), "fighter delivery missing: " + id)
 	var missing: Array[String] = ["missing"]
 	assert(not catalog.validate_roster(missing).is_empty())
