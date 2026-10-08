@@ -163,7 +163,7 @@ func _dispatch(event: Dictionary) -> void:
 				var offset := ActorScript.vector_from(event.get("position", [0, 0, 0]))
 				offset.x *= _attacker.facing
 				actor_data.position = offset
-				actor_data.facing = float(event.get("facing", 1.0)) * _attacker.facing
+				actor_data.facing = float(event.get("facing", 1.0)) * (_attacker.facing if event.get("mirror_facing", true) else 1.0)
 			if not actor.configure(actor_data):
 				actor.free()
 				_fail("Missing or invalid transparent actor resource: " + str(event.get("asset", "")))

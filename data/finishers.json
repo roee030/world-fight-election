@@ -1275,15 +1275,200 @@
     "yair_golan": {
       "fighter_id": "yair_golan",
       "finisher_id": "m16_burst",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "m16_burst_victory"
+      "duration": 3.5,
+      "camera_preset": "wide_stage",
+      "celebration_id": "m16_burst_victory",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.45,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 676,
+          "foot_baseline": 702
+        },
+        {
+          "at": 0.95,
+          "type": "spawn_prop",
+          "id": "m16_flash_1",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            1500,
+            0,
+            672,
+            362
+          ],
+          "pixel_scale": 0.001,
+          "anchor": "attacker",
+          "position": [
+            0.95,
+            1.45,
+            0.2
+          ]
+        },
+        {
+          "at": 0.95,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.05,
+          "type": "hit",
+          "id": "m16_stagger_1",
+          "damage": 2,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.05,
+          "type": "camera_impact",
+          "strength": 0.08
+        },
+        {
+          "at": 1.2,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.32,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 676,
+          "foot_baseline": 702
+        },
+        {
+          "at": 1.4,
+          "type": "spawn_prop",
+          "id": "m16_flash_2",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            1500,
+            0,
+            672,
+            362
+          ],
+          "pixel_scale": 0.001,
+          "anchor": "attacker",
+          "position": [
+            0.95,
+            1.45,
+            0.2
+          ]
+        },
+        {
+          "at": 1.4,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.5,
+          "type": "hit",
+          "id": "m16_stagger_2",
+          "damage": 2,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.5,
+          "type": "camera_impact",
+          "strength": 0.08
+        },
+        {
+          "at": 1.65,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.8,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            0,
+            0,
+            850,
+            724
+          ],
+          "figure_height_px": 676,
+          "foot_baseline": 702
+        },
+        {
+          "at": 1.95,
+          "type": "spawn_prop",
+          "id": "m16_final_flash",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            1500,
+            362,
+            672,
+            362
+          ],
+          "pixel_scale": 0.0015,
+          "anchor": "attacker",
+          "position": [
+            0.95,
+            1.45,
+            0.2
+          ]
+        },
+        {
+          "at": 1.95,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 2.05,
+          "type": "hit",
+          "id": "m16_burst_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.05,
+          "type": "camera_impact",
+          "strength": 0.2
+        },
+        {
+          "at": 2.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.05,
+          "type": "caption",
+          "text": "BURST COMPLETE",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.5,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.75,
+          "type": "celebration_start"
+        }
+      ]
     },
     "itamar_ben_gvir": {
       "fighter_id": "itamar_ben_gvir",
@@ -1770,11 +1955,65 @@
       ]
     },
     "m16_burst_victory": {
+      "fighter_id": "yair_golan",
       "celebration_id": "m16_burst_victory",
-      "implemented": false,
-      "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "implemented": true,
+      "duration": 2,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/yair_golan/poses/m16-kit.png",
+          "region": [
+            850,
+            0,
+            650,
+            724
+          ],
+          "figure_height_px": 687,
+          "foot_baseline": 708
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "spawn_actor",
+          "id": "kaplan_crowd",
+          "asset": "res://assets/finishers/yair_golan/actors/democracy-crowd.png",
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 935,
+          "anchor": "attacker",
+          "position": [
+            0.25,
+            0,
+            -0.85
+          ],
+          "mirror_facing": false
+        },
+        {
+          "at": 0.1,
+          "type": "caption",
+          "text": "DEMOCRACY",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 1.9,
+          "type": "result_marker"
+        }
+      ]
     },
     "crocodile_release_victory": {
       "celebration_id": "crocodile_release_victory",
