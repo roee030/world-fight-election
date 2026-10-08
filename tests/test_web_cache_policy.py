@@ -44,6 +44,12 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("worldFightMenuAction", patched_html)
             self.assertIn("state.menuVisible&&(!state.ready||Boolean(state.pending))", patched_html)
             self.assertIn("requestFullscreen", patched_html)
+            self.assertIn("rotate-device-ensemble.png", patched_html)
+            self.assertIn('id="worldFightFullscreenButton"', patched_html)
+            self.assertIn("requestWorldFightFullscreen", patched_html)
+            self.assertIn("orientationchange", patched_html)
+            self.assertIn("startup.dataset.initialized) { window.layoutWorldFightViewport(); return; }", patched_html)
+            self.assertTrue((root / "rotate-device-ensemble.png").is_file())
             self.assertLess(
                 patched_html.index('<div id="world-fight-startup">'),
                 patched_html.index('<script src="index.js">'),

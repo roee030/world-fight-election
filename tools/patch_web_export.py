@@ -1,10 +1,12 @@
 """Patch the generated Godot Web shell for reliable responsive startup."""
 
 from pathlib import Path
+from shutil import copyfile
 from typing import Mapping
 
 
 ASPECT_RATIO = 16.0 / 9.0
+ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.png"
 
 
 def fit_viewport(width: float, height: float, insets: Mapping[str, float] | None = None) -> dict[str, float | bool]:
@@ -47,10 +49,11 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 #world-fight-startup button:hover,#world-fight-startup button:active{border-left-color:#e15367;background:rgba(160,35,58,.82)}
 #world-fight-startup button[aria-busy=true]{color:#ffd18a;border-left-color:#ffd18a}
 #world-fight-startup .wf-loading{margin:10px 0 0 10px;color:#a9bdc6;font-size:12px;letter-spacing:.08em}
-#worldFightRotateGate{display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;padding:calc(24px + var(--wf-safe-top)) calc(24px + var(--wf-safe-right)) calc(24px + var(--wf-safe-bottom)) calc(24px + var(--wf-safe-left));box-sizing:border-box;background:#050810;color:#f7f2e8;text-align:center;font-family:Arial,sans-serif}
-#worldFightRotateGate .wf-rotate-card{max-width:360px;border:1px solid rgba(92,218,215,.55);padding:28px 24px;background:#0b1722}
+#worldFightRotateGate{display:none;position:fixed;inset:0;z-index:10000;align-items:flex-end;justify-content:center;padding:calc(24px + var(--wf-safe-top)) calc(20px + var(--wf-safe-right)) calc(30px + var(--wf-safe-bottom)) calc(20px + var(--wf-safe-left));box-sizing:border-box;background-color:#050810;background-image:linear-gradient(180deg,rgba(2,6,13,0) 42%,#050810 78%),url('rotate-device-ensemble.png');background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat;color:#f7f2e8;text-align:center;font-family:Arial,sans-serif}
+#worldFightRotateGate .wf-rotate-card{width:min(390px,calc(100vw - 40px));border:1px solid rgba(92,218,215,.65);padding:18px 20px;background:rgba(5,14,24,.9);box-shadow:0 12px 36px rgba(0,0,0,.72);backdrop-filter:blur(5px)}
 #worldFightRotateGate strong{display:block;font-size:25px;margin-bottom:10px;color:#66d9d4}
 #worldFightRotateGate span{display:block;line-height:1.55}
+#worldFightFullscreenButton{width:100%;min-height:48px;margin-top:14px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:16px;letter-spacing:.08em;cursor:pointer}
 </style>
 <script id="world-fight-responsive-script">
 (() => {
@@ -85,6 +88,10 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
   };
   window.worldFightSetReady = (ready) => { state.ready=Boolean(ready); window.layoutWorldFightViewport(); };
   window.worldFightSetMenuVisible = (visible) => { state.menuVisible=Boolean(visible); window.layoutWorldFightViewport(); };
+  window.requestWorldFightFullscreen = () => {
+    if (document.fullscreenElement||!document.documentElement.requestFullscreen) return Promise.resolve();
+    return document.documentElement.requestFullscreen().then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});
+  };
   window.worldFightAcknowledgeAction = (action) => {
     if (state.pending&&action&&state.pending!==action) return;
     state.pending=''; window.worldFightPendingAction=''; state.menuVisible=false;
@@ -93,14 +100,16 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
   };
   window.initializeWorldFightShell = () => {
     const startup=document.getElementById('world-fight-startup');
-    if (!startup || startup.dataset.initialized) return;
+    if (!startup) return;
+    if (startup.dataset.initialized) { window.layoutWorldFightViewport(); return; }
     startup.dataset.initialized='true';
+    document.getElementById('worldFightFullscreenButton')?.addEventListener('click',window.requestWorldFightFullscreen);
     startup.querySelectorAll('button').forEach((button)=>button.addEventListener('click',()=>{
       if (state.pending) return; state.pending=button.dataset.action; window.worldFightPendingAction=state.pending; button.setAttribute('aria-busy','true');
-      if (!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});
+      window.requestWorldFightFullscreen();
       if (typeof window.worldFightMenuAction==='function') window.worldFightMenuAction(state.pending);
     }));
-    window.addEventListener('resize',window.layoutWorldFightViewport); window.addEventListener('orientationchange',window.layoutWorldFightViewport);
+    window.addEventListener('resize',window.layoutWorldFightViewport); window.addEventListener('orientationchange',()=>{ window.layoutWorldFightViewport(); if (innerWidth>innerHeight) window.requestWorldFightFullscreen(); });
     if (window.visualViewport) { window.visualViewport.addEventListener('resize',window.layoutWorldFightViewport); window.visualViewport.addEventListener('scroll',window.layoutWorldFightViewport); }
     window.layoutWorldFightViewport();
   };
@@ -109,7 +118,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 </script>
 """
 
-STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span></div></div><script>window.initializeWorldFightShell()</script>"""
+STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests. */
 self.addEventListener('install', () => self.skipWaiting());
@@ -133,6 +142,8 @@ def patch(path: Path) -> None:
     if 'id="world-fight-startup"' not in html:
         html = html.replace("<body>", "<body>" + STARTUP_MARKUP, 1)
     path.write_text(html, encoding="utf-8")
+    if ROTATE_ART.is_file():
+        copyfile(ROTATE_ART, path.with_name("rotate-device-ensemble.png"))
     path.with_name("index.service.worker.js").write_text(RETIRE_WORKER, encoding="utf-8")
 
 

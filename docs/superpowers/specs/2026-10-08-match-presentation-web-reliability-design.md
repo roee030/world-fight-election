@@ -87,8 +87,8 @@ The Web build must adapt to the usable viewport of current phones rather than ta
 - The HTML shell measures `window.visualViewport` when available and falls back to the layout viewport. Browser address bars, toolbars and keyboard changes therefore cannot push the canvas or startup controls outside the visible area.
 - CSS safe-area insets (`env(safe-area-inset-*)`) are removed from the usable rectangle before fitting the 16:9 canvas. Notches, rounded corners and home indicators cannot cover required controls.
 - In landscape, the largest centered 16:9 rectangle that fits inside the usable viewport is used. Letterboxing is allowed; stretching or cropping the reference canvas is not.
-- In portrait, the game shows a bilingual rotate/full-screen gate instead of shrinking combat into an unreadable strip. Startup actions remain available only when they fit without conflicting with that gate.
-- Orientation changes, browser chrome expansion/collapse, full-screen entry/exit and `visualViewport` resize/scroll events trigger one shared layout function.
+- In portrait, the game shows a bilingual illustrated rotate/full-screen gate instead of shrinking combat into an unreadable strip. The portrait art shows the complete roster, a landscape-phone cue and the Knesset menorah; a persistent full-screen button remains available below it.
+- Orientation changes, browser chrome expansion/collapse, full-screen entry/exit and `visualViewport` resize/scroll events trigger one shared layout function. Rotation to landscape also makes a best-effort full-screen request; browsers that require a fresh user gesture fall back to the gate or in-game full-screen button.
 - The touch cluster uses a protected lower-left and lower-right safe zone. Every required action remains visible, non-overlapping and physically usable after scaling; the smallest round action is increased where necessary so it does not fall below a 44-CSS-pixel target on the supported small-phone matrix.
 - Desktop and mouse-only Web sessions may hide the combat touch controls, while every touch-capable landscape Web session shows them.
 
