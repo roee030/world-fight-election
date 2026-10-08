@@ -465,7 +465,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 **Interfaces:** Produces `avigdor/oil_barrel_48`; the `48:00 → 00:00` countdown is a code-native caption/clock and the celebration clock remains fixed at `48:00`.
 
 - [x] Follow the template; assert barrel spawn/throw precede countdown, explosion at zero is the sole final hit, and celebration clock text is exactly `48:00`.
-- [ ] Commit and push `Add Lieberman oil barrel finisher`; then record and push its hash.
+- [x] Commit and push `Add Lieberman oil barrel finisher` (`91a1aa5`); then record and push its hash.
 
 ---
 
@@ -480,7 +480,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `mansour_abbas/coalition_cashstorm`; proves repeated lightweight actors and mobile density reduction.
 
-- [ ] Follow the template; assert three stagger hits, one oversized-bundle final hit, maximum 12 desktop actors and reduced mobile count.
+- [x] Follow the template; assert three stagger hits, one oversized-bundle final hit, maximum 12 desktop actors and reduced mobile count.
 - [ ] Commit and push `Add Mansour Abbas cashstorm finisher`; then record and push its hash.
 
 ---

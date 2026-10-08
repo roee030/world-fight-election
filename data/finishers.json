@@ -953,14 +953,202 @@
     "mansour_abbas": {
       "fighter_id": "mansour_abbas",
       "finisher_id": "coalition_cashstorm",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
+      "duration": 3.6,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            0,
+            768,
+            512
+          ],
+          "figure_height_px": 473,
+          "foot_baseline": 501
+        },
+        {
+          "at": 0.65,
+          "type": "spawn_prop",
+          "id": "cash_rain_1",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0024,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.5,
+            0.2
+          ]
+        },
+        {
+          "at": 0.8,
+          "type": "hit",
+          "id": "cashstorm_stagger_1",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 0.8,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 1.1500000000000001,
+          "type": "spawn_prop",
+          "id": "cash_rain_2",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0024,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.5,
+            0.2
+          ]
+        },
+        {
+          "at": 1.3,
+          "type": "hit",
+          "id": "cashstorm_stagger_2",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.3,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 1.6500000000000001,
+          "type": "spawn_prop",
+          "id": "cash_rain_3",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.0024,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.5,
+            0.2
+          ]
+        },
+        {
+          "at": 1.8,
+          "type": "hit",
+          "id": "cashstorm_stagger_3",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.8,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 2,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.05,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            0,
+            768,
+            512
+          ],
+          "figure_height_px": 473,
+          "foot_baseline": 501
+        },
+        {
+          "at": 2.1,
+          "type": "spawn_prop",
+          "id": "cash_bundle",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            768,
+            0,
+            768,
+            470
+          ],
+          "pixel_scale": 0.004,
+          "anchor": "attacker",
+          "position": [
+            0.65,
+            1.25,
+            0.25
+          ]
+        },
+        {
+          "at": 2.2,
+          "type": "launch_prop",
+          "id": "cash_bundle",
+          "target": "defender",
+          "duration": 0.45
+        },
+        {
+          "at": 2.65,
+          "type": "hit",
+          "id": "cashstorm_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.65,
+          "type": "camera_impact",
+          "strength": 0.22
+        },
+        {
+          "at": 2.65,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.65,
+          "type": "caption",
+          "text": "CASH OUT",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 3.05,
+          "type": "celebration_start"
+        }
+      ],
       "celebration_id": "coalition_cashstorm_victory"
     },
     "gadi_eisenkot": {
@@ -1355,10 +1543,78 @@
     },
     "coalition_cashstorm_victory": {
       "celebration_id": "coalition_cashstorm_victory",
-      "implemented": false,
+      "implemented": true,
       "duration": 2.0,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            768,
+            470,
+            768,
+            554
+          ],
+          "figure_height_px": 504,
+          "foot_baseline": 528
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "COALITION BONUS",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 0.15,
+          "type": "spawn_prop",
+          "id": "victory_cash",
+          "asset": "res://assets/finishers/mansour_abbas/atlas/cashstorm-kit-v2.png",
+          "region": [
+            0,
+            512,
+            768,
+            512
+          ],
+          "pixel_scale": 0.002,
+          "anchor": "attacker",
+          "position": [
+            0,
+            2.2,
+            -0.2
+          ]
+        },
+        {
+          "at": 0.3,
+          "type": "move_actor",
+          "id": "victory_cash",
+          "anchor": "attacker",
+          "position": [
+            0,
+            1.3,
+            -0.2
+          ],
+          "duration": 1.3
+        },
+        {
+          "at": 1.8,
+          "type": "result_marker"
+        }
+      ]
     },
     "bazooka_command_victory": {
       "celebration_id": "bazooka_command_victory",
