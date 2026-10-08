@@ -87,6 +87,12 @@ Self-reviewed against the approved design and current `main.gd`, `fighter.gd`, `
 
 Each fighter task owns `assets/finishers/<fighter_id>/` with `actors/`, `props/`, `effects/`, `celebration/` and `preview.png` as required by the approved spec.
 
+## Post-roster result and Web delivery polish (2026-10-08)
+
+- Normal match wins and losses reuse the winning fighter's authored celebration while the arena, `YOU WIN` / `YOU LOSE`, winner name and result options remain visible.
+- `J` is the fast jab, `K` is the slower heavy attack and `L` is the Special/MAX input. A finisher requires one prior round win, 100% Special Energy, rival health at or below 15%, close range and a 0.55-second hold; the HUD reports the first missing requirement.
+- GitHub Pages exports disable the old PWA worker and inject service-worker/cache cleanup so phones do not remain pinned to an earlier build.
+
 ## Per-fighter delivery tracker
 
 Update one row after each fighter's focused/full tests and visual inspection. `Implementation commit` records the pushed code/assets commit; `Record commit` records the subsequent pushed documentation commit that adds the implementation hash and review notes. Use `Not started`, `In progress`, `Blocked` or `Complete` only.

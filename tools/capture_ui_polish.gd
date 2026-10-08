@@ -25,15 +25,18 @@ func _run() -> void:
 
 	main.player_rounds = 2
 	main.enemy_rounds = 1
-	main._show_result(true)
-	for _i in range(3):
+	main._show_result_with_celebration(true)
+	for _i in range(24):
+		main._process(0.04)
 		await process_frame
 	get_root().get_texture().get_image().save_png("res://output/ui-victory-qa.png")
 
+	main._finisher_director.cancel()
 	main.player_rounds = 0
 	main.enemy_rounds = 2
-	main._show_result(false)
-	for _i in range(3):
+	main._show_result_with_celebration(false)
+	for _i in range(24):
+		main._process(0.04)
 		await process_frame
 	get_root().get_texture().get_image().save_png("res://output/ui-defeat-qa.png")
 

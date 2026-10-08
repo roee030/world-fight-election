@@ -23,12 +23,12 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Jump | `W` or Up |
 | Guard | `S` / `H` |
 | Crouch | `C` |
-| Light attack | `J` / `1` |
-| Heavy attack | `K` / `2` |
-| Special | `L` / `3` |
+| Jab: fast, short-range combo starter | `J` / `1` |
+| Heavy: slower, longer-range high-damage hit | `K` / `2` |
+| Special / Finisher: strong meter attack; hold when Finish is ready | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: hold `L` / `3` or touch `MAX` for 0.55 seconds at match point with full Special Energy and the rival at 15% health or less. `FINISH READY` indicates eligibility. A shorter tap keeps the normal Special. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration.
+Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3` or touch `MAX` for 0.55 seconds. A shorter tap launches the normal Special instead. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of every full match, the winning fighter performs that celebration behind the visible `YOU WIN` / `YOU LOSE` result and its options.
 
 ## Run the project
 
@@ -46,7 +46,7 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
 
-In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface.
+In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `HEAVY`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The web export unregisters the former PWA service worker and clears its old caches on load, preventing an earlier GitHub Pages build from remaining stuck on a phone; after this migration deployment, close and reopen an already-open game tab once.
 
 ## Project structure
 

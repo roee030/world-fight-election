@@ -34,6 +34,10 @@ func _init() -> void:
 	host.test_eligible = false
 	assert(host._update_special_hold(0.0, true, false) == "special")
 	host.test_eligible = true
+	assert(host._finisher_hint_text(false, false, false) == "MAX: WIN 1 ROUND FIRST")
+	assert(host._finisher_hint_text(true, false, false) == "MAX: RIVAL HP ≤ 15%")
+	assert(host._finisher_hint_text(true, true, false) == "FINISH: MOVE CLOSE + HOLD L/MAX")
+	assert(host._finisher_hint_text(true, true, true) == "FINISH READY: HOLD L/MAX")
 	host._on_touch_action_down("special")
 	host._on_touch_action_up("special")
 	assert(host._sample_special_input(0.01) == "special", "touch tap between physics ticks")

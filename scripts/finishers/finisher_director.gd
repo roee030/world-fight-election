@@ -75,6 +75,33 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary)
 	sequence_started.emit(attacker.character_id)
 	return true
 
+
+func begin_celebration(winner: GameFighter, loser: GameFighter, celebration_id: String) -> bool:
+	if active or winner == null or loser == null:
+		return false
+	var celebration := _celebration(celebration_id)
+	if celebration.is_empty() or not celebration.get("implemented", false):
+		return false
+	_attacker = winner
+	_defender = loser
+	_definition = {"celebration_id": celebration_id}
+	_final = true
+	_celebrating = true
+	_lightbox = false
+	_hit_ids.clear()
+	_paused = false
+	active = true
+	diagnostic = ""
+	if _camera:
+		_camera_transform = _camera.transform
+		_camera_size = _camera.size
+		_camera_fov = _camera.fov
+	winner.enter_cinematic_lock(winner.position, winner.facing)
+	loser.enter_cinematic_lock(loser.position, loser.facing)
+	timeline.start(celebration)
+	celebration_started.emit(celebration_id)
+	return true
+
 func _celebration(id: String) -> Dictionary:
 	var source = catalog
 	if source == null and _host != null: source = _host.get("_finisher_catalog")

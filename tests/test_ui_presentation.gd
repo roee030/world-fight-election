@@ -81,7 +81,7 @@ func _run() -> void:
 	main._show_result(true)
 	if result_art.texture == null:
 		return _fail("victory result does not populate winner artwork")
-	if main.result_root.get_node("ResultContent/ResultTitle").text != "VICTORY":
+	if main.result_root.get_node("ResultContent/ResultTitle").text != "YOU WIN":
 		return _fail("victory result title is incorrect")
 	main._show_result(false)
 	if main.result_root.get_node("ResultContent/ResultTitle").text != "YOU LOSE":

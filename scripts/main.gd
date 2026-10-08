@@ -144,8 +144,15 @@ func _ready() -> void:
 	_finisher_director.configure(self, _arena, _fight_camera)
 	finisher_requested.connect(_try_begin_finisher)
 	_finisher_director.final_hit.connect(_on_finisher_final_hit)
-	_finisher_director.celebration_started.connect(func(_id): match_state = MatchState.Value.CELEBRATION)
-	_finisher_director.result_ready.connect(func(winner): _show_result(winner == 0))
+	_finisher_director.celebration_started.connect(func(_id):
+		match_state = MatchState.Value.RESULT if is_instance_valid(result_root) and result_root.visible else MatchState.Value.CELEBRATION
+	)
+	_finisher_director.result_ready.connect(func(winner):
+		if not result_root.visible:
+			_show_result(winner == 0)
+		else:
+			match_state = MatchState.Value.RESULT
+	)
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_build_ui()
 	_create_audio()
@@ -316,10 +323,30 @@ func _update_special_hold(delta: float, pressed: bool, released: bool) -> String
 		if _special_hold.active:
 			player_meter_label.text = "FINISH %d%%" % int(100.0 * _special_hold.elapsed / _special_hold.threshold)
 		elif eligible:
-			player_meter_label.text = "FINISH READY · HOLD MAX"
+			player_meter_label.text = "FINISH READY: HOLD L/MAX"
 		else:
-			player_meter_label.text = "SPECIAL ENERGY · %d%%" % int(player.meter) if is_instance_valid(player) else "SPECIAL ENERGY"
+			player_meter_label.text = _current_finisher_hint()
 	return result
+
+
+func _finisher_hint_text(match_point: bool, rival_low: bool, in_range: bool) -> String:
+	if not match_point:
+		return "MAX: WIN 1 ROUND FIRST"
+	if not rival_low:
+		return "MAX: RIVAL HP ≤ 15%"
+	if not in_range:
+		return "FINISH: MOVE CLOSE + HOLD L/MAX"
+	return "FINISH READY: HOLD L/MAX"
+
+
+func _current_finisher_hint() -> String:
+	if not is_instance_valid(player) or not is_instance_valid(enemy):
+		return "SPECIAL ENERGY"
+	if player.meter < 100.0:
+		return "SPECIAL ENERGY · %d%%" % int(player.meter)
+	var definition := _current_finisher_definition()
+	var distance_ok := player.position.distance_to(enemy.position) <= float(definition.get("activation_range", 1.75))
+	return _finisher_hint_text(FinisherRules.match_point_for(0, player_rounds, enemy_rounds), enemy.health / enemy.max_health() <= float(definition.get("trigger_health_ratio", 0.15)), distance_ok)
 
 
 func _cancel_special_hold() -> void:
@@ -625,7 +652,7 @@ func _build_touch_controls() -> void:
 	hud_root.add_child(stick)
 	var specs := [
 		{"action": "light", "title": "JAB", "pos": Vector2(1090, 543), "color": "#2b8c8f"},
-		{"action": "heavy", "title": "CROSS", "pos": Vector2(1172, 474), "color": "#ae565d"},
+		{"action": "heavy", "title": "HEAVY", "pos": Vector2(1172, 474), "color": "#ae565d"},
 		{"action": "special", "title": "MAX", "pos": Vector2(1010, 466), "color": "#906341"},
 		{"action": "jump", "title": "↑", "pos": Vector2(953, 564), "color": "#334a58"},
 		{"action": "block", "title": "GUARD", "pos": Vector2(1161, 618), "color": "#445761"}
@@ -703,7 +730,7 @@ func _build_menu() -> void:
 	var model_lab := _menu_text_button(action_panel, "FIGHTER LAB", Rect2(0, 276, 330, 52), 18)
 	model_lab.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/character_debug.tscn"))
 	_label(action_panel, "A/D MOVE   W JUMP   S GUARD", Rect2(0, 404, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
-	_label(action_panel, "J/K/L ATTACK   ESC PAUSE", Rect2(0, 428, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
+	_label(action_panel, "J JAB   K HEAVY   L SPECIAL/MAX", Rect2(0, 428, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
 	var fullscreen_btn := _button(menu_root, "⛶", Rect2(1212, 24, 44, 40), "#233440", 20)
@@ -1355,7 +1382,7 @@ func _end_round(reason: String) -> void:
 			player_rounds += 1
 		_update_scores()
 	if player_rounds >= 2 or enemy_rounds >= 2:
-		_show_result(player_rounds >= 2)
+		_show_result_with_celebration(player_rounds >= 2)
 	else:
 		message_label.text = "ROUND FOR YOU" if (reason == "ko" and player_rounds > enemy_rounds) else ("ROUND LOST" if reason == "ko" else "TIME")
 		message_label.visible = true
@@ -1388,6 +1415,7 @@ func _show_result(won: bool) -> void:
 	fight_live = false
 	hud_root.visible = false
 	result_root.visible = true
+	result_winner_art.visible = true
 	var content := result_root.get_node("ResultContent")
 	var title: Label = content.get_node("ResultTitle")
 	var winner_name: Label = content.get_node("WinnerName")
@@ -1410,7 +1438,7 @@ func _show_result(won: bool) -> void:
 	accent_style.bg_color = accent_color
 	if won:
 		campaign_wins += 1
-		title.text = "VICTORY"
+		title.text = "YOU WIN"
 		backdrop_word.text = "VICTORY"
 		detail.text = "You won %d–%d." % [player_rounds, enemy_rounds]
 		if campaign_mode and bout < 3:
@@ -1427,6 +1455,19 @@ func _show_result(won: bool) -> void:
 		detail.text = "The rival took the match. Change your rhythm and take the arena back."
 		button.text = "TRY AGAIN" if not campaign_mode else "RETRY BOUT"
 	_play_sound("victory" if won else "hit")
+
+
+func _show_result_with_celebration(won: bool) -> void:
+	_show_result(won)
+	var winner: GameFighter = player if won else enemy
+	var loser: GameFighter = enemy if won else player
+	if not is_instance_valid(winner) or not is_instance_valid(loser) or _finisher_catalog == null:
+		return
+	var definition: Dictionary = _finisher_catalog.definition_for(winner.character_id)
+	var celebration_id := str(definition.get("celebration_id", ""))
+	if _finisher_director.begin_celebration(winner, loser, celebration_id):
+		result_winner_art.visible = false
+		match_state = MatchState.Value.RESULT
 
 
 func _continue_from_result() -> void:
