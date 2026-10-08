@@ -46,9 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('canvas');
   if (canvas && 'ResizeObserver' in window) new ResizeObserver(place).observe(canvas);
   [500, 2000, 5000].forEach((delay) => setTimeout(place, delay));
+  const placementTimer = setInterval(place, 500);
   window.addEventListener('resize', place);
   menu.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
     const action = button.dataset.action;
+    clearInterval(placementTimer);
     window.worldFightPendingAction = action;
     if (typeof window.worldFightMenuAction === 'function') window.worldFightMenuAction(action);
   }));
