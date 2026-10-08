@@ -13,6 +13,8 @@ class WebCachePolicyTests(unittest.TestCase):
         preset = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
         self.assertIn("variant/extensions_support=false", preset)
         self.assertIn("progressive_web_app/enabled=false", preset)
+        self.assertNotIn("phone-orientation", preset)
+        self.assertNotIn("#canvas{display:block;width:100%!important;height:100%!important", preset)
         patcher = (ROOT / "tools" / "patch_web_export.py").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "deploy-pages.yml").read_text(encoding="utf-8")
         self.assertIn("getRegistrations()", patcher)
