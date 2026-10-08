@@ -28,7 +28,7 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Special / Finisher: strong meter attack; hold when Finish is ready | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3` or touch `MAX` for 0.55 seconds. A shorter tap launches the normal Special, spends 55 energy and shows `MAX SPECIAL!` as confirmation. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of every full match, the winning fighter performs that celebration behind the visible `YOU WIN` / `YOU LOSE` result and its options. `WIN CELEBRATION` in Finisher Lab previews the selected fighter's victory sequence directly.
+Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3`, or tap `MAX` once on touch screens. Outside finisher conditions, one `MAX` tap launches the normal Special, spends 55 energy and shows feedback. Releasing keyboard Special during pause cancels the pending hold on resume. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
 
 ## Run the project
 
@@ -44,7 +44,7 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 ## Play on a phone
 
-Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
+Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser and rotate to landscape. The startup actions are available from first paint while Godot loads; the centered 16:9 canvas follows the live visual viewport, respects notches and browser safe areas, and displays touch controls automatically without cropping.
 
 In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The exported canvas is constrained to a centered 16:9 rectangle inside Chrome's current visual viewport, keeping the full menu and every touch target inside its safe edges. The web export replaces the former PWA worker with a self-retiring cleanup worker, unregisters it and clears its old caches. This also repairs Chrome installations that retained the obsolete `index.service.worker.js`; after the migration deployment, close and reopen an already-open game tab once.
 
@@ -106,7 +106,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - Full-screen cinematic title art with a small floating text menu.
 - Fighter selection shows all fighters at once with face-focused portraits.
 - Angular fighting-game HUD with edge portraits, segmented cyan/red health, round markers, a central timer and a thin gold `SPECIAL ENERGY` meter. Phone controls use a large left joystick and a right-side diamond cluster matching the supplied console-fighter reference.
-- Results keep the live winner celebration visible behind a compact corner card; the defeated fighter stays down after the final blow and normal celebrations play at a readable 55% speed.
+- The defeated fighter falls on the lethal hit and remains grounded. Results stay hidden while the winner celebrates unobstructed for at least three seconds at 40% speed, then reveal one compact result card.
 - Per-stage visual alignment keeps feet on the visible floor.
 
 On phones, `MAX` launches an eligible finisher with one tap. Outside finisher conditions it remains the normal 55-energy special attack. Chrome web exports also include a lightweight HTML start menu that forwards Start Fight, Campaign and Fighter Lab to Godot, protecting the first screen from browser canvas-layout failures.
