@@ -43,7 +43,10 @@ func _run() -> void:
 	for step in range(int(sample * 60)):
 		main._finisher_director.advance(1.0 / 60.0)
 	for frame in range(4): await process_frame
-	await RenderingServer.frame_post_draw
+	# `frame_post_draw` can wait forever on Windows headless runs when no editor
+	# viewport is present. Force the pending draw after four settled frames so
+	# review captures remain deterministic in CI and local automation.
+	RenderingServer.force_draw(false)
 	var path := "res://output/finisher-review/%s-%s-%s.png" % [options.fighter, options.phase, options.density]
 	if options.get("side", "left") == "right": path = path.replace(".png", "-right.png")
 	root.get_texture().get_image().save_png(path)

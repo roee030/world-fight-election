@@ -1473,14 +1473,213 @@
     "itamar_ben_gvir": {
       "fighter_id": "itamar_ben_gvir",
       "finisher_id": "crocodile_release",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
+      "duration": 4.0,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            0,
+            627,
+            627
+          ],
+          "figure_height_px": 547,
+          "foot_baseline": 602
+        },
+        {
+          "at": 0.65,
+          "type": "spawn_actor",
+          "id": "crocodile_1",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 513,
+          "anchor": "attacker",
+          "position": [
+            -0.7,
+            0,
+            0.2
+          ]
+        },
+        {
+          "at": 0.75,
+          "type": "move_actor",
+          "id": "crocodile_1",
+          "anchor": "defender",
+          "position": [
+            -0.35,
+            0,
+            0.25
+          ],
+          "duration": 0.45
+        },
+        {
+          "at": 1.2000000000000002,
+          "type": "hit",
+          "id": "crocodile_hit_1",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.2000000000000002,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.35,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.37,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            0,
+            627,
+            627
+          ],
+          "figure_height_px": 547,
+          "foot_baseline": 602
+        },
+        {
+          "at": 1.45,
+          "type": "spawn_actor",
+          "id": "crocodile_2",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 513,
+          "anchor": "attacker",
+          "position": [
+            -0.7,
+            0,
+            0.2
+          ]
+        },
+        {
+          "at": 1.55,
+          "type": "move_actor",
+          "id": "crocodile_2",
+          "anchor": "defender",
+          "position": [
+            -0.35,
+            0,
+            0.25
+          ],
+          "duration": 0.45
+        },
+        {
+          "at": 2.0,
+          "type": "hit",
+          "id": "crocodile_hit_2",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 2.0,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.15,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.17,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            0,
+            627,
+            627
+          ],
+          "figure_height_px": 547,
+          "foot_baseline": 602
+        },
+        {
+          "at": 2.25,
+          "type": "spawn_actor",
+          "id": "crocodile_3",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 513,
+          "anchor": "attacker",
+          "position": [
+            -0.7,
+            0,
+            0.2
+          ]
+        },
+        {
+          "at": 2.35,
+          "type": "move_actor",
+          "id": "crocodile_3",
+          "anchor": "defender",
+          "position": [
+            -0.35,
+            0,
+            0.25
+          ],
+          "duration": 0.45
+        },
+        {
+          "at": 2.8,
+          "type": "hit",
+          "id": "crocodile_hit_3",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.8,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.8,
+          "type": "camera_impact",
+          "strength": 0.2
+        },
+        {
+          "at": 3.4,
+          "type": "celebration_start"
+        }
+      ],
       "celebration_id": "crocodile_release_victory"
     },
     "bezalel_smotrich": {
@@ -2017,10 +2216,110 @@
     },
     "crocodile_release_victory": {
       "celebration_id": "crocodile_release_victory",
-      "implemented": false,
+      "implemented": true,
       "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            627,
+            627,
+            627,
+            627
+          ],
+          "figure_height_px": 579,
+          "foot_baseline": 589
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "CROCODILE CREW",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 0.1,
+          "type": "spawn_actor",
+          "id": "crocodile_lineup_1",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0015,
+          "grounded": true,
+          "foot_baseline": 526,
+          "anchor": "attacker",
+          "position": [
+            -1.4,
+            0,
+            -0.15
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "spawn_actor",
+          "id": "crocodile_lineup_2",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0015,
+          "grounded": true,
+          "foot_baseline": 526,
+          "anchor": "attacker",
+          "position": [
+            0,
+            0,
+            -0.15
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "spawn_actor",
+          "id": "crocodile_lineup_3",
+          "asset": "res://assets/finishers/itamar_ben_gvir/atlas/crocodile-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0015,
+          "grounded": true,
+          "foot_baseline": 526,
+          "anchor": "attacker",
+          "position": [
+            2.5,
+            0,
+            -0.15
+          ]
+        },
+        {
+          "at": 1.8,
+          "type": "result_marker"
+        }
+      ]
     },
     "cattle_charge_victory": {
       "celebration_id": "cattle_charge_victory",
