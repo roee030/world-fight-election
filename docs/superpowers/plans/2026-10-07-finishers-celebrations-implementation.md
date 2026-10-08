@@ -533,7 +533,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 **Interfaces:** Produces `itamar_ben_gvir/crocodile_release`; proves three ordered ground actors and celebration lineup.
 
 - [x] Follow the template; assert three unique crocodile actors, two stagger hits, third final hit and all shadows remain on the floor.
-- [ ] Commit and push `Add Ben Gvir crocodile finisher`; then record and push its hash.
+- [x] Commit and push `Add Ben Gvir crocodile finisher` (`bcbe25a`); then record and push its hash.
 
 ---
 
