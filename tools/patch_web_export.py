@@ -38,11 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const actions = menu.querySelector('.wf-actions');
-    actions.style.left = `${rect.left + rect.width * 0.043}px`;
-    actions.style.top = `${rect.top + rect.height * 0.275}px`;
+    actions.style.left = `${rect.left + rect.width * 0.050}px`;
+    actions.style.top = `${rect.top + rect.height * 0.205}px`;
     actions.style.width = `${Math.max(180, rect.width * 0.285)}px`;
   };
   place();
+  const canvas = document.getElementById('canvas');
+  if (canvas && 'ResizeObserver' in window) new ResizeObserver(place).observe(canvas);
+  [500, 2000, 5000].forEach((delay) => setTimeout(place, delay));
   window.addEventListener('resize', place);
   menu.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
     const action = button.dataset.action;
