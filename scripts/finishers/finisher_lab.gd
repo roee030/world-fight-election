@@ -69,6 +69,11 @@ func _build_ui() -> void:
 	live.text = "LIVE VERSUS TEST"
 	live.pressed.connect(func(): start_live_test(IDS[attacker_selector.selected]))
 	row.add_child(live)
+	var celebration := Button.new()
+	celebration.name = "CelebrationPreview"
+	celebration.text = "WIN CELEBRATION"
+	celebration.pressed.connect(func(): preview_celebration(IDS[attacker_selector.selected]))
+	row.add_child(celebration)
 	var settings := HBoxContainer.new(); settings.name = "Settings"; panel.add_child(settings)
 	for value in [0.25, 0.5, 1.0]: _button(settings, "%s×" % value, func(v = value): set_speed(v))
 	_check(settings, "Mobile density", false, set_mobile)
@@ -196,6 +201,20 @@ func trigger_live_finisher() -> bool:
 	var started := director.begin(attacker, defender, definition)
 	if started:
 		status.text = "LIVE FINISHER — " + str(definition.get("finisher_id", ""))
+	return started
+
+
+func preview_celebration(fighter_id: String) -> bool:
+	preview(fighter_id, "eligible")
+	var definition := catalog.definition_for(selected)
+	var celebration_id := str(definition.get("celebration_id", ""))
+	var started := director.begin_celebration(attacker, defender, celebration_id)
+	if started:
+		set_paused(false)
+		status.text = "WIN CELEBRATION — %s" % selected.to_upper()
+		event_label.text = "WINNER POSE • RESULT-SCREEN VISIBILITY QA"
+	else:
+		status.text = "CELEBRATION UNAVAILABLE — %s" % selected.to_upper()
 	return started
 
 

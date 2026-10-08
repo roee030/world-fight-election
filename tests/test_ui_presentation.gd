@@ -79,8 +79,10 @@ func _run() -> void:
 	if main.result_root.get_node_or_null("ResultMenuButton") == null:
 		return _fail("result screen has no menu action")
 	var darken := main.result_root.get_node_or_null("ResultDarken") as Panel
-	if darken == null or (darken.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.a >= 0.75:
+	if darken == null or (darken.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.a > 0.38:
 		return _fail("result presentation hides the arena")
+	if main.result_root.get_node("ResultContent/ResultTitle").get_theme_font_size("font_size") > 90:
+		return _fail("result title covers too much of the winner celebration")
 	main._show_result(true)
 	if result_art.texture == null:
 		return _fail("victory result does not populate winner artwork")

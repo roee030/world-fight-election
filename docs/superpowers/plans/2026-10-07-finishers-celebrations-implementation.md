@@ -94,6 +94,9 @@ Each fighter task owns `assets/finishers/<fighter_id>/` with `actors/`, `props/`
 - GitHub Pages exports disable the old PWA worker and inject service-worker/cache cleanup so phones do not remain pinned to an earlier build.
 - Chrome recovery now publishes a no-fetch `index.service.worker.js` retirement worker at the legacy URL; it deletes the old caches, unregisters itself and reloads controlled tabs without reproducing the invalid opaque-response status bug.
 - The combat HUD and touch controls follow the supplied reference: angular cyan/red fighter wings, segmented health, thin gold Special Energy, central timer, large joystick and outlined `MAX` / `CROSS` / `JAB` / `GUARD` diamond cluster.
+- Fighters now use pausable processing explicitly, preventing the player, CPU, movement, AI clock and sprite motion from inheriting the always-running UI root during Pause.
+- Finisher Lab exposes `WIN CELEBRATION` for the selected fighter, and the result wash/title were reduced so the authored winner pose remains readable behind `YOU WIN` / `YOU LOSE` and the result actions.
+- Chrome receives a centered, contained 16:9 canvas sized against `100dvh`; all mobile controls have automated right/bottom safe-frame bounds, and a successful MAX tap shows explicit feedback.
 
 ## Per-fighter delivery tracker
 

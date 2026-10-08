@@ -238,6 +238,10 @@ func _physics_process(_delta: float) -> void:
 	var heavy := _consume("heavy", KEY_K, KEY_2)
 	var special_action := _sample_special_input(_delta)
 	var special := special_action == "special"
+	if special and player.meter >= 55.0:
+		message_label.text = "MAX SPECIAL!"
+		message_label.visible = true
+		combo_label_time = maxf(combo_label_time, 0.55)
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		if _finisher_director.active:
@@ -653,16 +657,16 @@ func _build_hud() -> void:
 
 func _build_touch_controls() -> void:
 	stick = VirtualStickScript.new()
-	stick.position = Vector2(30, 478)
-	stick.size = Vector2(210, 210)
+	stick.position = Vector2(66, 466)
+	stick.size = Vector2(218, 218)
 	stick.visible = false
 	hud_root.add_child(stick)
 	var specs := [
-		{"action": "special", "title": "MAX", "pos": Vector2(994, 454), "size": Vector2(94, 94), "color": "#b56b27", "shape": "diamond"},
-		{"action": "heavy", "title": "CROSS", "pos": Vector2(1156, 486), "size": Vector2(94, 94), "color": "#b53f57", "shape": "diamond"},
-		{"action": "light", "title": "JAB", "pos": Vector2(1070, 548), "size": Vector2(94, 94), "color": "#239f9b", "shape": "diamond"},
-		{"action": "jump", "title": "JUMP", "pos": Vector2(1172, 574), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
-		{"action": "block", "title": "GUARD", "pos": Vector2(1136, 626), "size": Vector2(108, 78), "color": "#3e5968", "shape": "diamond"}
+		{"action": "special", "title": "MAX", "pos": Vector2(958, 438), "size": Vector2(94, 94), "color": "#b56b27", "shape": "diamond"},
+		{"action": "heavy", "title": "CROSS", "pos": Vector2(1118, 466), "size": Vector2(94, 94), "color": "#b53f57", "shape": "diamond"},
+		{"action": "light", "title": "JAB", "pos": Vector2(1034, 536), "size": Vector2(94, 94), "color": "#239f9b", "shape": "diamond"},
+		{"action": "jump", "title": "JUMP", "pos": Vector2(1140, 560), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
+		{"action": "block", "title": "GUARD", "pos": Vector2(1098, 616), "size": Vector2(108, 74), "color": "#3e5968", "shape": "diamond"}
 	]
 	for spec in specs:
 		var rect := Rect2(spec.pos, spec.size)
@@ -1002,12 +1006,12 @@ func _build_result() -> void:
 	result_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(result_root)
 	# Keep the arena and final pose visible behind a cinematic fight-result wash.
-	var result_darken := _panel(result_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.008, 0.015, 0.52))
+	var result_darken := _panel(result_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.008, 0.015, 0.34))
 	result_darken.name = "ResultDarken"
-	_panel(result_root, Rect2(0, 220, 1280, 235), Color(0.010, 0.018, 0.030, 0.78))
-	_panel(result_root, Rect2(0, 214, 1280, 5), Color("#d6ad61"))
-	_panel(result_root, Rect2(0, 456, 1280, 4), Color(0.90, 0.31, 0.40, 0.82))
-	var backdrop_word := _label(result_root, "VICTORY", Rect2(-30, 210, 1340, 250), 154, Color(0.92, 0.76, 0.42, 0.10), HORIZONTAL_ALIGNMENT_CENTER)
+	_panel(result_root, Rect2(0, 246, 1280, 190), Color(0.010, 0.018, 0.030, 0.56))
+	_panel(result_root, Rect2(0, 240, 1280, 5), Color("#d6ad61"))
+	_panel(result_root, Rect2(0, 437, 1280, 4), Color(0.90, 0.31, 0.40, 0.82))
+	var backdrop_word := _label(result_root, "VICTORY", Rect2(-30, 238, 1340, 205), 128, Color(0.92, 0.76, 0.42, 0.08), HORIZONTAL_ALIGNMENT_CENTER)
 	backdrop_word.name = "ResultBackdropWord"
 	result_winner_art = TextureRect.new()
 	result_winner_art.name = "ResultWinnerArt"
@@ -1022,24 +1026,24 @@ func _build_result() -> void:
 	result_accent.name = "ResultAccent"
 	var content := Control.new()
 	content.name = "ResultContent"
-	content.position = Vector2(120, 218)
-	content.size = Vector2(1040, 235)
+	content.position = Vector2(120, 244)
+	content.size = Vector2(1040, 190)
 	result_root.add_child(content)
 	_label(content, "FINAL RESULT", Rect2(0, 0, 1040, 28), 12, Color("#d9b566"), HORIZONTAL_ALIGNMENT_CENTER)
-	var title := _label(content, "FIGHT OVER", Rect2(0, 20, 1040, 130), 104, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_CENTER)
+	var title := _label(content, "FIGHT OVER", Rect2(0, 14, 1040, 102), 88, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "ResultTitle"
-	var winner_name := _label(content, "", Rect2(0, 148, 1040, 44), 25, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_CENTER)
+	var winner_name := _label(content, "", Rect2(0, 112, 1040, 36), 23, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_CENTER)
 	winner_name.name = "WinnerName"
-	var detail := _label(content, "", Rect2(0, 190, 1040, 38), 15, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
+	var detail := _label(content, "", Rect2(0, 148, 1040, 34), 14, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
 	detail.name = "ResultDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var next := _button(result_root, "CONTINUE", Rect2(438, 506, 196, 54), "#1d777a", 16)
+	var next := _button(result_root, "CONTINUE", Rect2(438, 574, 196, 54), "#1d777a", 16)
 	next.name = "ContinueButton"
 	next.pressed.connect(_continue_from_result)
-	var menu := _button(result_root, "RETURN TO MENU", Rect2(646, 506, 196, 54), "#3b4852", 13)
+	var menu := _button(result_root, "RETURN TO MENU", Rect2(646, 574, 196, 54), "#3b4852", 13)
 	menu.name = "ResultMenuButton"
 	menu.pressed.connect(_return_to_menu)
-	_label(result_root, "ENTER  /  CONTINUE", Rect2(440, 570, 400, 24), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(result_root, "ENTER  /  CONTINUE", Rect2(440, 636, 400, 24), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_CENTER)
 	result_root.visible = false
 
 
@@ -1260,10 +1264,12 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	player = GameFighterScript.new()
 	player.name = "PlayerFighter"
 	player.setup(player_id, 0, false)
+	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(player)
 	enemy = GameFighterScript.new()
 	enemy.name = "CpuFighter"
 	enemy.setup(rival_id, 1, true, level)
+	enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(enemy)
 	player.rival = enemy
 	enemy.rival = player

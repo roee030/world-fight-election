@@ -26,6 +26,7 @@ func _run() -> void:
 	assert(preview.scenario_selector.item_count == 4)
 	assert(preview.roster_finish_buttons.size() == 13, "Fight Lab needs one Finish Attack button per fighter")
 	assert(preview.has_node("LabUI/Controls/PlaybackControls/LiveFightTest"), "Fight Lab needs a playable versus test")
+	assert(preview.has_node("LabUI/Controls/PlaybackControls/CelebrationPreview"), "Fight Lab needs a dedicated winner celebration preview")
 	assert(preview.live_attack_buttons.size() == 4, "playable lab needs jab, cross, special and finisher controls")
 	for fighter_id in preview.IDS:
 		assert(preview.roster_finish_buttons.has(fighter_id))
@@ -49,6 +50,9 @@ func _run() -> void:
 	assert(preview.defender.is_physics_processing(), "live test rival must use production combat physics")
 	assert(preview.trigger_live_finisher(), "eligible live test must launch the real finisher against the rival")
 	assert(preview.director.active)
+	preview.director.cancel()
+	assert(preview.preview_celebration("bennet"), "winner celebration preview did not launch")
+	assert(preview.director.active and preview.status.text.contains("CELEBRATION"))
 	# Exercise the real director with a minimal authored test catalog; production
 	# entries remain subject to the implemented guard above.
 	var definition: Dictionary = preview.catalog.definition_for("bennet")

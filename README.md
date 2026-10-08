@@ -28,7 +28,7 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Special / Finisher: strong meter attack; hold when Finish is ready | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3` or touch `MAX` for 0.55 seconds. A shorter tap launches the normal Special instead. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of every full match, the winning fighter performs that celebration behind the visible `YOU WIN` / `YOU LOSE` result and its options.
+Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3` or touch `MAX` for 0.55 seconds. A shorter tap launches the normal Special, spends 55 energy and shows `MAX SPECIAL!` as confirmation. Releasing during pause cancels the pending hold on resume without launching an attack. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of every full match, the winning fighter performs that celebration behind the visible `YOU WIN` / `YOU LOSE` result and its options. `WIN CELEBRATION` in Finisher Lab previews the selected fighter's victory sequence directly.
 
 ## Run the project
 
@@ -46,7 +46,7 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
 
-In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The web export replaces the former PWA worker with a self-retiring cleanup worker, unregisters it and clears its old caches. This also repairs Chrome installations that retained the obsolete `index.service.worker.js`; after the migration deployment, close and reopen an already-open game tab once.
+In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The exported canvas is constrained to a centered 16:9 rectangle inside Chrome's current visual viewport, keeping the full menu and every touch target inside its safe edges. The web export replaces the former PWA worker with a self-retiring cleanup worker, unregisters it and clears its old caches. This also repairs Chrome installations that retained the obsolete `index.service.worker.js`; after the migration deployment, close and reopen an already-open game tab once.
 
 ## Project structure
 

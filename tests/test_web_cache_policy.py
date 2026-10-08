@@ -26,9 +26,12 @@ class WebCachePolicyTests(unittest.TestCase):
             html.write_text("<html><head></head><body></body></html>", encoding="utf-8")
             patch(html)
             worker = (root / "index.service.worker.js").read_text(encoding="utf-8")
+            patched_html = html.read_text(encoding="utf-8")
             self.assertIn("self.registration.unregister()", worker)
             self.assertIn("caches.keys()", worker)
             self.assertIn("self.clients.claim()", worker)
+            self.assertIn("calc(100dvh * 16 / 9)", patched_html)
+            self.assertIn("justify-content:center", patched_html)
 
 
 if __name__ == "__main__":

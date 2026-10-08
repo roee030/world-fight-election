@@ -61,9 +61,17 @@ func _run() -> void:
 	if main.enemy_recoverable_bar.value >= recoverable_before:
 		return _fail("recoverable damage layer never drains, making health look full")
 	main.fight_live = true
+	if main.player.process_mode != Node.PROCESS_MODE_PAUSABLE or main.enemy.process_mode != Node.PROCESS_MODE_PAUSABLE:
+		return _fail("fighters inherit the always-processing UI root and can keep fighting during pause")
 	main._toggle_pause()
 	if not main.paused or not paused or not main.pause_root.visible:
 		return _fail("pause menu does not pause the scene tree")
+	var paused_ai_clock: float = main.enemy.ai_clock
+	var paused_enemy_position: Vector3 = main.enemy.position
+	await physics_frame
+	await physics_frame
+	if not is_equal_approx(main.enemy.ai_clock, paused_ai_clock) or not main.enemy.position.is_equal_approx(paused_enemy_position):
+		return _fail("CPU movement or decision clock advanced while pause was visible")
 	main._toggle_pause()
 	if paused:
 		return _fail("resume did not unpause the scene tree")
