@@ -633,11 +633,11 @@ Run all `tests/test_*.gd` serially with unique logs, `python -m unittest`, `git 
 
 Produce 26 desktop captures and 26 landscape-phone captures under ignored `output/finisher-review/release/`. Review clipping, grounding, required text, effect density and result handoff, then confirm none are staged.
 
-- [ ] **Step 6: Push release documentation**
+- [x] **Step 6: Push release documentation**
 
 Mark every checklist item complete with delivery records, update README controls and AGENTS status, commit `Complete finisher and celebration roster`, and push.
 
-- [ ] **Step 7: Verify GitHub Pages**
+- [x] **Step 7: Verify GitHub Pages**
 
 Wait for the workflow to succeed. Verify `/`, `index.wasm`, `index.pck`, `index.manifest.json` and `index.service.worker.js` return HTTP `200`. Open the published game at `844×390`, enter a fight and run one finisher with no browser errors.
 

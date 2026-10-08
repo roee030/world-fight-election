@@ -464,6 +464,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 20 Trump B-2 flyover | 38/38 Godot and 10/10 Python; one final blast, B-2 in finisher and celebration, cleanup and Fight Lab route; desktop/phone/right-side captures inspected and attack aircraft moved below the HUD safe area | Push delivery and record hash; complete-roster audit and Pages verification |
 | 2026-10-08 | Trump delivered in `69441ca` | Automated and visual evidence recorded before push | Complete-roster audit and Pages verification |
 | 2026-10-08 | Task 21 complete roster audit | 39/39 Godot and 10/10 Python; all 13 implemented, 13 Fight Lab buttons, mobile actor cap, result-marker contract and asset validation; 52/52 desktop/landscape-phone release captures reviewed in four contact sheets with no empty files, clipping or floating actors | Push release documentation and verify GitHub Pages deployment |
+| 2026-10-08 | Complete roster released in `531c662` | Pages workflow `37744619202` succeeded; `/`, WASM, PCK, manifest and service worker returned HTTP 200; public 844×390 check loaded the main menu and all 13 Fight Lab buttons, then ran Bennet through `EXIT SUCCESS` with no browser errors | Finisher and celebration roster complete |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 
