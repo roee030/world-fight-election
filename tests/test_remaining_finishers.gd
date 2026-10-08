@@ -1,6 +1,6 @@
 extends SceneTree
 
-const EXPECTED_IDS := ["gadi_eisenkot", "yair_golan", "itamar_ben_gvir", "aryeh_deri"]
+const EXPECTED_IDS := ["gadi_eisenkot", "yair_golan", "itamar_ben_gvir", "aryeh_deri", "bezalel_smotrich"]
 
 func _init() -> void:
 	call_deferred("_run")

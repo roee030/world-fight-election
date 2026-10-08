@@ -1685,15 +1685,187 @@
     "bezalel_smotrich": {
       "fighter_id": "bezalel_smotrich",
       "finisher_id": "cattle_charge",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "cattle_charge_victory"
+      "duration": 4.1,
+      "camera_preset": "wide_stage",
+      "celebration_id": "cattle_charge_victory",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            0,
+            0,
+            627,
+            627
+          ],
+          "figure_height_px": 456,
+          "foot_baseline": 567
+        },
+        {
+          "at": 0.35,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/boot.wav"
+        },
+        {
+          "at": 0.65,
+          "type": "spawn_actor",
+          "id": "herd_back_one",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 510,
+          "anchor": "attacker",
+          "position": [
+            -2,
+            0,
+            -0.75
+          ]
+        },
+        {
+          "at": 0.7,
+          "type": "move_actor",
+          "id": "herd_back_one",
+          "anchor": "defender",
+          "position": [
+            1.6,
+            0,
+            -0.75
+          ],
+          "duration": 1
+        },
+        {
+          "at": 1,
+          "type": "spawn_actor",
+          "id": "herd_back_two",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0022,
+          "grounded": true,
+          "foot_baseline": 510,
+          "anchor": "attacker",
+          "position": [
+            -2.2,
+            0,
+            -1
+          ]
+        },
+        {
+          "at": 1.05,
+          "type": "move_actor",
+          "id": "herd_back_two",
+          "anchor": "defender",
+          "position": [
+            1.8,
+            0,
+            -1
+          ],
+          "duration": 1
+        },
+        {
+          "at": 1.25,
+          "type": "spawn_actor",
+          "id": "central_bull",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0038,
+          "grounded": true,
+          "foot_baseline": 510,
+          "anchor": "attacker",
+          "position": [
+            -1.6,
+            0,
+            0.15
+          ]
+        },
+        {
+          "at": 1.3,
+          "type": "move_actor",
+          "id": "central_bull",
+          "anchor": "defender",
+          "position": [
+            0,
+            0,
+            0.15
+          ],
+          "duration": 0.85
+        },
+        {
+          "at": 1.3,
+          "type": "spawn_prop",
+          "id": "herd_dust",
+          "asset": "res://assets/finishers/bezalel_smotrich/effects/dust.png",
+          "pixel_scale": 0.00065,
+          "grounded": true,
+          "foot_baseline": 734,
+          "anchor": "defender",
+          "position": [
+            0,
+            0,
+            0.35
+          ]
+        },
+        {
+          "at": 2.15,
+          "type": "hit",
+          "id": "cattle_charge_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.15,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 2.15,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.15,
+          "type": "caption",
+          "text": "CATTLE CHARGE",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.7,
+          "type": "cleanup"
+        },
+        {
+          "at": 3,
+          "type": "celebration_start"
+        }
+      ]
     },
     "aryeh_deri": {
       "fighter_id": "aryeh_deri",
@@ -2543,11 +2715,103 @@
       ]
     },
     "cattle_charge_victory": {
+      "fighter_id": "bezalel_smotrich",
       "celebration_id": "cattle_charge_victory",
-      "implemented": false,
-      "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "implemented": true,
+      "duration": 2,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            627,
+            627,
+            627,
+            627
+          ],
+          "figure_height_px": 487,
+          "foot_baseline": 560
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "spawn_actor",
+          "id": "ranch_cow_left",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0024,
+          "grounded": true,
+          "foot_baseline": 505,
+          "anchor": "attacker",
+          "position": [
+            -1.3,
+            0,
+            -0.8
+          ],
+          "modulate": [
+            0.08,
+            0.065,
+            0.05,
+            0.72
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "spawn_actor",
+          "id": "ranch_cow_right",
+          "asset": "res://assets/finishers/bezalel_smotrich/poses/cattle-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0022,
+          "grounded": true,
+          "foot_baseline": 505,
+          "anchor": "attacker",
+          "position": [
+            1.1,
+            0,
+            -1.1
+          ],
+          "modulate": [
+            0.08,
+            0.065,
+            0.05,
+            0.72
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "caption",
+          "text": "HERD UNDER CONTROL",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 1.9,
+          "type": "result_marker"
+        }
+      ]
     },
     "campaign_entourage_victory": {
       "fighter_id": "aryeh_deri",

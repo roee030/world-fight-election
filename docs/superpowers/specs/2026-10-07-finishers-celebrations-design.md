@@ -419,7 +419,7 @@ Update this section in the same commit that completes each item.
 - [x] Gadi Eisenkot — `bazooka_command`: tracked rocket, single blast and grounded salute; desktop/phone review completed.
 - [x] Yair Golan — `m16_burst`: two stagger bursts, one final burst and a background democracy crowd; both-side desktop/phone review completed.
 - [x] Itamar Ben-Gvir — `crocodile_release`: three grounded crocodiles, two staggers, one final attack and a fully visible three-crocodile lineup; desktop/phone review completed.
-- [ ] Bezalel Smotrich — `cattle_charge`
+- [x] Bezalel Smotrich — `cattle_charge`: two rear cattle, one central final bull, grounded dust and tinted settled-herd silhouettes; desktop/phone review completed.
 - [x] Aryeh Deri — `campaign_entourage`: two campaign-operative staggers, one final sign pass and a quiet grounded prayer; desktop/phone review completed.
 - [ ] Joint List — `two_headed_chaos_squad`
 - [ ] Donald Trump — `b2_flyover`
@@ -457,6 +457,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Ben-Gvir delivered in `bcbe25a` | Automated and visual evidence recorded before push | Deri `campaign_entourage` while Smotrich art halo is corrected |
 | 2026-10-08 | Task 18 Deri campaign entourage | 35/35 Godot and 10/10 Python; two staggers, one final sign, cleanup before a nonviolent prayer celebration and Fight Lab route; corrected 33-pixel atlas crop reviewed on desktop/phone/right side | Push delivery and record hash; Smotrich art correction and remaining fighters next |
 | 2026-10-08 | Deri delivered in `fec02b0` | Automated and visual evidence recorded before push | Repair Smotrich cattle art, then Joint List and Trump |
+| 2026-10-08 | Task 17 Smotrich cattle charge | 36/36 Godot and 10/10 Python; central-bull-only final, background depth, grounded dust, actor cap, sprite tint and Fight Lab route; desktop/phone/right-side attack plus silhouette celebration inspected | Push delivery and record hash; Joint List and Trump next |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 

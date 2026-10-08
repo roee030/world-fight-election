@@ -34,6 +34,9 @@ func configure(data: Dictionary) -> bool:
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sprite.transparent = true
 	sprite.flip_h = float(data.get("facing", 1.0)) < 0
+	var tint = data.get("modulate", [])
+	if tint is Array and tint.size() == 4:
+		sprite.modulate = Color(float(tint[0]), float(tint[1]), float(tint[2]), float(tint[3]))
 	grounded = bool(data.get("grounded", false))
 	floor_y = float(data.get("floor_y", 0.0))
 	if grounded:
