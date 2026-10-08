@@ -102,7 +102,8 @@ The HTML shell is a recovery surface, not an independently positioned permanent 
 - It contains `START FIGHT`, `CAMPAIGN` and `FIGHTER LAB` actions from first paint, plus a short loading state while Godot initializes.
 - Godot installs a stable JavaScript bridge and explicitly publishes `ready` plus current menu visibility.
 - A click before readiness stores exactly one pending action and shows immediate pressed/loading feedback. Godot consumes it after the bridge is ready.
-- The fallback hides only after Godot confirms that the requested screen transition occurred. It can reappear when returning to the main menu.
+- The fallback is loading-only: it disappears as soon as Godot publishes readiness and never floats over the real Godot menu. A pre-ready action still hides only after Godot confirms the requested transition.
+- A loading-action tap requests browser full screen from that same user gesture; failure is non-blocking and the in-game full-screen control remains available.
 - Placement is recalculated from the canvas rectangle on resize, orientation change and visual viewport change. It does not guess from page percentages alone.
 - The HTML patch remains idempotent, retires obsolete service workers and clears obsolete caches without registering a new persistent worker.
 - Non-Chrome browsers continue to use the Godot menu; the recovery layer may be enabled by capability/readiness rather than user-agent string if that is more reliable.
@@ -118,7 +119,8 @@ Generated HTML will be tested structurally and then exercised in an actual brows
 - A normal winner celebration advances at 0.40 speed, keeps the result UI hidden for at least 3.0 real seconds, then reveals exactly one result card.
 - Win and loss paths select the correct winner and preserve the loser on the floor.
 - Pause freezes celebration playback and the clear-view timer.
-- Real MAX button signals start one normal Special at 55+ energy, one eligible finisher at 100 energy, and provide failure feedback when unavailable.
+- The five phone actions are `PUNCH`, `KICK`, `FINISH`, `JUMP` and `GUARD`. KICK uses the real kick clip without spending Special Energy; FINISH starts one eligible finisher at 100 energy and otherwise provides failure feedback without launching another attack.
+- A lethal hit remains locked on its knockdown frame through the round intermission, while the next-round reset immediately returns both fighters to idle.
 - HUD nodes and hit targets stay inside the 1280×720 safe frame with no overlap in the action cluster.
 - The patched Web shell contains the readiness handshake, pending-action queue, responsive canvas measurement, safe-area handling, portrait gate and cache retirement behavior.
 - The phone viewport matrix preserves a centered uncropped 16:9 canvas in landscape and a readable rotate gate in portrait.

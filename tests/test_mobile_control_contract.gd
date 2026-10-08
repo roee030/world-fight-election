@@ -18,15 +18,16 @@ func _run() -> void:
 	assert(not main._mobile_input_available(false, false, 0, 900), "wide native mouse-only builds should hide touch controls")
 	main._set_touch_controls_visible(true)
 	assert(main.stick.visible, "phone fight has no joystick")
-	for action in ["light", "heavy", "special", "jump", "block"]:
+	for action in ["light", "kick", "special", "jump", "block"]:
 		assert(main.buttons.has(action), "missing touch action: " + action)
 		assert(main.buttons[action].visible, "hidden touch action: " + action)
-	for action in ["light", "heavy", "special", "block"]:
+	for action in ["light", "kick", "special", "block"]:
 		var diamond: Polygon2D = main.hud_root.get_node_or_null("TouchDiamond_" + action.capitalize()) as Polygon2D
 		assert(diamond != null and diamond.polygon.size() == 4, "touch %s must use a four-point diamond plate" % action)
-	assert(main.buttons.light.text == "JAB")
-	assert(main.buttons.heavy.text == "CROSS")
-	assert(main.buttons.special.text == "MAX")
+	assert(main.buttons.light.text == "PUNCH")
+	assert(main.buttons.kick.text == "KICK")
+	assert(main.buttons.special.text == "FINISH")
+	assert(main.buttons.jump.text == "JUMP")
 	assert(main.buttons.block.text == "GUARD")
 	for action in main.buttons:
 		var target: Button = main.buttons[action]
@@ -51,22 +52,33 @@ func _run() -> void:
 	main.enemy.health = main.enemy.max_health()
 	main.player.round_over = false
 	main.enemy.round_over = false
+	main.buttons.kick.emit_signal("button_down")
+	main.buttons.kick.emit_signal("pressed")
+	main.buttons.kick.emit_signal("button_up")
+	main._physics_process(0.016)
+	main.player._physics_process(0.016)
+	assert(main.player.attack_kind == "kick", "KICK button did not start a real kick")
+	assert(main.player.attack_clip == "kick", "KICK button used the wrong fighter animation")
+	assert(main.player.meter == 100.0, "ordinary KICK spent Special Energy")
+	main.player.attack_kind = ""
+	main.player.attack_clip = ""
+	main.player.busy = 0.0
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("pressed")
 	main.buttons.special.emit_signal("button_up")
 	main._physics_process(0.016)
 	main.player._physics_process(0.016)
-	assert(main.player.attack_kind == "special", "tapping MAX with full energy did not start the special attack")
-	assert(main.player.meter == 45.0, "MAX special did not spend its documented 55 energy")
-	assert(main.message_label.visible and main.message_label.text.contains("MAX"), "MAX touch has no visible confirmation")
+	assert(main.player.attack_kind == "", "FINISH must not silently launch a different attack")
+	assert(main.player.meter == 100.0, "an unavailable FINISH must not spend Special Energy")
+	assert(main.message_label.visible and main.message_label.text.contains("WIN 1 ROUND"), "FINISH must explain its missing condition")
 	main._physics_process(0.016)
-	assert(main.player.meter == 45.0, "one MAX gesture submitted the normal Special more than once")
+	assert(main.player.meter == 100.0, "one FINISH gesture submitted an unintended attack")
 	main.player.attack_kind = ""
 	main.player.busy = 0.0
 	main.player.meter = 0.0
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("button_up")
-	assert(main.message_label.visible and main.message_label.text.contains("55%"), "unavailable MAX press has no useful energy feedback")
+	assert(main.message_label.visible and main.message_label.text.contains("100%"), "unavailable FINISH press has no useful energy feedback")
 	main._process(1.3)
 	assert(not main.message_label.visible, "MAX feedback must expire instead of obscuring combat")
 	main.paused = true

@@ -144,11 +144,13 @@ git commit -m "fix: reveal results after clear celebration"
 
 - [x] **Step 1: Add failing real-button regressions**
 
-Emit the actual MAX button's `button_down`, `pressed` and `button_up` signals and advance host/fighter physics. Assert one normal Special and exactly 55 meter spent when finisher conditions are false; one director activation when eligible; no buffered attack while paused/result; visible feedback for insufficient energy/busy state; and no double dispatch.
+Historical implementation note: the original MAX dual-purpose contract below was superseded on 2026-10-08 by direct phone feedback. The final phone contract is five unambiguous actions (`PUNCH`, `KICK`, `FINISH`, `JUMP`, `GUARD`); FINISH never falls back to a different attack.
+
+Emit the actual FINISH button's `button_down`, `pressed` and `button_up` signals and advance host/fighter physics. Assert no attack or meter spend when conditions are false; one director activation when eligible; no buffered attack while paused/result; visible unmet-condition feedback; and no double dispatch.
 
 - [x] **Step 2: Add failing HUD/control geometry regressions**
 
-Assert all five controls are inside the safe frame, pairwise non-overlapping, at least 88 reference pixels on their smallest dimension, and positioned in the MAX/CROSS/JAB/SP/GUARD cluster. Assert the menu no longer contains the two keyboard-guide labels.
+Assert all five controls are inside the safe frame, pairwise non-overlapping, at least 100 reference pixels on their smallest dimension, and positioned in the FINISH/KICK/PUNCH/JUMP/GUARD cluster. Assert the menu no longer contains the two keyboard-guide labels.
 
 - [x] **Step 3: Run mobile/UI tests and verify RED**
 
@@ -163,7 +165,7 @@ Expected: FAIL on actual-signal single-dispatch, smallest SP size and menu guide
 
 - [x] **Step 4: Centralize touch Special submission and feedback**
 
-Route touch MAX through one edge-triggered method. Consume the gesture once, choose eligible finisher before normal Special, reject invalid match states, and show a short reason when energy/actionability prevents activation.
+Route touch FINISH through one edge-triggered method. Consume the gesture once, launch only an eligible finisher, reject invalid match states, and show a short reason when a requirement prevents activation.
 
 - [x] **Step 5: Refine HUD, joystick and action cluster from one layout table**
 

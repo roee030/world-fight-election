@@ -32,10 +32,10 @@ const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
 const TOUCH_CONTROL_LAYOUT := [
-	{"action": "special", "title": "MAX", "pos": Vector2(945, 400), "size": Vector2(100, 100), "color": "#b56b27", "shape": "diamond"},
-	{"action": "heavy", "title": "CROSS", "pos": Vector2(1128, 400), "size": Vector2(100, 100), "color": "#b53f57", "shape": "diamond"},
-	{"action": "light", "title": "JAB", "pos": Vector2(1015, 500), "size": Vector2(100, 100), "color": "#239f9b", "shape": "diamond"},
-	{"action": "jump", "title": "SP", "pos": Vector2(1138, 500), "size": Vector2(100, 100), "color": "#80671d", "shape": "round"},
+	{"action": "special", "title": "FINISH", "pos": Vector2(945, 400), "size": Vector2(100, 100), "color": "#b56b27", "shape": "diamond"},
+	{"action": "kick", "title": "KICK", "pos": Vector2(1128, 400), "size": Vector2(100, 100), "color": "#b53f57", "shape": "diamond"},
+	{"action": "light", "title": "PUNCH", "pos": Vector2(1015, 500), "size": Vector2(100, 100), "color": "#239f9b", "shape": "diamond"},
+	{"action": "jump", "title": "JUMP", "pos": Vector2(1138, 500), "size": Vector2(100, 100), "color": "#80671d", "shape": "round"},
 	{"action": "block", "title": "GUARD", "pos": Vector2(1035, 600), "size": Vector2(150, 100), "color": "#3e5968", "shape": "diamond"}
 ]
 
@@ -256,6 +256,7 @@ func _physics_process(_delta: float) -> void:
 			depth_axis = -stick.axis.y
 	var light := _consume("light", KEY_J, KEY_1)
 	var heavy := _consume("heavy", KEY_K, KEY_2)
+	var kick := _consume("kick", KEY_NONE, KEY_NONE)
 	var special_action := _sample_special_input(_delta)
 	var special := special_action == "special"
 	if special and player.meter >= 55.0:
@@ -271,11 +272,11 @@ func _physics_process(_delta: float) -> void:
 		Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP) or _input_down.get("jump", false) or (stick != null and stick.axis.y < -0.62),
 		Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_H) or _input_down.get("block", false),
 		Input.is_key_pressed(KEY_C) or _input_down.get("crouch", false) or (stick != null and stick.axis.y > 0.62),
-		"special" if special else ("heavy" if heavy else ("light" if light else "")),
+		"special" if special else ("kick" if kick else ("heavy" if heavy else ("light" if light else ""))),
 		depth_axis
 	)
 	_input_down["jump"] = false
-	for action in ["light", "heavy", "special"]: _input_down[action] = false
+	for action in ["light", "heavy", "kick", "special"]: _input_down[action] = false
 
 
 func _consume(action: String, key: Key, alt_key: Key) -> bool:
@@ -310,18 +311,16 @@ func _submit_touch_special() -> void:
 	_input_held["special"] = false
 	_special_release_pending = false
 	if paused or not fight_live or not round_ready or match_state not in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT] or not is_instance_valid(player) or not is_instance_valid(enemy):
-		_show_special_feedback("MAX NOT AVAILABLE")
+		_show_special_feedback("FINISH NOT AVAILABLE")
 		return
 	if _finisher_eligible():
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		return
-	if player.meter < 55.0:
-		_show_special_feedback("MAX NEEDS 55% SPECIAL ENERGY")
+	if player.meter < 100.0:
+		_show_special_feedback("FINISH NEEDS 100% SPECIAL ENERGY")
 		return
-	if player.busy > 0.0 or player.stun > 0.0 or player.knockdown_time > 0.0 or player.recovery_time > 0.0 or player.round_over:
-		_show_special_feedback("MAX NOT READY")
-		return
-	_input_down["special"] = true
+	var hint := _current_finisher_hint()
+	_show_special_feedback("FINISH: WAIT FOR BOTH FIGHTERS TO RECOVER" if hint.begins_with("FINISH READY") else hint)
 
 
 func _show_special_feedback(text: String) -> void:
@@ -406,7 +405,7 @@ func _update_special_hold(delta: float, pressed: bool, released: bool) -> String
 		if _special_hold.active:
 			player_meter_label.text = "FINISH %d%%" % int(100.0 * _special_hold.elapsed / _special_hold.threshold)
 		elif eligible:
-			player_meter_label.text = "FINISH READY: HOLD L/MAX"
+			player_meter_label.text = "FINISH READY: HOLD L / TAP FINISH"
 		else:
 			player_meter_label.text = _current_finisher_hint()
 	return result
@@ -414,12 +413,12 @@ func _update_special_hold(delta: float, pressed: bool, released: bool) -> String
 
 func _finisher_hint_text(match_point: bool, rival_low: bool, in_range: bool) -> String:
 	if not match_point:
-		return "MAX: WIN 1 ROUND FIRST"
+		return "FINISH: WIN 1 ROUND FIRST"
 	if not rival_low:
-		return "MAX: RIVAL HP ≤ 15%"
+		return "FINISH: RIVAL HP ≤ 15%"
 	if not in_range:
-		return "FINISH: MOVE CLOSE + HOLD L/MAX"
-	return "FINISH READY: HOLD L/MAX"
+		return "FINISH: MOVE CLOSE"
+	return "FINISH READY: HOLD L / TAP FINISH"
 
 
 func _current_finisher_hint() -> String:
@@ -796,7 +795,7 @@ func _build_touch_controls() -> void:
 			_on_touch_action_up(spec.action)
 		)
 		b.pressed.connect(func():
-			if spec.action in ["light", "heavy"]:
+			if spec.action in ["light", "kick"]:
 				_input_down[spec.action] = true
 		)
 		buttons[spec.action] = b
@@ -1560,8 +1559,6 @@ func _end_round(reason: String) -> void:
 		message_label.text = "ROUND FOR YOU" if (reason == "ko" and player_rounds > enemy_rounds) else ("ROUND LOST" if reason == "ko" else "TIME")
 		message_label.visible = true
 		intermission = 1.55
-		if is_instance_valid(player): player.round_over = false
-		if is_instance_valid(enemy): enemy.round_over = false
 
 
 func _update_scores() -> void:

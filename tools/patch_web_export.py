@@ -80,7 +80,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     if (fit.portrait) { startup.style.display='none'; return; }
     const left=offsetLeft+fit.left, top=offsetTop+fit.top;
     for (const element of [canvas,startup]) { element.style.left=`${left}px`; element.style.top=`${top}px`; element.style.width=`${fit.width}px`; element.style.height=`${fit.height}px`; }
-    startup.style.display=state.menuVisible?'block':'none';
+    startup.style.display=(state.menuVisible&&(!state.ready||Boolean(state.pending)))?'block':'none';
     const loading=startup.querySelector('.wf-loading'); if (loading) loading.hidden=state.ready;
   };
   window.worldFightSetReady = (ready) => { state.ready=Boolean(ready); window.layoutWorldFightViewport(); };
@@ -97,6 +97,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     startup.dataset.initialized='true';
     startup.querySelectorAll('button').forEach((button)=>button.addEventListener('click',()=>{
       if (state.pending) return; state.pending=button.dataset.action; window.worldFightPendingAction=state.pending; button.setAttribute('aria-busy','true');
+      if (!document.fullscreenElement&&document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});
       if (typeof window.worldFightMenuAction==='function') window.worldFightMenuAction(state.pending);
     }));
     window.addEventListener('resize',window.layoutWorldFightViewport); window.addEventListener('orientationchange',window.layoutWorldFightViewport);

@@ -41,8 +41,8 @@ Input behavior:
 - A normal Special tap continues to use the existing special attack.
 - Holding Special for `0.55` seconds while eligible confirms the Finish Attack.
 - The HUD changes `SPECIAL READY` to `FINISH READY` while eligibility is true.
-- The touch `MAX` button uses the same hold duration and progress feedback.
-- Releasing before confirmation performs the normal special once. It must not perform both actions.
+- The phone exposes a dedicated one-tap `FINISH` button. It starts only an eligible finisher; otherwise it reports the first unmet condition without spending meter or launching another move.
+- Keyboard Special retains the hold duration and progress feedback. Releasing before confirmation performs the normal special once. It must not perform both actions.
 
 Failure behavior:
 

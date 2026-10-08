@@ -10,6 +10,7 @@ signal strike_landed(attacker: int, defender: int, move: String, blocked: bool, 
 const MOVES := {
 	"light": {"duration": 0.46, "startup": 0.12, "active": 0.09, "cancel_from": 0.205, "cancel_to": 0.34, "damage": 7.0, "reach": 1.32, "lunge": 2.45, "clip": "jab"},
 	"heavy": {"duration": 0.66, "startup": 0.235, "active": 0.105, "cancel_from": 0.365, "cancel_to": 0.51, "damage": 14.0, "reach": 1.58, "lunge": 2.7, "clip": "hook"},
+	"kick": {"duration": 0.72, "startup": 0.25, "active": 0.11, "cancel_from": 0.42, "cancel_to": 0.56, "damage": 15.0, "reach": 1.72, "lunge": 2.45, "clip": "kick"},
 	"special": {"duration": 0.84, "startup": 0.28, "active": 0.13, "cancel_from": 0.51, "cancel_to": 0.65, "damage": 23.0, "reach": 2.18, "lunge": 2.6, "clip": "kick"}
 }
 const INPUT_BUFFER_SECONDS := 0.34
@@ -507,7 +508,7 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 		damage *= 0.22
 		stun = 0.18
 	else:
-		stun = 0.34 if kind == "light" else (0.48 if kind == "heavy" else 0.55)
+		stun = 0.34 if kind == "light" else (0.48 if kind in ["heavy", "kick"] else 0.55)
 		_clear_combo()
 		attack_kind = ""
 		attack_clip = ""
@@ -601,6 +602,8 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	input_depth = 0.0
 	attack_request = ""
 	round_over = false
+	if not _visual.is_empty():
+		_visual.motion.play_state("idle", true)
 	combo_changed.emit(who, 0)
 	health_changed.emit(who, health)
 	meter_changed.emit(who, meter)

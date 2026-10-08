@@ -42,6 +42,8 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("world-fight-startup", patched_html)
             self.assertIn("START FIGHT", patched_html)
             self.assertIn("worldFightMenuAction", patched_html)
+            self.assertIn("state.menuVisible&&(!state.ready||Boolean(state.pending))", patched_html)
+            self.assertIn("requestFullscreen", patched_html)
             self.assertLess(
                 patched_html.index('<div id="world-fight-startup">'),
                 patched_html.index('<script src="index.js">'),

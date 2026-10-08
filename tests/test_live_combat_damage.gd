@@ -28,11 +28,24 @@ func _run() -> void:
 		return _fail("a live player attack against guard caused no chip damage")
 	if not is_equal_approx(main.enemy_health_bar.value, main.enemy.health):
 		return _fail("enemy HUD health did not follow live combat damage")
+	main.enemy.reset_round(1.85, 1.0)
+	main.enemy.is_cpu = false
+	main.enemy.input_block = false
+	main.intermission = 0.0
+	main.round_ready = true
+	main.match_state = main.MatchState.Value.FIGHTING
+	main.enemy.receive_hit(7.0, 1.0, "light")
+	if not _is_permanently_defeated(main.enemy):
+		return _fail("the live round host released the KO before the next-round reset: %s" % _defeat_state(main.enemy))
+	main._start_round()
+	if main.enemy._visual.sprite.animation != "idle":
+		return _fail("the next round inherited the previous KO pose instead of resetting to idle")
 	# Isolate the fighter reaction contract from the match host's intermission
 	# reset. These calls still exercise the production receive_hit path.
 	main.fight_live = false
 	main.enemy.input_block = false
 	main.enemy.health = 1.0
+	main.enemy.round_over = false
 	main.enemy.receive_hit(7.0, 1.0, "light")
 	if not _is_permanently_defeated(main.enemy):
 		return _fail("a lethal light did not leave the defeated fighter permanently fallen: %s" % _defeat_state(main.enemy))
