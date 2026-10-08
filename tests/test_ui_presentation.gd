@@ -26,6 +26,9 @@ func _run() -> void:
 		return _fail("main menu still contains a selectable roster strip")
 	if main.menu_root.get_node_or_null("HeroLineup") != null:
 		return _fail("main menu still splits the screen into fighter strips")
+	for label in main.menu_root.find_children("*", "Label", true, false):
+		if "A/D MOVE" in label.text or "J JAB" in label.text:
+			return _fail("keyboard combat instructions are still visible on the startup menu")
 
 	var mystery := main.select_root.get_node_or_null("MysteryCpuMark") as Label
 	if mystery == null or mystery.text != "?":

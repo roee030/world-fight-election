@@ -31,6 +31,13 @@ const ARENA_EDGE := 5.8
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
+const TOUCH_CONTROL_LAYOUT := [
+	{"action": "special", "title": "MAX", "pos": Vector2(945, 420), "size": Vector2(96, 96), "color": "#b56b27", "shape": "diamond"},
+	{"action": "heavy", "title": "CROSS", "pos": Vector2(1128, 420), "size": Vector2(96, 96), "color": "#b53f57", "shape": "diamond"},
+	{"action": "light", "title": "JAB", "pos": Vector2(1015, 520), "size": Vector2(92, 92), "color": "#239f9b", "shape": "diamond"},
+	{"action": "jump", "title": "SP", "pos": Vector2(1148, 520), "size": Vector2(90, 90), "color": "#80671d", "shape": "round"},
+	{"action": "block", "title": "GUARD", "pos": Vector2(1058, 612), "size": Vector2(142, 88), "color": "#3e5968", "shape": "diamond"}
+]
 
 var player: GameFighter
 var enemy: GameFighter
@@ -106,6 +113,7 @@ var _opponent_selector := OpponentSelectorScript.new()
 var _celebration_clear_elapsed := 0.0
 var _celebration_result_marked := false
 var _celebration_won := false
+var _touch_special_consumed := false
 
 const BOUTS := [
 	{"name": "Avigdor", "id": "avigdor", "level": 1, "title": "THE QUIET ROOM"},
@@ -282,16 +290,40 @@ func _current_finisher_definition() -> Dictionary:
 
 
 func _on_touch_action_down(action: String) -> void:
-	# Phone browsers can lose a pointer release event. Eligible MAX therefore
-	# launches on the tap instead of requiring a fragile press-and-hold gesture.
-	if action == "special" and is_instance_valid(player) and is_instance_valid(enemy) and _finisher_eligible():
-		_input_down[action] = false
-		_input_held[action] = false
-		_special_release_pending = false
-		finisher_requested.emit(player, enemy, _current_finisher_definition())
+	if action == "special":
+		_submit_touch_special()
 		return
 	_input_down[action] = true
 	_input_held[action] = true
+
+
+func _submit_touch_special() -> void:
+	if _touch_special_consumed:
+		return
+	_touch_special_consumed = true
+	_input_down["special"] = false
+	_input_held["special"] = false
+	_special_release_pending = false
+	if paused or not fight_live or not round_ready or match_state not in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT] or not is_instance_valid(player) or not is_instance_valid(enemy):
+		_show_special_feedback("MAX NOT AVAILABLE")
+		return
+	if _finisher_eligible():
+		finisher_requested.emit(player, enemy, _current_finisher_definition())
+		return
+	if player.meter < 55.0:
+		_show_special_feedback("MAX NEEDS 55% SPECIAL ENERGY")
+		return
+	if player.busy > 0.0 or player.stun > 0.0 or player.knockdown_time > 0.0 or player.recovery_time > 0.0 or player.round_over:
+		_show_special_feedback("MAX NOT READY")
+		return
+	_input_down["special"] = true
+
+
+func _show_special_feedback(text: String) -> void:
+	if not is_instance_valid(message_label):
+		return
+	message_label.text = text
+	message_label.visible = true
 
 
 func _install_web_menu_bridge() -> void:
@@ -319,9 +351,8 @@ func _on_web_menu_action(arguments: Array) -> void:
 func _on_touch_action_up(action: String) -> void:
 	_input_held[action] = false
 	if action == "special":
-		_special_release_pending = true
-		if paused:
-			_special_cancel_after_pause = true
+		_touch_special_consumed = false
+		_special_release_pending = false
 	if action == "block":
 		_input_down[action] = false
 
@@ -726,14 +757,7 @@ func _build_touch_controls() -> void:
 	stick.size = Vector2(218, 218)
 	stick.visible = false
 	hud_root.add_child(stick)
-	var specs := [
-		{"action": "special", "title": "MAX", "pos": Vector2(958, 438), "size": Vector2(94, 94), "color": "#b56b27", "shape": "diamond"},
-		{"action": "heavy", "title": "CROSS", "pos": Vector2(1118, 466), "size": Vector2(94, 94), "color": "#b53f57", "shape": "diamond"},
-		{"action": "light", "title": "JAB", "pos": Vector2(1034, 536), "size": Vector2(94, 94), "color": "#239f9b", "shape": "diamond"},
-		{"action": "jump", "title": "SP", "pos": Vector2(1140, 560), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
-		{"action": "block", "title": "GUARD", "pos": Vector2(1098, 616), "size": Vector2(108, 74), "color": "#3e5968", "shape": "diamond"}
-	]
-	for spec in specs:
+	for spec in TOUCH_CONTROL_LAYOUT:
 		var rect := Rect2(spec.pos, spec.size)
 		var b := _button(hud_root, spec.title, rect, spec.color, 15)
 		b.name = "Touch_" + str(spec.action).capitalize()
@@ -825,8 +849,6 @@ func _build_menu() -> void:
 	campaign.pressed.connect(func(): _open_select("campaign"))
 	var model_lab := _menu_text_button(action_panel, "FIGHTER LAB", Rect2(0, 276, 330, 52), 18)
 	model_lab.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/character_debug.tscn"))
-	_label(action_panel, "A/D MOVE   W JUMP   S GUARD", Rect2(0, 404, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
-	_label(action_panel, "J JAB   K HEAVY   L SPECIAL/MAX", Rect2(0, 428, 340, 20), 9, Color("#b6c2c7"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
 	var fullscreen_btn := _button(menu_root, "⛶", Rect2(1212, 24, 44, 40), "#233440", 20)
