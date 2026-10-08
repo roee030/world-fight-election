@@ -564,7 +564,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `aryeh_deri/campaign_entourage`; the celebration transitions from active effects to a quiet prayer tableau.
 
-- [ ] Follow the template; assert two foreground passes, one final sign impact, all crowd actors cleaned before prayer and no attack effect during celebration.
+- [x] Follow the template; assert two foreground passes, one final sign impact, all crowd actors cleaned before prayer and no attack effect during celebration.
 - [ ] Commit and push `Add Deri campaign finisher`; then record and push its hash.
 
 ---

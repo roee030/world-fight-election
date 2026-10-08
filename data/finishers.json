@@ -1698,15 +1698,236 @@
     "aryeh_deri": {
       "fighter_id": "aryeh_deri",
       "finisher_id": "campaign_entourage",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "campaign_entourage_victory"
+      "duration": 4.0,
+      "camera_preset": "wide_stage",
+      "celebration_id": "campaign_entourage_victory",
+      "events": [
+        {
+          "at": 0.0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.3,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            0,
+            0,
+            590,
+            627
+          ],
+          "figure_height_px": 568,
+          "foot_baseline": 616
+        },
+        {
+          "at": 0.4,
+          "type": "caption",
+          "text": "CAMPAIGN ENTOURAGE",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.55,
+          "type": "spawn_actor",
+          "id": "entourage_pass_one",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            585,
+            0,
+            669,
+            627
+          ],
+          "pixel_scale": 0.00235,
+          "grounded": true,
+          "foot_baseline": 612,
+          "anchor": "attacker",
+          "position": [
+            -1.8,
+            0.0,
+            0.12
+          ]
+        },
+        {
+          "at": 0.6,
+          "type": "move_actor",
+          "id": "entourage_pass_one",
+          "anchor": "defender",
+          "position": [
+            0.15,
+            0.0,
+            0.12
+          ],
+          "duration": 0.5
+        },
+        {
+          "at": 1.1,
+          "type": "hit",
+          "id": "campaign_entourage_stagger_one",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.22,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.25,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            0,
+            0,
+            590,
+            627
+          ],
+          "figure_height_px": 568,
+          "foot_baseline": 616
+        },
+        {
+          "at": 1.35,
+          "type": "spawn_actor",
+          "id": "entourage_pass_two",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            585,
+            0,
+            669,
+            627
+          ],
+          "pixel_scale": 0.0025,
+          "grounded": true,
+          "foot_baseline": 612,
+          "anchor": "attacker",
+          "position": [
+            -1.85,
+            0.0,
+            0.28
+          ]
+        },
+        {
+          "at": 1.4,
+          "type": "move_actor",
+          "id": "entourage_pass_two",
+          "anchor": "defender",
+          "position": [
+            0.1,
+            0.0,
+            0.28
+          ],
+          "duration": 0.5
+        },
+        {
+          "at": 1.9,
+          "type": "hit",
+          "id": "campaign_entourage_stagger_two",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.9,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.02,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.05,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            0,
+            0,
+            590,
+            627
+          ],
+          "figure_height_px": 568,
+          "foot_baseline": 616
+        },
+        {
+          "at": 2.15,
+          "type": "spawn_actor",
+          "id": "final_sign_pass",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            585,
+            0,
+            669,
+            627
+          ],
+          "pixel_scale": 0.00265,
+          "grounded": true,
+          "foot_baseline": 612,
+          "anchor": "attacker",
+          "position": [
+            -1.9,
+            0.0,
+            0.4
+          ]
+        },
+        {
+          "at": 2.2,
+          "type": "move_actor",
+          "id": "final_sign_pass",
+          "anchor": "defender",
+          "position": [
+            0.0,
+            0.0,
+            0.4
+          ],
+          "duration": 0.5
+        },
+        {
+          "at": 2.7,
+          "type": "hit",
+          "id": "campaign_sign_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.7,
+          "type": "camera_impact",
+          "strength": 0.24
+        },
+        {
+          "at": 2.7,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.7,
+          "type": "caption",
+          "text": "THE FINAL SIGN",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 3.05,
+          "type": "cleanup"
+        },
+        {
+          "at": 3.4,
+          "type": "celebration_start"
+        }
+      ]
     },
     "joint_list": {
       "fighter_id": "joint_list",
@@ -2329,11 +2550,44 @@
       "events": []
     },
     "campaign_entourage_victory": {
+      "fighter_id": "aryeh_deri",
       "celebration_id": "campaign_entourage_victory",
-      "implemented": false,
-      "duration": 2.0,
+      "implemented": true,
+      "duration": 2.2,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0.0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/aryeh_deri/atlas/entourage-kit-v2.png",
+          "region": [
+            627,
+            627,
+            627,
+            627
+          ],
+          "figure_height_px": 522,
+          "foot_baseline": 547
+        },
+        {
+          "at": 0.0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.1,
+          "type": "caption",
+          "text": "A QUIET PRAYER",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.0,
+          "type": "result_marker"
+        }
+      ]
     },
     "two_headed_chaos_squad_victory": {
       "celebration_id": "two_headed_chaos_squad_victory",
