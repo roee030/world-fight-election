@@ -581,7 +581,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `joint_list/two_headed_chaos_squad`; supporting actors are fictional, masked and contain no ethnic or religious markings.
 
-- [ ] Follow the template; assert two stagger crossings, one final comic blast, squad cleanup before celebration, and both heads participate in eating/sharing knafeh.
+- [x] Follow the template; assert two stagger crossings, one final comic blast, squad cleanup before celebration, and both heads participate in eating/sharing knafeh.
 - [ ] Commit and push `Add Joint List chaos squad finisher`; then record and push its hash.
 
 ---

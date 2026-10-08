@@ -2104,15 +2104,160 @@
     "joint_list": {
       "fighter_id": "joint_list",
       "finisher_id": "two_headed_chaos_squad",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "two_headed_chaos_squad_victory"
+      "duration": 4.0,
+      "camera_preset": "wide_stage",
+      "celebration_id": "two_headed_chaos_squad_victory",
+      "events": [
+        {
+          "at": 0.0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "caption",
+          "text": "CHAOS SQUAD",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.55,
+          "type": "spawn_actor",
+          "id": "chaos_squad_crossing_one",
+          "asset": "res://assets/finishers/joint_list/actors/chaos-squad-crossing.png",
+          "pixel_scale": 0.0019,
+          "grounded": true,
+          "foot_baseline": 966,
+          "anchor": "attacker",
+          "position": [
+            -2.0,
+            0.0,
+            0.15
+          ]
+        },
+        {
+          "at": 0.6,
+          "type": "move_actor",
+          "id": "chaos_squad_crossing_one",
+          "anchor": "defender",
+          "position": [
+            0.15,
+            0.0,
+            0.15
+          ],
+          "duration": 0.5
+        },
+        {
+          "at": 1.1,
+          "type": "hit",
+          "id": "chaos_squad_stagger_one",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.22,
+          "type": "cleanup"
+        },
+        {
+          "at": 1.35,
+          "type": "spawn_actor",
+          "id": "chaos_squad_crossing_two",
+          "asset": "res://assets/finishers/joint_list/actors/chaos-squad-crossing.png",
+          "pixel_scale": 0.00205,
+          "grounded": true,
+          "foot_baseline": 966,
+          "anchor": "attacker",
+          "position": [
+            -2.1,
+            0.0,
+            0.3
+          ]
+        },
+        {
+          "at": 1.4,
+          "type": "move_actor",
+          "id": "chaos_squad_crossing_two",
+          "anchor": "defender",
+          "position": [
+            0.05,
+            0.0,
+            0.3
+          ],
+          "duration": 0.5
+        },
+        {
+          "at": 1.9,
+          "type": "hit",
+          "id": "chaos_squad_stagger_two",
+          "damage": 3,
+          "final": false,
+          "reaction": "hit"
+        },
+        {
+          "at": 1.9,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.02,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.2,
+          "type": "spawn_prop",
+          "id": "chaos_comic_blast",
+          "asset": "res://assets/finishers/joint_list/effects/comic-blast-final.png",
+          "pixel_scale": 0.00165,
+          "anchor": "defender",
+          "position": [
+            0.0,
+            1.0,
+            0.35
+          ]
+        },
+        {
+          "at": 2.2,
+          "type": "hit",
+          "id": "chaos_squad_comic_blast_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.2,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 2.2,
+          "type": "screen_flash"
+        },
+        {
+          "at": 2.2,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.75,
+          "type": "cleanup"
+        },
+        {
+          "at": 3.05,
+          "type": "celebration_start"
+        }
+      ]
     },
     "trump": {
       "fighter_id": "trump",
@@ -2854,11 +2999,43 @@
       ]
     },
     "two_headed_chaos_squad_victory": {
+      "fighter_id": "joint_list",
       "celebration_id": "two_headed_chaos_squad_victory",
-      "implemented": false,
-      "duration": 2.0,
+      "implemented": true,
+      "duration": 2.2,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0.0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/joint_list/celebration/knafeh-sharing.png",
+          "figure_height_px": 1152,
+          "foot_baseline": 1217
+        },
+        {
+          "at": 0.0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.1,
+          "type": "caption",
+          "text": "SHARE THE KNAFEH",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 2.0,
+          "type": "result_marker"
+        }
+      ]
     },
     "b2_flyover_victory": {
       "celebration_id": "b2_flyover_victory",

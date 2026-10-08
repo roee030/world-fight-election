@@ -421,7 +421,7 @@ Update this section in the same commit that completes each item.
 - [x] Itamar Ben-Gvir — `crocodile_release`: three grounded crocodiles, two staggers, one final attack and a fully visible three-crocodile lineup; desktop/phone review completed.
 - [x] Bezalel Smotrich — `cattle_charge`: two rear cattle, one central final bull, grounded dust and tinted settled-herd silhouettes; desktop/phone review completed.
 - [x] Aryeh Deri — `campaign_entourage`: two campaign-operative staggers, one final sign pass and a quiet grounded prayer; desktop/phone review completed.
-- [ ] Joint List — `two_headed_chaos_squad`
+- [x] Joint List — `two_headed_chaos_squad`: fictional masked comic squad, two staggers, one final blast and a two-headed knafeh celebration; desktop/phone review completed.
 - [ ] Donald Trump — `b2_flyover`
 
 ## Definition of complete
@@ -459,6 +459,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Deri delivered in `fec02b0` | Automated and visual evidence recorded before push | Repair Smotrich cattle art, then Joint List and Trump |
 | 2026-10-08 | Task 17 Smotrich cattle charge | 36/36 Godot and 10/10 Python; central-bull-only final, background depth, grounded dust, actor cap, sprite tint and Fight Lab route; desktop/phone/right-side attack plus silhouette celebration inspected | Push delivery and record hash; Joint List and Trump next |
 | 2026-10-08 | Smotrich delivered in `7c6291d` | Automated and visual evidence recorded before push | Joint List `two_headed_chaos_squad` and Trump `b2_flyover` |
+| 2026-10-08 | Task 19 Joint List chaos squad | 37/37 Godot and 10/10 Python; two stagger crossings, one final non-graphic comic blast, cleanup before celebration and Fight Lab route; desktop/phone/right-side finale plus two-headed knafeh tableau inspected | Push delivery and record hash; Trump last |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 
