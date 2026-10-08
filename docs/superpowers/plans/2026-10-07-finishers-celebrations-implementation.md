@@ -549,7 +549,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 **Interfaces:** Produces `bezalel_smotrich/cattle_charge`; proves two depth layers and mobile herd reduction.
 
 - [x] Follow the template; assert central cattle final-hit ownership, rear-layer non-collision, capped actor count and tinted background silhouettes.
-- [ ] Commit and push `Add Smotrich cattle charge finisher`; then record and push its hash.
+- [x] Commit and push `Add Smotrich cattle charge finisher` (`7c6291d`); then record and push its hash.
 
 ---
 

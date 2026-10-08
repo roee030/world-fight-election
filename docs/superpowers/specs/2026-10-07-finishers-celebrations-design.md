@@ -458,6 +458,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 18 Deri campaign entourage | 35/35 Godot and 10/10 Python; two staggers, one final sign, cleanup before a nonviolent prayer celebration and Fight Lab route; corrected 33-pixel atlas crop reviewed on desktop/phone/right side | Push delivery and record hash; Smotrich art correction and remaining fighters next |
 | 2026-10-08 | Deri delivered in `fec02b0` | Automated and visual evidence recorded before push | Repair Smotrich cattle art, then Joint List and Trump |
 | 2026-10-08 | Task 17 Smotrich cattle charge | 36/36 Godot and 10/10 Python; central-bull-only final, background depth, grounded dust, actor cap, sprite tint and Fight Lab route; desktop/phone/right-side attack plus silhouette celebration inspected | Push delivery and record hash; Joint List and Trump next |
+| 2026-10-08 | Smotrich delivered in `7c6291d` | Automated and visual evidence recorded before push | Joint List `two_headed_chaos_squad` and Trump `b2_flyover` |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 
