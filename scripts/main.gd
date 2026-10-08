@@ -333,6 +333,7 @@ func _install_web_menu_bridge() -> void:
 	var window := JavaScriptBridge.get_interface("window")
 	if window != null:
 		window.worldFightMenuAction = _web_menu_callback
+		JavaScriptBridge.eval("window.worldFightSetReady?.(true); window.worldFightSetMenuVisible?.(true);")
 		var pending = window.worldFightPendingAction
 		if pending != null and not str(pending).is_empty():
 			_on_web_menu_action([str(pending)])
@@ -341,11 +342,14 @@ func _install_web_menu_bridge() -> void:
 func _on_web_menu_action(arguments: Array) -> void:
 	if arguments.is_empty():
 		return
-	match str(arguments[0]):
+	var action := str(arguments[0])
+	match action:
 		"quick": _open_select("quick")
 		"campaign": _open_select("campaign")
 		"lab": get_tree().change_scene_to_file("res://scenes/character_debug.tscn")
-	JavaScriptBridge.eval("document.getElementById('chrome-start-menu')?.remove()")
+		_: return
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.worldFightAcknowledgeAction?.('%s')" % action)
 
 
 func _on_touch_action_up(action: String) -> void:
@@ -967,6 +971,8 @@ func _open_select(mode: String) -> void:
 	map_select_root.visible = false
 	select_root.visible = true
 	_refresh_roster()
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.worldFightSetMenuVisible?.(false)")
 
 
 func _select_fighter(id: String) -> void:
@@ -1307,6 +1313,8 @@ func _show_menu() -> void:
 	player = null
 	enemy = null
 	_build_stage()
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.worldFightSetMenuVisible?.(true)")
 
 
 func _start_quick_fight() -> void:

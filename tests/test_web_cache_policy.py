@@ -30,11 +30,19 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("self.registration.unregister()", worker)
             self.assertIn("caches.keys()", worker)
             self.assertIn("self.clients.claim()", worker)
-            self.assertIn("calc(100dvh * 16 / 9)", patched_html)
-            self.assertIn("justify-content:center", patched_html)
-            self.assertIn("chrome-start-menu", patched_html)
+            self.assertIn("visualViewport", patched_html)
+            self.assertIn("safe-area-inset-left", patched_html)
+            self.assertIn("worldFightRotateGate", patched_html)
+            self.assertIn("layoutWorldFightViewport", patched_html)
+            self.assertIn("worldFightSetReady", patched_html)
+            self.assertIn("worldFightSetMenuVisible", patched_html)
+            self.assertIn("worldFightAcknowledgeAction", patched_html)
+            self.assertIn("world-fight-startup", patched_html)
             self.assertIn("START FIGHT", patched_html)
             self.assertIn("worldFightMenuAction", patched_html)
+            patch(html)
+            patched_twice = html.read_text(encoding="utf-8")
+            self.assertEqual(patched_twice.count('id="world-fight-responsive-script"'), 1)
 
 
 if __name__ == "__main__":
