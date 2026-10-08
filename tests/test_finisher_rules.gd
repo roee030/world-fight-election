@@ -6,14 +6,10 @@ func _init() -> void:
 	if rules == null or state == null:
 		quit(1)
 		return
-	var context := {"implemented": true, "match_point": true, "health_ratio": 0.15, "meter": 100.0, "state": state.Value.FIGHTING, "grounded": true, "actionable": true, "distance": 1.75, "facing_correct": true, "paused": false}
+	var context := {"implemented": true, "match_point": false, "health_ratio": 1.0, "meter": 100.0, "state": state.Value.FIGHTING, "grounded": false, "actionable": true, "attacker_actionable": true, "distance": 99.0, "facing_correct": false, "paused": false}
 	var definition := {"implemented": true, "trigger_health_ratio": 0.15, "meter_cost": 100.0, "activation_range": 1.75}
-	assert(rules.is_eligible(context, definition))
-	for key in ["match_point", "grounded", "actionable", "facing_correct"]:
-		var invalid := context.duplicate()
-		invalid[key] = false
-		assert(not rules.is_eligible(invalid, definition), key)
-	for pair in [["health_ratio", 0.151], ["meter", 99.9], ["distance", 1.751], ["paused", true], ["state", state.Value.RESULT]]:
+	assert(rules.is_eligible(context, definition), "full meter must activate regardless of round, health, distance, grounding or facing")
+	for pair in [["meter", 99.9], ["paused", true], ["state", state.Value.RESULT], ["attacker_actionable", false]]:
 		var invalid := context.duplicate()
 		invalid[pair[0]] = pair[1]
 		assert(not rules.is_eligible(invalid, definition))
@@ -24,5 +20,5 @@ func _init() -> void:
 	assert(not rules.match_point_for(0, 0, 1))
 	assert(state.can_transition(state.Value.FIGHTING, state.Value.FINISHER_PROMPT))
 	assert(not state.can_transition(state.Value.ROUND_INTRO, state.Value.CELEBRATION))
-	print("PASS: finisher eligibility boundaries and transitions")
+	print("PASS: one-press full-meter finisher activation boundaries")
 	quit(0)

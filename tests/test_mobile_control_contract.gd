@@ -66,13 +66,11 @@ func _run() -> void:
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("pressed")
 	main.buttons.special.emit_signal("button_up")
-	main._physics_process(0.016)
-	main.player._physics_process(0.016)
-	assert(main.player.attack_kind == "", "FINISH must not silently launch a different attack")
-	assert(main.player.meter == 100.0, "an unavailable FINISH must not spend Special Energy")
-	assert(main.message_label.visible and main.message_label.text.contains("WIN 1 ROUND"), "FINISH must explain its missing condition")
-	main._physics_process(0.016)
-	assert(main.player.meter == 100.0, "one FINISH gesture submitted an unintended attack")
+	assert(main._finisher_director.active, "100% FINISH must activate on one phone press without round or health prerequisites")
+	assert(main.player.meter == 0.0, "one FINISH gesture must spend Special Energy once")
+	main._finisher_director.cancel()
+	main.match_state = main.MatchState.Value.FIGHTING
+	main.round_ready = true
 	main.player.attack_kind = ""
 	main.player.busy = 0.0
 	main.player.meter = 0.0
@@ -88,19 +86,6 @@ func _run() -> void:
 	main.paused = false
 	main._physics_process(0.016)
 	assert(main.player.attack_kind == "", "MAX pressed during pause buffered into resumed combat")
-	main._finisher_director.cancel()
-	main.player.attack_kind = ""
-	main.player.busy = 0.0
-	main.player.meter = 100.0
-	main.player_rounds = 1
-	main.enemy.health = minf(15.0, main.enemy.max_health() * 0.15)
-	main.player.position = Vector3(-0.6, 0.0, 0.0)
-	main.enemy.position = Vector3(0.6, 0.0, 0.0)
-	main.player.facing = 1.0
-	main.buttons.special.emit_signal("button_down")
-	main.buttons.special.emit_signal("pressed")
-	main.buttons.special.emit_signal("button_up")
-	assert(main._finisher_director.active, "eligible phone MAX tap did not launch the finisher")
 	assert(main.CONTROL_BINDINGS == {
 		"move": [KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT],
 		"jump": [KEY_W, KEY_UP],

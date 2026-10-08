@@ -564,6 +564,8 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	exit_cinematic_lock()
 	_authored_hit_ids.clear()
 	position = Vector3(position_x, 0.0, 0.0)
+	facing = 1.0 if who == 0 else -1.0
+	attack_facing = facing
 	velocity = Vector3.ZERO
 	health = health_value
 	meter = 0.0
@@ -605,6 +607,8 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	attack_request = ""
 	round_over = false
 	if not _visual.is_empty():
+		_visual.sprite.flip_h = facing < 0.0
+		_visual.motion.set_facing(facing)
 		_visual.motion.play_state("idle", true)
 	combo_changed.emit(who, 0)
 	health_changed.emit(who, health)

@@ -27,26 +27,17 @@ Finishers follow that sequence. Visual spectacle never replaces deterministic hi
 
 ## Player contract
 
-A Finish Attack is eligible only when all conditions are true:
-
-- The current round can win the match for the attacker.
-- The defender has at most 15% of maximum health.
-- The attacker has 100 Special Energy.
-- Both fighters are grounded and neither is stunned, knocked down or recovering.
-- The fighters are inside the finisher's configured activation range and facing correctly.
-- The match is in `FIGHTING`, with no pause or result overlay.
+A Finish Attack can be activated when the attacker has 100 Special Energy, can act and the match is in `FIGHTING` with no pause or result overlay. Match point, defender health, grounding and facing are not activation requirements.
 
 Input behavior:
 
-- A normal Special tap continues to use the existing special attack.
-- Holding Special for `0.55` seconds while eligible confirms the Finish Attack.
-- The HUD changes `SPECIAL READY` to `FINISH READY` while eligibility is true.
-- The phone exposes a dedicated one-tap `FINISH` button. It starts only an eligible finisher; otherwise it reports the first unmet condition without spending meter or launching another move.
-- Keyboard Special retains the hold duration and progress feedback. Releasing before confirmation performs the normal special once. It must not perform both actions.
+- Below 100 energy, a normal Special tap continues to use the existing special attack.
+- At 100 energy, one press of keyboard Special or the phone `FINISH` button starts the Finish Attack and spends the meter once.
+- Distance is sampled on activation. Inside `activation_range` the authored hits apply; outside it the opening misses, no damage is applied and ordinary combat resumes.
+- The HUD distinguishes an in-range ready state from `TOO FAR — ATTACK WILL MISS`.
 
 Failure behavior:
 
-- If eligibility disappears before confirmation, the hold is cancelled without spending meter.
 - Once the cinematic starts, meter is spent immediately.
 - If an authored finisher opening misses, the cinematic ends, both fighters unlock and ordinary combat resumes.
 - A successful finisher can emit one defeat event and one match transition only.
@@ -328,9 +319,9 @@ No fighter is integrated into matches before its entire sequence is approved in 
 
 ### Shared system tests
 
-- Eligibility requires match point, critical defender health and full meter.
-- A Special tap remains backward compatible.
-- Hold confirmation cannot trigger both special and finisher.
+- Activation requires full meter and an actionable attacker, but not match point or critical defender health.
+- A single press at full meter starts exactly one finisher on keyboard and touch.
+- An out-of-range activation consumes meter, deals no damage and restores combat without moving the fighters together.
 - Meter is spent once at confirmed activation.
 - Ordinary input, AI and round timer freeze during the cinematic.
 - Pause freezes and resumes at the same timeline time and event ID.
@@ -466,6 +457,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 21 complete roster audit | 39/39 Godot and 10/10 Python; all 13 implemented, 13 Fight Lab buttons, mobile actor cap, result-marker contract and asset validation; 52/52 desktop/landscape-phone release captures reviewed in four contact sheets with no empty files, clipping or floating actors | Push release documentation and verify GitHub Pages deployment |
 | 2026-10-08 | Complete roster released in `531c662` | Pages workflow `37744619202` succeeded; `/`, WASM, PCK, manifest and service worker returned HTTP 200; public 844×390 check loaded the main menu and all 13 Fight Lab buttons, then ran Bennet through `EXIT SUCCESS` with no browser errors | Finisher and celebration roster complete |
 | 2026-10-08 | Live-versus Fight Lab and phone input repair, released in `321fc4b` | 40/40 Godot and 10/10 Python; 1280×720 live Lab inspected with grounded fighters, controls and bounds visible; Pages workflows `37751248944` and `37751848780` succeeded; public 390×844 portrait gate and 844×390 fight with joystick plus all five actions inspected | Complete |
+| 2026-10-08 | One-press full-meter activation and round-facing reset | At 100% energy keyboard/touch starts the finisher immediately; range owns hit versus miss; every round resets player right/CPU left | Verification and deployment |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 

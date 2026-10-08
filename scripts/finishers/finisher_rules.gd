@@ -10,9 +10,6 @@ static func is_eligible(context: Dictionary, definition: Dictionary) -> bool:
 		return false
 	if context.get("state", -1) != MatchState.Value.FIGHTING:
 		return false
-	for key in ["match_point", "grounded", "actionable", "facing_correct"]:
-		if not context.get(key, false):
-			return false
-	return float(context.get("health_ratio", 1.0)) <= float(definition.get("trigger_health_ratio", 0.15)) \
-		and float(context.get("meter", 0.0)) >= float(definition.get("meter_cost", 100.0)) \
-		and float(context.get("distance", INF)) <= float(definition.get("activation_range", 1.75))
+	if not context.get("attacker_actionable", context.get("actionable", false)):
+		return false
+	return float(context.get("meter", 0.0)) >= float(definition.get("meter_cost", 100.0))

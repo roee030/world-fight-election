@@ -25,10 +25,10 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Crouch | `C` |
 | Jab: fast, short-range combo starter | `J` / `1` |
 | Heavy: slower, longer-range high-damage hit | `K` / `2` |
-| Special / Finisher: strong meter attack; hold when Finish is ready | `L` / `3` |
+| Special / Finisher: normal Special below 100%; one-press Finish at 100% | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: first win one round, fill Special Energy to 100%, reduce the rival to 15% health or less and move close. The HUD then says `FINISH READY`; hold `L` / `3`, or tap `FINISH` once on touch screens. The phone button is dedicated to the finisher and explains any missing condition instead of launching a different move. Releasing keyboard Special during pause cancels the pending hold on resume. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
+Finisher controls: fill Special Energy to 100%, then press `L` / `3` once or tap `FINISH` on touch screens. No prior round win or rival-health threshold is required. The authored sequence always starts and spends the full meter; it damages the rival only when the fighters were inside the configured activation range at the instant of the press. An out-of-range attempt plays as an opening miss, deals no damage and resumes combat. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
 
 ## Run the project
 
@@ -109,9 +109,9 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - The defeated fighter falls on the lethal hit and remains grounded. Results stay hidden while the winner celebrates unobstructed for at least three seconds at 40% speed, then reveal one compact result card.
 - Per-stage visual alignment keeps feet on the visible floor.
 
-On phones, `FINISH` launches an eligible finisher with one tap and otherwise reports the unmet requirement without spending energy. Chrome web exports include temporary loading actions that forward Start Fight, Campaign and Fighter Lab to Godot, then disappear when the real menu is ready.
+On phones, `FINISH` launches a finisher with one tap whenever Special Energy is full. Distance determines hit or miss rather than whether the sequence starts. Chrome web exports include temporary loading actions that forward Start Fight, Campaign and Fighter Lab to Godot, then disappear when the real menu is ready.
 
-The shared finisher and celebration system is complete for all 13 fighters: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. `LIVE VERSUS TEST` creates a production fighter and a selectable rival at 15% health with full Special Energy; use the normal keyboard controls or the lab action buttons, then `F` or `FINISH NOW` to validate the finisher against that rival. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
+The shared finisher and celebration system is complete for all 13 fighters: one MAX/Special press at 100% triggers the authored timeline, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. `LIVE VERSUS TEST` creates a production fighter and a selectable rival with full Special Energy; use the normal keyboard controls or the lab action buttons, then `F` or `FINISH NOW` to validate in-range hits and out-of-range misses. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 
 ## Asset and repository policy
 

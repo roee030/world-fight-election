@@ -152,8 +152,8 @@ func preview(fighter_id: String, scenario: String) -> void:
 	if not catalog.errors.is_empty(): status.text = "CATALOG ERRORS: " + "; ".join(catalog.errors)
 	elif not definition.get("implemented", false): status.text = "PLANNED — %s / %s • assets and timeline pending" % [selected, definition.get("finisher_id", "")]
 	elif outcome == "eligible":
-		var eligible := Rules.is_eligible({"state": MatchState.Value.FIGHTING, "paused": false, "match_point": true, "grounded": true, "actionable": true, "facing_correct": true, "health_ratio": defender.health / 100, "meter": attacker.meter, "distance": attacker.position.distance_to(defender.position)}, definition)
-		status.text = ("ELIGIBLE" if eligible else "INELIGIBLE") + " — full Special Energy, match point, grounded, 15% rival health"
+		var eligible := Rules.is_eligible({"state": MatchState.Value.FIGHTING, "paused": false, "attacker_actionable": true, "meter": attacker.meter}, definition)
+		status.text = ("ELIGIBLE" if eligible else "INELIGIBLE") + " — full Special Energy activates on one press"
 	else:
 		director.force_opening_miss = outcome == "miss"
 		director.begin(attacker, defender, definition)
@@ -191,20 +191,19 @@ func trigger_live_finisher() -> bool:
 	if not live_mode or not is_instance_valid(attacker) or not is_instance_valid(defender) or director.active:
 		return false
 	var definition := catalog.definition_for(selected)
-	var dx := defender.position.x - attacker.position.x
 	var eligible := Rules.is_eligible({
-		"state": MatchState.Value.FIGHTING, "paused": false, "match_point": true,
-		"grounded": true, "actionable": true, "facing_correct": dx * attacker.facing > 0.0,
-		"health_ratio": defender.health / defender.max_health(), "meter": attacker.meter,
-		"distance": attacker.position.distance_to(defender.position)
+		"state": MatchState.Value.FIGHTING, "paused": false,
+		"attacker_actionable": attacker.busy <= 0.0 and attacker.stun <= 0.0 and attacker.knockdown_time <= 0.0 and attacker.recovery_time <= 0.0 and not attacker.round_over,
+		"meter": attacker.meter
 	}, definition)
 	if not eligible:
-		status.text = "MOVE CLOSER — finisher needs 100% energy, rival ≤15% HP and correct facing"
+		status.text = "FINISH NEEDS 100% SPECIAL ENERGY AND AN ACTIONABLE FIGHTER"
 		return false
 	_live_attack_request = ""
-	var started := director.begin(attacker, defender, definition)
+	var in_range := attacker.position.distance_to(defender.position) <= float(definition.get("activation_range", 1.75))
+	var started := director.begin(attacker, defender, definition, in_range)
 	if started:
-		status.text = "LIVE FINISHER — " + str(definition.get("finisher_id", ""))
+		status.text = ("LIVE FINISHER — " if in_range else "LIVE FINISHER MISS — ") + str(definition.get("finisher_id", ""))
 	return started
 
 
@@ -249,7 +248,7 @@ func _process(delta: float) -> void:
 		var playback_delta := delta * speed * (CELEBRATION_PLAYBACK_SCALE if celebration_preview else 1.0)
 		director.advance(playback_delta); elapsed += playback_delta
 	elif live_mode and is_instance_valid(attacker) and is_instance_valid(defender):
-		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if defender.health <= 15.0 and attacker.meter >= 100.0 else "LIVE COMBAT"]
+		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if attacker.meter >= 100.0 else "LIVE COMBAT"]
 	_update_display()
 
 func set_speed(value: float) -> void:

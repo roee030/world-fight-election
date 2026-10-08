@@ -395,6 +395,7 @@ func _current_finisher_context() -> Dictionary:
 		"distance": player.position.distance_to(enemy.position),
 		"facing_correct": dx * player.facing > 0.0,
 		"grounded": player.is_on_floor() and enemy.is_on_floor(),
+		"attacker_actionable": player.busy <= 0.0 and player.stun <= 0.0 and player.knockdown_time <= 0.0 and player.recovery_time <= 0.0 and not player.round_over,
 		"actionable": player.busy <= 0.0 and enemy.busy <= 0.0 and player.stun <= 0.0 and enemy.stun <= 0.0 and player.knockdown_time <= 0.0 and enemy.knockdown_time <= 0.0 and player.recovery_time <= 0.0 and enemy.recovery_time <= 0.0 and not player.round_over and not enemy.round_over,
 	}
 
@@ -407,23 +408,8 @@ func _update_special_hold(delta: float, pressed: bool, released: bool) -> String
 	elif match_state == MatchState.Value.FINISHER_PROMPT:
 		match_state = MatchState.Value.FIGHTING
 	if is_instance_valid(player_meter_label):
-		if _special_hold.active:
-			player_meter_label.text = "FINISH %d%%" % int(100.0 * _special_hold.elapsed / _special_hold.threshold)
-		elif eligible:
-			player_meter_label.text = "FINISH READY: HOLD L / TAP FINISH"
-		else:
-			player_meter_label.text = _current_finisher_hint()
+		player_meter_label.text = _current_finisher_hint()
 	return result
-
-
-func _finisher_hint_text(match_point: bool, rival_low: bool, in_range: bool) -> String:
-	if not match_point:
-		return "FINISH: WIN 1 ROUND FIRST"
-	if not rival_low:
-		return "FINISH: RIVAL HP ≤ 15%"
-	if not in_range:
-		return "FINISH: MOVE CLOSE"
-	return "FINISH READY: HOLD L / TAP FINISH"
 
 
 func _current_finisher_hint() -> String:
@@ -433,22 +419,13 @@ func _current_finisher_hint() -> String:
 	var definition := _current_finisher_definition()
 	if float(context.meter) < float(definition.get("meter_cost", 100.0)):
 		return "SPECIAL ENERGY · %d%%" % int(context.meter)
-	var basic_hint := _finisher_hint_text(
-		bool(context.match_point),
-		float(context.health_ratio) <= float(definition.get("trigger_health_ratio", 0.15)),
-		float(context.distance) <= float(definition.get("activation_range", 1.75))
-	)
-	if not basic_hint.begins_with("FINISH READY"):
-		return basic_hint
-	if not bool(context.facing_correct):
-		return "FINISH: FACE THE RIVAL"
-	if not bool(context.grounded):
-		return "FINISH: BOTH FIGHTERS MUST BE GROUNDED"
-	if not bool(context.actionable):
-		return "FINISH: WAIT FOR BOTH FIGHTERS TO RECOVER"
 	if bool(context.paused) or int(context.state) != MatchState.Value.FIGHTING:
 		return "FINISH NOT AVAILABLE"
-	return "FINISH READY: HOLD L / TAP FINISH"
+	if not bool(context.attacker_actionable):
+		return "FINISH: WAIT FOR YOUR FIGHTER TO RECOVER"
+	if float(context.distance) > float(definition.get("activation_range", 1.75)):
+		return "FINISH READY: TOO FAR — ATTACK WILL MISS"
+	return "FINISH READY: TAP FINISH"
 
 
 func _cancel_special_hold() -> void:
@@ -460,7 +437,8 @@ func _cancel_special_hold() -> void:
 func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definition: Dictionary) -> bool:
 	if not _finisher_eligible() or attacker != player or defender != enemy:
 		return false
-	if not _finisher_director.begin(attacker, defender, definition):
+	var opening_in_range := attacker.position.distance_to(defender.position) <= float(definition.get("activation_range", 1.75))
+	if not _finisher_director.begin(attacker, defender, definition, opening_in_range):
 		return false
 	match_state = MatchState.Value.FINISHER_CINEMATIC
 	round_ready = false

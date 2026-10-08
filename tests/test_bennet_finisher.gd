@@ -78,5 +78,5 @@ func _run() -> void:
 	director.cancel()
 	assert(director.temporary_actor_count() == 0 and not main.player.cinematic_locked)
 	main.free()
-	print("PASS: delivered Bennet real MAX hold, laptop timing, pause, one KO, celebration, cleanup and miss")
+	print("PASS: delivered Bennet one-press MAX, laptop timing, pause, one KO, celebration, cleanup and miss")
 	quit(0)

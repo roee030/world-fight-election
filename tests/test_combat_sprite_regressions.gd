@@ -32,6 +32,13 @@ func _run() -> void:
 	attacker.facing = -1.0
 	attacker._animate()
 	if not attacker._visual.sprite.flip_h: return _fail("neutral facing did not update")
+	attacker.reset_round(-1.85, attacker.max_health())
+	victim.facing = 1.0
+	victim.attack_facing = 1.0
+	victim._visual.sprite.flip_h = false
+	victim.reset_round(1.85, victim.max_health())
+	if attacker.facing != 1.0 or attacker.attack_facing != 1.0 or attacker._visual.sprite.flip_h: return _fail("player facing was not reset at round start")
+	if victim.facing != -1.0 or victim.attack_facing != -1.0 or not victim._visual.sprite.flip_h: return _fail("CPU facing was not reset at round start")
 	arena.free()
 	quit(0)
 

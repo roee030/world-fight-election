@@ -16,7 +16,7 @@
 - Keep one 1280×720 gameplay coordinate system with `canvas_items` scaling; do not crop or stretch it.
 - Celebration playback multiplier is `0.40`; the unobstructed real-time interval is at least `3.0` seconds.
 - A lethal hit permanently locks the defeated fighter on the grounded final knockdown frame.
-- Phone MAX is one tap: eligible finisher first, otherwise the normal 55-energy Special.
+- Keyboard and phone FINISH are one press at 100% energy. Range determines hit or opening miss; round wins and rival health do not gate activation.
 - Support the formula-driven viewport matrix 568×320, 667×375, 740×360, 844×390, 915×412, 1024×600 and 1280×720.
 - Preserve pause freezing, single result handoff, finisher hit ownership and cleanup contracts.
 - Do not commit `.godot`, exports, browser traces, temporary renders or unrelated `.uid` files.

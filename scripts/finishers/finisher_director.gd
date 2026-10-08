@@ -16,6 +16,7 @@ var diagnostic := ""
 var reduced_motion := false
 var effect_density := "desktop"
 var force_opening_miss := false
+var _opening_miss := false
 var _host: Node
 var _arena: Node3D
 var _camera: Camera3D
@@ -44,7 +45,7 @@ func configure(host: Node, arena: Node3D, camera: Camera3D) -> void:
 	_arena = arena
 	_camera = camera
 
-func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary) -> bool:
+func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary, opening_in_range: bool = true) -> bool:
 	if active or attacker == null or defender == null or defender.health <= 0 or not definition.get("implemented", false): return false
 	var cost := float(definition.get("meter_cost", 100))
 	if attacker.meter < cost: return false
@@ -58,6 +59,7 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary)
 	_lightbox = false
 	_hit_ids.clear()
 	_paused = false
+	_opening_miss = force_opening_miss or not opening_in_range
 	active = true
 	diagnostic = ""
 	if _camera:
@@ -65,9 +67,13 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary)
 		_camera_size = _camera.size
 		_camera_fov = _camera.fov
 	var direction := 1.0 if defender.position.x >= attacker.position.x else -1.0
-	var midpoint := clampf((attacker.position.x + defender.position.x) * 0.5, -3.8, 3.8)
-	attacker.enter_cinematic_lock(Vector3(midpoint - direction * 0.8, 0, 0), direction)
-	defender.enter_cinematic_lock(Vector3(midpoint + direction * 0.8, 0, 0), -direction)
+	if _opening_miss:
+		attacker.enter_cinematic_lock(attacker.position, direction)
+		defender.enter_cinematic_lock(defender.position, -direction)
+	else:
+		var midpoint := clampf((attacker.position.x + defender.position.x) * 0.5, -3.8, 3.8)
+		attacker.enter_cinematic_lock(Vector3(midpoint - direction * 0.8, 0, 0), direction)
+		defender.enter_cinematic_lock(Vector3(midpoint + direction * 0.8, 0, 0), -direction)
 	attacker.meter -= cost
 	attacker.meter_changed.emit(attacker.who, attacker.meter)
 	timeline.start(_definition)
@@ -143,7 +149,7 @@ func _dispatch(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"hit":
 			if _celebrating or _final: return
-			if _hit_ids.is_empty() and force_opening_miss:
+			if _hit_ids.is_empty() and _opening_miss:
 				_fail("Opening missed")
 				return
 			var id := str(event.get("id", ""))
