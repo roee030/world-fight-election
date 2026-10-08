@@ -16,6 +16,16 @@ var _finisher_catalog: RefCounted
 const FinisherDirectorScript = preload("res://scripts/finishers/finisher_director.gd")
 var _finisher_director: Node
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
+const CONTROL_BINDINGS := {
+	"move": [KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT],
+	"jump": [KEY_W, KEY_UP],
+	"guard": [KEY_S, KEY_H],
+	"crouch": [KEY_C],
+	"light": [KEY_J, KEY_1],
+	"heavy": [KEY_K, KEY_2],
+	"special": [KEY_L, KEY_3],
+	"pause": [KEY_ESCAPE]
+}
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
@@ -622,7 +632,8 @@ func _build_touch_controls() -> void:
 	]
 	for spec in specs:
 		var b := _button(hud_root, spec.title, Rect2(spec.pos.x, spec.pos.y, 72 if spec.action != "block" else 94, 72 if spec.action != "block" else 52), spec.color, 15)
-		b.visible = DisplayServer.is_touchscreen_available()
+		b.name = "Touch_" + str(spec.action).capitalize()
+		b.visible = false
 		b.button_down.connect(func():
 			_on_touch_action_down(spec.action)
 		)
@@ -634,6 +645,28 @@ func _build_touch_controls() -> void:
 				_input_down[spec.action] = true
 		)
 		buttons[spec.action] = b
+	_set_touch_controls_visible(_detect_mobile_input())
+
+
+func _mobile_input_available(touchscreen: bool, web_touch_points: int, short_edge: int) -> bool:
+	return touchscreen or web_touch_points > 0 or short_edge <= 600
+
+
+func _detect_mobile_input() -> bool:
+	var touch_points := 0
+	var short_edge := 9999
+	if OS.has_feature("web"):
+		touch_points = int(JavaScriptBridge.eval("navigator.maxTouchPoints || 0"))
+		short_edge = int(JavaScriptBridge.eval("Math.min(window.innerWidth, window.innerHeight)"))
+	return _mobile_input_available(DisplayServer.is_touchscreen_available(), touch_points, short_edge)
+
+
+func _set_touch_controls_visible(value: bool) -> void:
+	if is_instance_valid(stick):
+		stick.visible = value
+	for action in buttons:
+		if is_instance_valid(buttons[action]):
+			buttons[action].visible = value
 
 
 func _build_menu() -> void:

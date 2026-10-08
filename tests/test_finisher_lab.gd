@@ -25,6 +25,8 @@ func _run() -> void:
 	assert(preview.attacker_selector.item_count == 13 and preview.defender_selector.item_count == 13)
 	assert(preview.scenario_selector.item_count == 4)
 	assert(preview.roster_finish_buttons.size() == 13, "Fight Lab needs one Finish Attack button per fighter")
+	assert(preview.has_node("LabUI/Controls/PlaybackControls/LiveFightTest"), "Fight Lab needs a playable versus test")
+	assert(preview.live_attack_buttons.size() == 4, "playable lab needs jab, cross, special and finisher controls")
 	for fighter_id in preview.IDS:
 		assert(preview.roster_finish_buttons.has(fighter_id))
 		assert(preview.roster_finish_buttons[fighter_id].text.contains("FINISH"))
@@ -41,6 +43,12 @@ func _run() -> void:
 	assert(preview.director.effect_density == "mobile" and preview.director.reduced_motion)
 	assert(preview.has_node("LabUI/Controls/Settings/SafeFrame") and preview.has_node("LabUI/Controls/Settings/Bounds"))
 	assert(preview.event_label.text.contains("EVENT"))
+	preview.start_live_test("bennet")
+	assert(preview.live_mode and preview.attacker.health > 0 and preview.defender.health == 15)
+	assert(preview.attacker.is_physics_processing(), "live test attacker must use production combat physics")
+	assert(preview.defender.is_physics_processing(), "live test rival must use production combat physics")
+	assert(preview.trigger_live_finisher(), "eligible live test must launch the real finisher against the rival")
+	assert(preview.director.active)
 	# Exercise the real director with a minimal authored test catalog; production
 	# entries remain subject to the implemented guard above.
 	var definition: Dictionary = preview.catalog.definition_for("bennet")

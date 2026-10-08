@@ -16,6 +16,7 @@ var attacker_selector: OptionButton
 var defender_selector: OptionButton
 var scenario_selector: OptionButton
 var roster_finish_buttons: Dictionary = {}
+var live_attack_buttons: Dictionary = {}
 var status: Label
 var event_label: Label
 var scrub: HSlider
@@ -28,6 +29,8 @@ var safe_frame := true
 var bounds := true
 var overlay: Control
 var _updating_scrub := false
+var live_mode := false
+var _live_attack_request := ""
 
 func _ready() -> void:
 	add_child(arena)
@@ -48,7 +51,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var layer := CanvasLayer.new(); layer.name = "LabUI"; layer.layer = 20; add_child(layer)
-	var panel := VBoxContainer.new(); panel.name = "Controls"; panel.position = Vector2(24, 16); panel.size = Vector2(1232, 180); layer.add_child(panel)
+	var panel := VBoxContainer.new(); panel.name = "Controls"; panel.position = Vector2(24, 16); panel.size = Vector2(1232, 214); layer.add_child(panel)
 	var title := Label.new(); title.text = "FINISHER LAB  •  Shared match runtime"; title.add_theme_font_size_override("font_size", 25); panel.add_child(title)
 	var row := HBoxContainer.new(); panel.add_child(row)
 	attacker_selector = _selector(row, "Attacker", IDS)
@@ -57,10 +60,15 @@ func _build_ui() -> void:
 	attacker_selector.item_selected.connect(func(index): preview(IDS[index], outcome))
 	defender_selector.item_selected.connect(func(_index): preview(selected, outcome))
 	scenario_selector.item_selected.connect(func(index): preview(selected, scenario_selector.get_item_text(index)))
-	row = HBoxContainer.new(); panel.add_child(row)
+	row = HBoxContainer.new(); row.name = "PlaybackControls"; panel.add_child(row)
 	_button(row, "PLAY / PAUSE", func(): set_paused(not paused))
 	_button(row, "STEP 1/60", step_frame)
 	_button(row, "SPRITE LAB", close)
+	var live := Button.new()
+	live.name = "LiveFightTest"
+	live.text = "LIVE VERSUS TEST"
+	live.pressed.connect(func(): start_live_test(IDS[attacker_selector.selected]))
+	row.add_child(live)
 	var settings := HBoxContainer.new(); settings.name = "Settings"; panel.add_child(settings)
 	for value in [0.25, 0.5, 1.0]: _button(settings, "%s×" % value, func(v = value): set_speed(v))
 	_check(settings, "Mobile density", false, set_mobile)
@@ -68,7 +76,14 @@ func _build_ui() -> void:
 	_check(settings, "SafeFrame", true, func(value): safe_frame = value; overlay.queue_redraw())
 	_check(settings, "Bounds", true, func(value): bounds = value; overlay.queue_redraw())
 	var legend := Label.new(); legend.text = "Cyan: collision   Green: hurt proxy   Yellow: guard proxy   Orange: reach guide   Mint: world floor"; legend.add_theme_font_size_override("font_size", 14); panel.add_child(legend)
-	var roster := GridContainer.new(); roster.name = "FighterFinishGrid"; roster.columns = 7; roster.position = Vector2(24, 176); roster.size = Vector2(1232, 82); layer.add_child(roster)
+	var combat_row := HBoxContainer.new(); combat_row.name = "LiveCombatControls"; panel.add_child(combat_row)
+	for spec in [["JAB", "light"], ["CROSS", "heavy"], ["SPECIAL", "special"]]:
+		var attack := Button.new(); attack.name = "Live_" + spec[1]; attack.text = spec[0]
+		attack.pressed.connect(func(action = spec[1]): _live_attack_request = action)
+		combat_row.add_child(attack); live_attack_buttons[spec[1]] = attack
+	var live_finish := Button.new(); live_finish.name = "Live_finisher"; live_finish.text = "FINISH NOW"
+	live_finish.pressed.connect(trigger_live_finisher); combat_row.add_child(live_finish); live_attack_buttons.finisher = live_finish
+	var roster := GridContainer.new(); roster.name = "FighterFinishGrid"; roster.columns = 7; roster.position = Vector2(24, 218); roster.size = Vector2(1232, 82); layer.add_child(roster)
 	for fighter_id in IDS:
 		var finish := Button.new()
 		finish.name = "Finish_" + fighter_id
@@ -108,6 +123,7 @@ func _check(row: Node, text: String, checked: bool, callback: Callable) -> void:
 func preview(fighter_id: String, scenario: String) -> void:
 	director.cancel()
 	director.diagnostic = ""
+	live_mode = false
 	selected = fighter_id if IDS.has(fighter_id) else IDS[0]
 	outcome = scenario if ["eligible", "hit", "miss", "pause-resume"].has(scenario) else "eligible"
 	camera.current = true
@@ -115,8 +131,8 @@ func preview(fighter_id: String, scenario: String) -> void:
 	scenario_selector.select(["eligible", "hit", "miss", "pause-resume"].find(outcome))
 	for fighter in [attacker, defender]:
 		if is_instance_valid(fighter): fighter.free()
-	attacker = _fighter(selected, 0, -0.8)
-	defender = _fighter(IDS[defender_selector.selected], 1, 0.8)
+	attacker = _fighter(selected, 0, -0.8, false)
+	defender = _fighter(IDS[defender_selector.selected], 1, 0.8, false)
 	attacker.rival = defender; defender.rival = attacker
 	attacker.meter = 100; defender.health = 15
 	attacker.facing = 1; defender.facing = -1
@@ -137,15 +153,78 @@ func preview(fighter_id: String, scenario: String) -> void:
 	set_paused(outcome != "hit" or not director.active)
 	_update_display()
 
-func _fighter(id: String, who: int, x: float) -> GameFighter:
+func _fighter(id: String, who: int, x: float, active: bool = false) -> GameFighter:
 	var fighter := GameFighter.new(); fighter.setup(id, who, false); arena.add_child(fighter)
-	fighter.position.x = x; fighter.set_physics_process(false)
+	fighter.position.x = x; fighter.set_physics_process(active)
 	return fighter
+
+
+func start_live_test(fighter_id: String) -> void:
+	director.cancel()
+	director.diagnostic = ""
+	live_mode = true
+	selected = fighter_id if IDS.has(fighter_id) else IDS[0]
+	for fighter in [attacker, defender]:
+		if is_instance_valid(fighter): fighter.free()
+	attacker = _fighter(selected, 0, -0.8, true)
+	defender = _fighter(IDS[defender_selector.selected], 1, 0.8, true)
+	attacker.rival = defender; defender.rival = attacker
+	attacker.meter = 100.0; defender.health = 15.0
+	attacker.facing = 1; defender.facing = -1; defender._visual.sprite.flip_h = true
+	attacker.round_over = false; defender.round_over = false
+	elapsed = 0.0
+	set_paused(false)
+	status.text = "LIVE VERSUS — A/D move · W jump · S guard · J/K/L attacks · F finisher"
+	event_label.text = "RIVAL HP 15%   •   SPECIAL ENERGY 100%   •   FINISH READY"
+
+
+func trigger_live_finisher() -> bool:
+	if not live_mode or not is_instance_valid(attacker) or not is_instance_valid(defender) or director.active:
+		return false
+	var definition := catalog.definition_for(selected)
+	var dx := defender.position.x - attacker.position.x
+	var eligible := Rules.is_eligible({
+		"state": MatchState.Value.FIGHTING, "paused": false, "match_point": true,
+		"grounded": true, "actionable": true, "facing_correct": dx * attacker.facing > 0.0,
+		"health_ratio": defender.health / defender.max_health(), "meter": attacker.meter,
+		"distance": attacker.position.distance_to(defender.position)
+	}, definition)
+	if not eligible:
+		status.text = "MOVE CLOSER — finisher needs 100% energy, rival ≤15% HP and correct facing"
+		return false
+	_live_attack_request = ""
+	var started := director.begin(attacker, defender, definition)
+	if started:
+		status.text = "LIVE FINISHER — " + str(definition.get("finisher_id", ""))
+	return started
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not live_mode or not event is InputEventKey or not event.pressed or event.echo:
+		return
+	match event.keycode:
+		KEY_J, KEY_1: _live_attack_request = "light"
+		KEY_K, KEY_2: _live_attack_request = "heavy"
+		KEY_L, KEY_3: _live_attack_request = "special"
+		KEY_F: trigger_live_finisher()
+
+
+func _physics_process(_delta: float) -> void:
+	if not live_mode or paused or director.active or not is_instance_valid(attacker) or not is_instance_valid(defender):
+		return
+	var axis := 0.0
+	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): axis -= 1.0
+	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): axis += 1.0
+	attacker.set_controls(axis, Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP), Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_H), Input.is_key_pressed(KEY_C), _live_attack_request)
+	defender.set_controls(0.0, false, false, false, "")
+	_live_attack_request = ""
 
 func _process(delta: float) -> void:
 	if not visible: return
 	if not paused and director.active:
 		director.advance(delta * speed); elapsed += delta * speed
+	elif live_mode and is_instance_valid(attacker) and is_instance_valid(defender):
+		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if defender.health <= 15.0 and attacker.meter >= 100.0 else "LIVE COMBAT"]
 	_update_display()
 
 func set_speed(value: float) -> void:
@@ -177,7 +256,8 @@ func set_reduced_motion(value: bool) -> void: director.set_reduced_motion(value)
 
 func _update_display() -> void:
 	if not director.diagnostic.is_empty(): status.text = "DIRECTOR: " + director.diagnostic
-	event_label.text = "EVENT: %s   •   %.3fs   •   %s×   •   %s   •   consumed hits: %s" % [director.current_event_key(), elapsed, speed, "PAUSED" if paused else "PLAYING", ", ".join(director.consumed_hit_ids())]
+	if not live_mode or director.active:
+		event_label.text = "EVENT: %s   •   %.3fs   •   %s×   •   %s   •   consumed hits: %s" % [director.current_event_key(), elapsed, speed, "PAUSED" if paused else "PLAYING", ", ".join(director.consumed_hit_ids())]
 	_updating_scrub = true; scrub.value = elapsed; _updating_scrub = false
 	overlay.queue_redraw()
 
@@ -201,6 +281,6 @@ func _draw_overlays() -> void:
 		overlay.draw_circle(camera.unproject_position(fighter.position + Vector3(fighter.facing * 0.4, 1, 0)), 12, Color.YELLOW, false)
 
 func close() -> void:
-	director.cancel(); visible = false; get_node("LabUI").visible = false
+	director.cancel(); live_mode = false; visible = false; get_node("LabUI").visible = false
 	get_parent().stage.visible = true; get_parent().get_node("DebugUI").visible = true
 	get_parent().get_node("SpriteLabCamera").current = true

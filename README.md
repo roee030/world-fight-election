@@ -46,6 +46,8 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
 
+In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, mobile detection uses browser touch points and viewport size as fallbacks, so the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls remain available even when the browser reports no touchscreen through Godot.
+
 ## Project structure
 
 | Path | Purpose |
@@ -107,7 +109,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - Results and pause screens preserve the arena behind cinematic overlays.
 - Per-stage visual alignment keeps feet on the visible floor.
 
-The shared finisher and celebration system is complete for all 13 fighters: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
+The shared finisher and celebration system is complete for all 13 fighters: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. `LIVE VERSUS TEST` creates a production fighter and a selectable rival at 15% health with full Special Energy; use the normal keyboard controls or the lab action buttons, then `F` or `FINISH NOW` to validate the finisher against that rival. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 
 ## Asset and repository policy
 
