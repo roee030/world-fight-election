@@ -481,7 +481,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 **Interfaces:** Produces `mansour_abbas/coalition_cashstorm`; proves repeated lightweight actors and mobile density reduction.
 
 - [x] Follow the template; assert three stagger hits, one oversized-bundle final hit, maximum 12 desktop actors and reduced mobile count.
-- [ ] Commit and push `Add Mansour Abbas cashstorm finisher`; then record and push its hash.
+- [x] Commit and push `Add Mansour Abbas cashstorm finisher` (`d304298`); then record and push its hash.
 
 ---
 
@@ -498,7 +498,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `gadi_eisenkot/bazooka_command`; proves projectile tracking, recoil and smoke cleanup.
 
-- [ ] Follow the template; assert one projectile, one final hit, smoke cleanup and grounded salute.
+- [x] Follow the template; assert one projectile, one final hit, smoke cleanup and grounded salute.
 - [ ] Commit and push `Add Eisenkot bazooka finisher`; then record and push its hash.
 
 ---

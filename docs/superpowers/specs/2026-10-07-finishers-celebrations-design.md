@@ -416,7 +416,7 @@ Update this section in the same commit that completes each item.
 - [x] Benny Gantz — `independence_flag`: full flag strike, tall body and planted-flag salute; both-side desktop/phone review completed.
 - [x] Avigdor Lieberman — `oil_barrel_48`: mirrored oil-barrel flight, accelerated 48:00 countdown, zero-time blast and fixed 48:00 victory clock; both-side desktop/phone review completed.
 - [x] Mansour Abbas — `coalition_cashstorm`: three nonlethal cash showers, oversized-bundle final and counting-cash celebration; both-side desktop/phone review completed.
-- [ ] Gadi Eisenkot — `bazooka_command`
+- [x] Gadi Eisenkot — `bazooka_command`: tracked rocket, single blast and grounded salute; desktop/phone review completed.
 - [ ] Yair Golan — `m16_burst`
 - [ ] Itamar Ben-Gvir — `crocodile_release`
 - [ ] Bezalel Smotrich — `cattle_charge`
@@ -448,6 +448,8 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 12 Lieberman oil barrel plus complete Fight Lab roster | 30/30 Godot and 10/10 Python; clock/pause/miss/one KO, both directions, six reviewed flight/blast/victory captures; 13 visible FINISH buttons inspected at 1280×720 | Push delivery and record hash; Mansour cash storm next |
 | 2026-10-08 | Lieberman and Fight Lab roster delivered in `91a1aa5` | Automated and visual evidence recorded before push | Mansour `coalition_cashstorm` |
 | 2026-10-08 | Task 13 Mansour cash storm | 31/31 Godot and 10/10 Python; three low-health staggers, pause, both directions, one bundle KO/result and cleanup; six desktop/phone captures inspected | Push delivery and record hash; Eisenkot bazooka next |
+| 2026-10-08 | Mansour delivered in `d304298` | Automated and visual evidence recorded before push | Eisenkot `bazooka_command` |
+| 2026-10-08 | Task 14 Eisenkot bazooka | 32/32 Godot and 10/10 Python; single final hit, mobile actor limit, result/cleanup; rocket, blast and salute captures inspected | Push delivery and record hash; Yair Golan M16 next |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 

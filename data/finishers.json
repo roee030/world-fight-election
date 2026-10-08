@@ -1154,15 +1154,123 @@
     "gadi_eisenkot": {
       "fighter_id": "gadi_eisenkot",
       "finisher_id": "bazooka_command",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "bazooka_command_victory"
+      "duration": 3.7,
+      "camera_preset": "wide_stage",
+      "celebration_id": "bazooka_command_victory",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.45,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/gadi_eisenkot/poses/bazooka-kit.png",
+          "region": [
+            0,
+            0,
+            627,
+            627
+          ],
+          "figure_height_px": 405,
+          "foot_baseline": 548
+        },
+        {
+          "at": 0.9,
+          "type": "camera_preset",
+          "preset": "projectile_track"
+        },
+        {
+          "at": 1.05,
+          "type": "spawn_prop",
+          "id": "bazooka_rocket",
+          "asset": "res://assets/finishers/gadi_eisenkot/poses/bazooka-kit.png",
+          "region": [
+            627,
+            0,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0014,
+          "anchor": "attacker",
+          "position": [
+            0.85,
+            1.2,
+            0.2
+          ]
+        },
+        {
+          "at": 1.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 1.1,
+          "type": "launch_prop",
+          "id": "bazooka_rocket",
+          "target": "defender",
+          "duration": 0.55
+        },
+        {
+          "at": 1.65,
+          "type": "hit",
+          "id": "bazooka_command_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 1.65,
+          "type": "camera_impact",
+          "strength": 0.28
+        },
+        {
+          "at": 1.65,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 1.65,
+          "type": "spawn_prop",
+          "id": "bazooka_blast",
+          "asset": "res://assets/finishers/gadi_eisenkot/poses/bazooka-kit.png",
+          "region": [
+            0,
+            627,
+            627,
+            627
+          ],
+          "pixel_scale": 0.0024,
+          "anchor": "defender",
+          "position": [
+            0,
+            1,
+            0.3
+          ]
+        },
+        {
+          "at": 1.65,
+          "type": "caption",
+          "text": "COMMAND COMPLETE",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.3,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.8,
+          "type": "celebration_start"
+        }
+      ]
     },
     "yair_golan": {
       "fighter_id": "yair_golan",
@@ -1617,11 +1725,49 @@
       ]
     },
     "bazooka_command_victory": {
+      "fighter_id": "gadi_eisenkot",
       "celebration_id": "bazooka_command_victory",
-      "implemented": false,
-      "duration": 2.0,
+      "implemented": true,
+      "duration": 2,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/gadi_eisenkot/poses/bazooka-kit.png",
+          "region": [
+            627,
+            627,
+            627,
+            627
+          ],
+          "figure_height_px": 506,
+          "foot_baseline": 556
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "MISSION ACCOMPLISHED",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 1.9,
+          "type": "result_marker"
+        }
+      ]
     },
     "m16_burst_victory": {
       "celebration_id": "m16_burst_victory",
