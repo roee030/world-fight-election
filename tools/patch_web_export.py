@@ -70,11 +70,15 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 .wf-needs-fullscreen #worldFightFullscreenGate{display:flex}
 #worldFightFullscreenGate strong{font-size:clamp(30px,8vmin,60px);font-weight:900;letter-spacing:.08em;color:#fff3c4;text-shadow:0 0 24px rgba(255,200,80,.55)}
 #worldFightFullscreenGate span{margin-top:10px;color:#a9c3cb;font-size:14px;letter-spacing:.12em}
+#worldFightGraphicsReset{display:none;z-index:10002;background:rgba(3,7,13,.94)}
+.wf-context-lost #worldFightGraphicsReset{display:flex}
+#worldFightGraphicsReset strong{font-size:22px;color:#ffd18a;margin-bottom:8px}
+#worldFightGraphicsReset button{margin-top:16px;min-height:48px;padding:0 28px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:15px;letter-spacing:.1em}
 #worldFightDiag{position:fixed;left:6px;bottom:6px;z-index:10001;max-width:60vw;padding:6px 8px;background:rgba(0,0,0,.78);color:#9ff;font:11px/1.35 monospace;white-space:pre-wrap;pointer-events:none}
 </style>
 <script id="world-fight-responsive-script">
 (() => {
-  const state = { ready: false, fullscreenSeen: false, stage: 'download', errors: [] };
+  const state = { ready: false, fullscreenSeen: false, stage: 'download', errors: [], lastBeat: 0 };
   const params = new URLSearchParams(location.search);
   const diagnostics = params.has('diag');
   const fullscreenSupported = () => Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
@@ -94,13 +98,35 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     let renderer = '?';
     try { const gl = document.createElement('canvas').getContext('webgl2'); const info = gl && gl.getExtension('WEBGL_debug_renderer_info'); renderer = gl ? (info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'NO WEBGL2'; } catch (error) { renderer = String(error); }
     const viewport = window.visualViewport;
-    panel.textContent = `stage: ${state.stage}  ready: ${state.ready}\nwindow: ${innerWidth}x${innerHeight}  visual: ${viewport ? Math.round(viewport.width)+'x'+Math.round(viewport.height) : '-'}  dpr: ${devicePixelRatio}\nfullscreen: ${isFullscreen()}  touch: ${navigator.maxTouchPoints||0}  memory: ${navigator.deviceMemory||'?'}GB\ngpu: ${renderer}\n${state.errors.slice(-3).join('\n')}`;
+    const beat = state.lastBeat ? ((Date.now() - state.lastBeat) / 1000).toFixed(1) + 's ago' : 'none yet';
+    const safe = window.worldFightSafeArea;
+    panel.textContent = `stage: ${state.stage}  ready: ${state.ready}  engine heartbeat: ${beat}\nsafe area: L${safe.left} R${safe.right} T${safe.top} B${safe.bottom}\nwindow: ${innerWidth}x${innerHeight}  visual: ${viewport ? Math.round(viewport.width)+'x'+Math.round(viewport.height) : '-'}  dpr: ${devicePixelRatio}\nfullscreen: ${isFullscreen()}  touch: ${navigator.maxTouchPoints||0}  memory: ${navigator.deviceMemory||'?'}GB\ngpu: ${renderer}\n${state.errors.slice(-3).join('\n')}`;
   };
   const recordError = (message) => { state.errors.push(String(message).slice(0, 180)); renderDiagnostics(); };
   window.addEventListener('error', (event) => recordError(event.message || event));
+  for (const level of ['error', 'warn']) {
+    const original = console[level].bind(console);
+    console[level] = (...args) => { original(...args); recordError(level + ': ' + args.map(String).join(' ')); };
+  }
+  if (diagnostics) setInterval(renderDiagnostics, 500);
   window.addEventListener('unhandledrejection', (event) => recordError(event.reason || 'rejected promise'));
+  const readSafeInsets = () => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+    document.body.appendChild(probe);
+    const style = getComputedStyle(probe);
+    const value = { top: parseFloat(style.paddingTop)||0, right: parseFloat(style.paddingRight)||0, bottom: parseFloat(style.paddingBottom)||0, left: parseFloat(style.paddingLeft)||0 };
+    probe.remove();
+    return value;
+  };
+  // The canvas is full bleed (viewport-fit=cover). Godot reads these CSS-pixel
+  // insets once a second and keeps its HUD, touch controls and menu text clear
+  // of notches; the same call doubles as the engine heartbeat for ?diag=1.
+  window.worldFightSafeArea = { top: 0, right: 0, bottom: 0, left: 0, height: innerHeight };
+  window.worldFightHeartbeat = () => { state.lastBeat = Date.now(); return JSON.stringify(window.worldFightSafeArea); };
   window.layoutWorldFightViewport = () => {
     const portrait = innerHeight > innerWidth;
+    if (document.body) window.worldFightSafeArea = Object.assign(readSafeInsets(), { height: innerHeight });
     document.documentElement.classList.toggle('wf-portrait', portrait);
     const needsFullscreen = state.ready && !state.fullscreenRefused && !portrait && isTouchPhone() && fullscreenSupported() && !isFullscreen();
     document.documentElement.classList.toggle('wf-needs-fullscreen', needsFullscreen);
@@ -180,19 +206,29 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
       else if (state.fullscreenSeen && typeof window.worldFightPauseRequest === 'function') window.worldFightPauseRequest('fullscreen');
       window.layoutWorldFightViewport();
     };
+    document.getElementById('worldFightReloadButton')?.addEventListener('pointerup', () => location.reload());
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('webkitfullscreenchange', onFullscreenChange);
     window.addEventListener('resize', window.layoutWorldFightViewport);
     window.addEventListener('orientationchange', window.layoutWorldFightViewport);
     if (window.visualViewport) window.visualViewport.addEventListener('resize', window.layoutWorldFightViewport);
-    document.addEventListener('DOMContentLoaded', watchEngineLoader);
+    document.addEventListener('DOMContentLoaded', () => {
+      // The canvas is parsed after this shell, so attach here, not earlier.
+      document.getElementById('canvas')?.addEventListener('webglcontextlost', () => {
+        // Godot cannot rebuild a lost WebGL context; a frozen half-drawn frame
+        // would look like a stuck game. Say so and offer a reload.
+        recordError('WebGL context lost');
+        document.documentElement.classList.add('wf-context-lost');
+      });
+      watchEngineLoader();
+    });
     window.layoutWorldFightViewport();
   };
 })();
 </script>
 """
 
-BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><script>window.initializeWorldFightShell()</script>"""
+BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests.
    It never navigates open pages: a forced reload would download the game twice. */

@@ -16,8 +16,9 @@ class WebCachePolicyTests(unittest.TestCase):
         preset = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
         self.assertIn("variant/extensions_support=false", preset)
         self.assertIn("progressive_web_app/enabled=false", preset)
-        # Without viewport-fit=cover the browser keeps the canvas out of notches.
-        self.assertNotIn("viewport-fit=cover", preset)
+        # Full bleed: the canvas covers the notch side too (no black strip);
+        # Godot insets its interactive UI by the published safe area instead.
+        self.assertIn("viewport-fit=cover", preset)
         patcher = (ROOT / "tools" / "patch_web_export.py").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "deploy-pages.yml").read_text(encoding="utf-8")
         self.assertIn("getRegistrations()", patcher)
@@ -82,6 +83,11 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("wf-retry", patched)
             self.assertIn("SLOW CONNECTION", patched)
             self.assertIn("params.has('diag')", patched)
+            self.assertIn("worldFightSafeArea", patched)
+            self.assertIn("safe-area-inset-left", patched)
+            self.assertIn("worldFightHeartbeat", patched)
+            self.assertIn("webglcontextlost", patched)
+            self.assertIn("worldFightGraphicsReset", patched)
             self.assertNotIn('data-action="quick"', patched)
             self.assertLess(
                 patched.index('<div id="world-fight-startup"'),

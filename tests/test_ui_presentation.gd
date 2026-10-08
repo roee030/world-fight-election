@@ -12,6 +12,21 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	# Startup must stay light for software and low-memory phone GPUs: no hidden
+	# 3D arena behind the menu and no stage-card images until that screen opens.
+	if not main.get_viewport().disable_3d:
+		return _fail("the menu still renders the hidden 3D arena")
+	for card in main.stage_buttons:
+		if (card.get_node("StageArt") as TextureRect).texture != null:
+			return _fail("stage card art was loaded at startup")
+	main._confirm_selection()
+	for card in main.stage_buttons:
+		if (card.get_node("StageArt") as TextureRect).texture == null:
+			return _fail("stage card art did not load with the arena screen")
+	main._setup_bout("bennet", "avigdor", 1, "3D QA")
+	if main.get_viewport().disable_3d:
+		return _fail("a fight must render the 3D arena")
+	main._show_menu()
 	var hero: TextureRect = main.menu_root.get_node_or_null("MainHeroBackground") as TextureRect
 	if hero == null or hero.texture == null:
 		return _fail("main menu has no full-screen hero artwork")
@@ -73,6 +88,15 @@ func _run() -> void:
 	var enemy_group := frame.find_child("EnemyHUDGroup", true, false) as Control
 	if enemy_group == null or not is_equal_approx(enemy_group.anchor_left, 1.0):
 		return _fail("CPU panel must anchor to the right edge on wide phones")
+	# Full-bleed web canvas: browser safe-area insets (CSS px) move the HUD,
+	# touch controls and menu actions clear of notches.
+	var canvas_height: float = main.get_viewport().get_visible_rect().size.y
+	main.apply_safe_area({"left": 40.0, "right": 30.0, "top": 0.0, "bottom": 10.0, "height": canvas_height / 2.0})
+	if not is_equal_approx(main.hud_root.offset_left, 80.0) or not is_equal_approx(main.hud_root.offset_right, -60.0) or not is_equal_approx(main.hud_root.offset_bottom, -20.0):
+		return _fail("safe-area insets were not applied to the combat HUD")
+	if not is_equal_approx((main.menu_root.get_node("MenuActionPanel") as Control).position.x, 58.0 + 80.0):
+		return _fail("menu actions are not kept clear of the notch")
+	main.apply_safe_area({"left": 0.0, "right": 0.0, "top": 0.0, "bottom": 0.0, "height": canvas_height})
 	main._on_meter_changed(0, 100.0)
 	if main.player_meter_percent.text != "SP READY":
 		return _fail("full Special Energy does not announce SP")

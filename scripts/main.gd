@@ -101,6 +101,8 @@ var result_winner_art: TextureRect
 var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
 var _web_pause_callback: JavaScriptObject
+var _web_poll_time := 0.0
+var safe_insets := {"left": 0.0, "right": 0.0, "top": 0.0, "bottom": 0.0}
 var combo_label_time := 0.0
 var special_feedback_time := 0.0
 var fight_live := false
@@ -192,6 +194,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if OS.has_feature("web"):
+		_web_poll_time -= delta
+		if _web_poll_time <= 0.0:
+			_web_poll_time = 1.0
+			_poll_web_shell()
 	if match_state == MatchState.Value.CELEBRATION:
 		if not paused:
 			_celebration_clear_elapsed += delta
@@ -372,6 +379,38 @@ func _install_web_menu_bridge() -> void:
 		var pending = window.worldFightPendingAction
 		if pending != null and not str(pending).is_empty():
 			_on_web_menu_action([str(pending)])
+
+
+func _poll_web_shell() -> void:
+	# One call per second: a heartbeat for the shell's ?diag=1 panel that also
+	# returns the browser safe-area insets (CSS pixels) for the full-bleed canvas.
+	var raw = JavaScriptBridge.eval("window.worldFightHeartbeat ? window.worldFightHeartbeat() : ''")
+	if raw == null or str(raw).is_empty():
+		return
+	var data = JSON.parse_string(str(raw))
+	if data is Dictionary:
+		apply_safe_area(data)
+
+
+func apply_safe_area(css_insets: Dictionary) -> void:
+	# Convert CSS-pixel insets to canvas units and keep interactive UI out of
+	# notches and rounded corners while the art stays full bleed.
+	var css_height := maxf(1.0, float(css_insets.get("height", 0.0)))
+	var scale_factor := get_viewport().get_visible_rect().size.y / css_height if float(css_insets.get("height", 0.0)) > 0.0 else 1.0
+	var next := {}
+	for side in ["left", "right", "top", "bottom"]:
+		next[side] = roundf(maxf(0.0, float(css_insets.get(side, 0.0))) * scale_factor)
+	if next == safe_insets:
+		return
+	safe_insets = next
+	if is_instance_valid(hud_root):
+		hud_root.offset_left = safe_insets.left
+		hud_root.offset_right = -safe_insets.right
+		hud_root.offset_top = safe_insets.top
+		hud_root.offset_bottom = -safe_insets.bottom
+	var action_panel := menu_root.get_node_or_null("MenuActionPanel") as Control if is_instance_valid(menu_root) else null
+	if action_panel != null:
+		action_panel.position.x = 58.0 + safe_insets.left
 
 
 func _on_web_pause_request(_arguments: Array) -> void:
@@ -636,7 +675,9 @@ func _build_stage(stage_id: String = "") -> void:
 	var backdrop_material := StandardMaterial3D.new()
 	backdrop_material.albedo_texture = backdrop_texture
 	backdrop_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	backdrop_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	# Plain linear filtering: the plate is always shown near full size, and GPU
+	# mipmap generation for a 1920x1080 image is a startup spike on weak GPUs.
+	backdrop_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
 	backdrop_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	backdrop.material_override = backdrop_material
 	_fight_camera.add_child(backdrop)
@@ -1123,7 +1164,10 @@ func _build_map_select() -> void:
 		var card := _button(map_select_root, "", rect, "#14212c", 15)
 		card.name = "StageCard_" + str(i)
 		var art := TextureRect.new()
-		art.texture = load(str(STAGES[i].image))
+		art.name = "StageArt"
+		# Loaded when the arena screen opens: five 1920x1080 images at startup
+		# overloaded software and low-memory phone GPUs.
+		art.set_meta("image", str(STAGES[i].image))
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		art.position = Vector2(4, 4); art.size = Vector2(368, 172); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1184,8 +1228,28 @@ func _refresh_roster() -> void:
 		roster_tiles[i].add_theme_stylebox_override("hover", style)
 
 
+func _load_stage_card_art() -> void:
+	for card in stage_buttons:
+		var art := card.get_node_or_null("StageArt") as TextureRect
+		if art != null and art.texture == null:
+			art.texture = load(str(art.get_meta("image", "")))
+
+
+func _exit_tree() -> void:
+	# disable_3d belongs to the shared root viewport; Fighter Lab needs it on.
+	if is_inside_tree():
+		get_viewport().disable_3d = false
+
+
+func _set_3d_visible(value: bool) -> void:
+	# Menus are opaque 2D screens. Skipping the hidden 3D arena (lights,
+	# shadows, backdrop) there keeps weak and software GPUs responsive.
+	get_viewport().disable_3d = not value
+
+
 func _confirm_selection() -> void:
 	select_root.visible = false
+	_load_stage_card_art()
 	map_select_root.visible = true
 	_refresh_stage_cards()
 
@@ -1513,6 +1577,7 @@ func _show_menu() -> void:
 	player = null
 	enemy = null
 	_build_stage()
+	_set_3d_visible(false)
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.worldFightSetMenuVisible?.(true)")
 
@@ -1544,6 +1609,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	hud_root.visible = true
 	current_rival_id = rival_id
 	current_level = level
+	_set_3d_visible(true)
 	_build_stage(selected_stage_id)
 	(_hud_node("PlayerName") as Label).text = _fighter_name(player_id)
 	(_hud_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and bout == 3 else "")
