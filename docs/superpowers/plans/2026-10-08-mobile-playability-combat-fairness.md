@@ -21,6 +21,19 @@
 | 4 / 4B Fairness, energy, finisher, rematch | Done: CPU guard 91% → 33% of player attacks at level 1, guard cooldown, slower energy economy, finisher = 30% HP blow, best-of-three flow, same-rival rematch + NEW OPPONENT | `test_combat_fairness.gd` (old code: player won 2/16 rounds; new: 15/16 for the scripted player), `test_finisher_match_integration.gd` |
 | 5 Ideas | Not started (proposals) | — |
 
+### Follow-up delivery (2026-10-09, phone play-test round 2)
+
+| Issue | Root cause | Fix and evidence |
+|---|---|---|
+| Phone/PC showed art only, menus shifted/"zoomed" | Godot mirrored the whole UI right-to-left on Hebrew locales | Forced LTR root layout; reproduced and verified with Playwright `locale: he-IL` at 780×360 @3×; regression in `test_ui_presentation.gd` |
+| `?diag=1` froze the game | Diagnostics created a WebGL context every 500 ms, exhausting the browser limit | GPU probed once and released; Python test |
+| Black strip on the notch side | `viewport-fit=cover` had been removed | Restored full bleed; Godot insets HUD/touch/menu by the published safe area; Godot test |
+| K showed a punch and a kick | 12-frame `hook` clip was `[0, 5, 6, 0]` (frame 6 = kick) | `[0, 5, 5, 0]`; `test_attack_clip_frames.gd` fails on the old map |
+| Celebration off the fight floor line | `victory_low` (and lingering finisher framing) moved the camera while the stage backplate is camera-attached | Celebrations keep the fight framing; integration test compares the camera transform |
+| Player died before SP; energy reset each round | High per-hit damage; meter cleared on round reset | `DAMAGE_SCALE 0.62`, energy carries over between rounds; fairness test (avg round 24 s, SP in 10/10 matches) |
+| CPU too easy/predictable | Simple reactive rules | `cpu_brain.gd`: learning, prediction, whiff punish, spacing, weighted intents; 1.7 bits attack entropy, habit guard 40% → 76% |
+| Select screen design | — | Rebuilt per reference; style shared by arena select, menu, pause and result |
+
 ## Evidence gathered before planning
 
 | # | Observation | Source | Status |

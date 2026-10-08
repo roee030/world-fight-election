@@ -20,13 +20,14 @@ const MAX_COMBO_HITS := 3
 # bar. Clean hits charge the attacker, blocked hits charge it a little, and the
 # defender receives comeback energy from the damage it actually takes.
 const SPECIAL_COST := 55.0
-const METER_HIT_BASE := 3.0
-const METER_HIT_DAMAGE_SCALE := 0.4
+# Global scale for ordinary hits so rounds last long enough to read the rival
+# and build Special Energy (play-testing: players died in a handful of hits).
+const DAMAGE_SCALE := 0.62
+const METER_HIT_BASE := 3.5
+const METER_HIT_DAMAGE_SCALE := 0.55
 const METER_BLOCKED_ATTACKER := 2.5
 const METER_DEFENDER_DAMAGE_SCALE := 0.32
-# Reactive guard chance per CPU level (index = level - 1). Level 1 is the
-# Quick Fight rival and must not read and block most player attacks.
-const CPU_REACTIVE_BLOCK_CHANCE := [0.32, 0.44, 0.56, 0.68]
+const CpuBrainScript = preload("res://scripts/cpu_brain.gd")
 
 var who := 0
 var character_id := "bennet"
@@ -73,9 +74,7 @@ var rival: GameFighter
 var arena_bounds := 5.8
 var arena_depth_bounds := 0.82
 var ai_clock := 0.0
-var ai_block_time := 0.0
-var ai_attack_cooldown := 0.0
-var ai_guard_cooldown := 0.0
+var cpu_brain: RefCounted
 var _visual: Dictionary
 var _body_mesh: Node3D
 var _animation_paused := false
@@ -356,66 +355,13 @@ func _physics_process(delta: float) -> void:
 
 func _run_cpu(delta: float) -> void:
 	ai_clock += delta
-	ai_attack_cooldown = maxf(0.0, ai_attack_cooldown - delta)
-	ai_guard_cooldown = maxf(0.0, ai_guard_cooldown - delta)
-	var distance := absf(global_position.x - rival.global_position.x)
-	var enemy_attacking := rival.attack_kind != "" and rival.attack_time > 0.0
-	var dir := signf(rival.global_position.x - global_position.x)
-	var lane_dir := signf(rival.global_position.z - global_position.z)
-	var axis := 0.0
-	var block := false
-	var crouch := false
-	var request := ""
+	if cpu_brain == null or cpu_brain.level != cpu_level:
+		cpu_brain = CpuBrainScript.new(cpu_level)
+	var controls: Dictionary = cpu_brain.decide(self, rival, delta)
+	ai_mode = cpu_brain.intent
 	if stun > 0.0 or knockdown_time > 0.0 or recovery_time > 0.0:
-		ai_mode = "recover"
 		attack_request = ""
-		set_controls(0.0, false, false, false, "")
-		return
-	var enemy_move: Dictionary = MOVES.get(rival.attack_kind, {})
-	var enemy_elapsed := rival.attack_duration - rival.attack_time if not enemy_move.is_empty() else 0.0
-	var reaction_window := maxf(0.025, float(enemy_move.get("startup", 0.0)) - (0.035 + cpu_level * 0.012))
-	if enemy_attacking and distance < 1.82 and absf(rival.global_position.z - global_position.z) < 0.85 and not enemy_move.is_empty():
-		if ai_guard_cooldown <= 0.0 and ai_block_time <= 0.0 and enemy_elapsed >= reaction_window and enemy_elapsed <= float(enemy_move.startup) + float(enemy_move.active):
-			# One guard decision per incoming attack; a cooldown stops the CPU from
-			# reading every hit of a player chain.
-			ai_guard_cooldown = maxf(0.12, 0.42 - 0.08 * cpu_level)
-			if randf() < cpu_block_chance():
-				block = true
-				ai_block_time = 0.20 + cpu_level * 0.025
-	if ai_block_time > 0.0:
-		ai_block_time -= delta
-		block = true
-	var elapsed := attack_duration - attack_time
-	var current_move: Dictionary = MOVES.get(attack_kind, {})
-	var cancel_window: bool = not current_move.is_empty() and attack_confirmed and elapsed >= float(current_move.cancel_from) and elapsed <= float(current_move.cancel_to)
-	if cancel_window and combo_count < MAX_COMBO_HITS and randf() < delta * (1.0 + cpu_level * 0.7):
-		request = "heavy" if attack_kind == "light" else ("special" if meter >= SPECIAL_COST else "heavy")
-	elif not block and distance > (1.48 + 0.06 * cpu_level):
-		ai_mode = "approach"
-		if absf(rival.global_position.z - global_position.z) > 0.54: crouch = false
-		axis = dir
-	elif not block and distance < 1.48 and busy <= 0.0 and stun <= 0.0 and attack_kind == "":
-		ai_mode = "engage"
-		# Sometimes disengage before a committed attack; CPU punish choices depend on the rival's recovery.
-		if rival.attack_kind != "" and rival.attack_time < 0.16 and randf() < delta * (1.1 + cpu_level * 0.25):
-			ai_mode = "retreat"
-			axis = -dir
-		elif ai_attack_cooldown <= 0.0 and randf() < delta * (0.75 + cpu_level * 0.34):
-			var roll := randf()
-			if roll < 0.57: request = "light"
-			elif roll < 0.84: request = "heavy"
-			elif meter >= SPECIAL_COST: request = "special"
-			else: request = "light"
-			ai_attack_cooldown = 0.28 if request == "light" else 0.42
-		if not block and cpu_level >= 2 and rival.attack_kind == "heavy" and distance < 1.82 and enemy_elapsed >= reaction_window and randf() < delta * (1.1 + cpu_level * 0.28):
-			crouch = true
-	elif block:
-		ai_mode = "defend"
-	var depth := 0.0
-	if not block and (distance < 2.1 or absf(rival.global_position.z - global_position.z) > 0.3):
-		depth = lane_dir if absf(rival.global_position.z - global_position.z) > 0.52 else 0.0
-		if enemy_attacking and cpu_level >= 3 and randf() < delta * 0.75: depth = -lane_dir
-	set_controls(axis, false, block, crouch, request, depth)
+	set_controls(float(controls.axis), false, bool(controls.block), bool(controls.crouch), str(controls.request), float(controls.depth))
 
 
 func _start_attack(kind: String, chained: bool = false) -> void:
@@ -489,7 +435,7 @@ func _try_hit() -> void:
 		# Guard absorbs most of the strike, but it must still deal visible chip
 		# damage. Previously this branch only charged the attacker's meter, so a
 		# guarding CPU looked completely immune and its HP bar never moved.
-		rival.receive_hit(float(move.damage), attack_facing, attack_kind)
+		rival.receive_hit(float(move.damage) * DAMAGE_SCALE, attack_facing, attack_kind)
 		_gain_meter(METER_BLOCKED_ATTACKER)
 		rival.stun = maxf(rival.stun, 0.18)
 		rival.hit_stop = maxf(rival.hit_stop, 0.045)
@@ -497,7 +443,7 @@ func _try_hit() -> void:
 		_clear_combo()
 		strike_landed.emit(who, rival.who, attack_kind, true, combo_count)
 		return
-	var damage: float = move.damage
+	var damage: float = move.damage * DAMAGE_SCALE
 	if character_id == "avigdor": damage *= 1.16
 	if is_cpu: damage *= 0.72 + 0.07 * cpu_level
 	if attack_kind == "special": damage *= 1.18
@@ -578,7 +524,7 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 	if defeated_now: defeated.emit(who)
 
 
-func reset_round(position_x: float, health_value: float = 100.0) -> void:
+func reset_round(position_x: float, health_value: float = 100.0, keep_meter: bool = false) -> void:
 	exit_cinematic_lock()
 	_authored_hit_ids.clear()
 	position = Vector3(position_x, 0.0, 0.0)
@@ -586,7 +532,9 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	attack_facing = facing
 	velocity = Vector3.ZERO
 	health = health_value
-	meter = 0.0
+	# Special Energy carries over between rounds of one match; a new match
+	# creates new fighters, which start empty.
+	if not keep_meter: meter = 0.0
 	stun = 0.0
 	busy = 0.0
 	attack_kind = ""
@@ -605,9 +553,8 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	getup_pending = false
 	knockdown_rotation = 0.0
 	jump_crossing = false
-	ai_attack_cooldown = 0.0
-	ai_guard_cooldown = 0.0
-	ai_block_time = 0.0
+	# A fresh brain each match; learning carries across the rounds of one match.
+	if cpu_brain != null and not keep_meter: cpu_brain = null
 	jump_phase = ""
 	jump_phase_time = 0.0
 	_collider.disabled = false
@@ -653,10 +600,6 @@ func knock_down_and_recover() -> void:
 		_visual.sprite.rotation.z = 0.0
 		_visual.sprite.position.y = float(_visual.ground_y)
 	_animate()
-
-
-func cpu_block_chance() -> float:
-	return float(CPU_REACTIVE_BLOCK_CHANCE[clampi(cpu_level, 1, CPU_REACTIVE_BLOCK_CHANCE.size()) - 1])
 
 
 func _gain_meter(amount: float) -> void:

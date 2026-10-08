@@ -91,12 +91,24 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     if (usableHeight > usableWidth) return {portrait:true,left:safe.left,top:safe.top,width:0,height:0};
     return {portrait:false,left:safe.left,top:safe.top,width:usableWidth,height:usableHeight};
   };
+  let cachedGpu = '';
+  const gpuName = () => {
+    // Probe once and release the context: every live WebGL context counts
+    // against the browser limit, and exceeding it kills the game's own context.
+    if (cachedGpu) return cachedGpu;
+    try {
+      const gl = document.createElement('canvas').getContext('webgl2');
+      const info = gl && gl.getExtension('WEBGL_debug_renderer_info');
+      cachedGpu = gl ? (info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'NO WEBGL2';
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    } catch (error) { cachedGpu = String(error); }
+    return cachedGpu;
+  };
   const renderDiagnostics = () => {
     if (!diagnostics) return;
     let panel = document.getElementById('worldFightDiag');
     if (!panel) { panel = document.createElement('div'); panel.id = 'worldFightDiag'; document.body.appendChild(panel); }
-    let renderer = '?';
-    try { const gl = document.createElement('canvas').getContext('webgl2'); const info = gl && gl.getExtension('WEBGL_debug_renderer_info'); renderer = gl ? (info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'NO WEBGL2'; } catch (error) { renderer = String(error); }
+    const renderer = gpuName();
     const viewport = window.visualViewport;
     const beat = state.lastBeat ? ((Date.now() - state.lastBeat) / 1000).toFixed(1) + 's ago' : 'none yet';
     const safe = window.worldFightSafeArea;

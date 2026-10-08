@@ -12,6 +12,12 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 
+	# A Hebrew device locale must not mirror the LTR-authored UI off-screen.
+	TranslationServer.set_locale("he")
+	if main.menu_root.is_layout_rtl() or (main.menu_root.get_node("MenuActionPanel") as Control).is_layout_rtl():
+		TranslationServer.set_locale("en")
+		return _fail("Hebrew locale mirrored the menu right-to-left")
+	TranslationServer.set_locale("en")
 	# Startup must stay light for software and low-memory phone GPUs: no hidden
 	# 3D arena behind the menu and no stage-card images until that screen opens.
 	if not main.get_viewport().disable_3d:
@@ -45,12 +51,12 @@ func _run() -> void:
 		if "A/D MOVE" in label.text or "J JAB" in label.text:
 			return _fail("keyboard combat instructions are still visible on the startup menu")
 
-	var mystery := main.select_root.get_node_or_null("MysteryCpuMark") as Label
+	var mystery := main.select_root.find_child("MysteryCpuMark", true, false) as Label
 	if mystery == null or mystery.text != "?":
 		return _fail("fighter select does not show a mystery CPU slot")
 	if main.select_rival_name.text != "RANDOM OPPONENT":
 		return _fail("fighter select exposes a fixed rival")
-	var roster_grid := main.select_root.get_node_or_null("RosterGrid") as GridContainer
+	var roster_grid := main.select_root.find_child("RosterGrid", true, false) as GridContainer
 	if roster_grid == null:
 		return _fail("fighter select has no fixed roster grid")
 	if roster_grid.columns != 7 or roster_grid.get_child_count() != main.PLAYABLE_IDS.size():

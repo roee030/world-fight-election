@@ -93,13 +93,23 @@ func _run() -> void:
 	assert(main.fight_live and main.match_state in [main.MatchState.Value.ROUND_INTRO, main.MatchState.Value.FIGHTING], "round two did not start")
 	assert(main.enemy.health == main.enemy.max_health(), "round two did not reset the rival")
 
+	# Special Energy carries over between rounds of the same match.
+	main.player.meter = 42.0
+	main._start_round()
+	await process_frame
+	assert(is_equal_approx(main.player.meter, 42.0), "Special Energy was reset between rounds")
+
 	# 3. A lethal finisher at match point wins the match and celebrates.
 	for frame in range(95): await physics_frame
 	_arm(main, 10.0)
 	main.player_rounds = 1
+	var fight_camera: Camera3D = main._fight_camera
+	var fight_transform: Transform3D = fight_camera.transform
+	var fight_fov: float = fight_camera.fov
 	main._input_down["special"] = true
 	main._physics_process(0.016)
 	main._process(1.1)
+	assert(fight_camera.transform.is_equal_approx(fight_transform) and is_equal_approx(fight_camera.fov, fight_fov), "celebration moved the camera off the fight floor line")
 	assert(main.enemy.health == 0.0)
 	assert(main.player_rounds == 2)
 	assert(main.match_state == main.MatchState.Value.CELEBRATION, "match-winning finisher must celebrate")
@@ -116,6 +126,7 @@ func _run() -> void:
 	main._continue_from_result()
 	await process_frame
 	assert(main.enemy.character_id == rival, "REMATCH changed the rival")
+	assert(main.player.meter == 0.0, "a new match must start with empty Special Energy")
 	main.free()
 	print("PASS: finisher damage share, round KO, match KO celebration and same-rival rematch")
 	quit(0)

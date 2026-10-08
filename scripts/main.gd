@@ -21,6 +21,9 @@ const SlantBarScript = preload("res://scripts/hud/slant_bar.gd")
 const CIRCLE_MASK_SHADER = preload("res://scripts/hud/circle_mask.gdshader")
 const DESIGN_SIZE := Vector2(1280, 720)
 const HUD_FRAME_HEIGHT := 132.0
+const OrnamentScript = preload("res://scripts/ui/ornament.gd")
+const ACCENT_CYAN := Color("#46dcd8")
+const ACCENT_GOLD := Color("#e8b94f")
 const HUD_PANEL_SIZE := Vector2(540, 124)
 const HUD_HP_BAR_X := 126.0
 const HUD_HP_BAR_WIDTH := 390.0
@@ -102,6 +105,7 @@ var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
 var _web_pause_callback: JavaScriptObject
 var _web_poll_time := 0.0
+var _bold_font_cache: Font
 var safe_insets := {"left": 0.0, "right": 0.0, "top": 0.0, "bottom": 0.0}
 var combo_label_time := 0.0
 var special_feedback_time := 0.0
@@ -170,6 +174,9 @@ const STAGES := [
 
 
 func _ready() -> void:
+	# Every screen is authored left-to-right. Godot otherwise mirrors the whole
+	# UI on Hebrew/Arabic phones and browsers, pushing menus off-screen.
+	get_tree().root.set_layout_direction(Window.LAYOUT_DIRECTION_LTR)
 	if ResourceLoader.exists("res://scripts/finishers/finisher_catalog.gd"):
 		_finisher_catalog = load("res://scripts/finishers/finisher_catalog.gd").new()
 		_finisher_catalog.load_default()
@@ -811,14 +818,14 @@ func _build_hud() -> void:
 	system_buttons.name = "SystemButtons"
 	frame.add_child(system_buttons)
 	system_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	system_buttons.offset_left = -112
+	system_buttons.offset_left = -136
 	system_buttons.offset_right = -14
 	system_buttons.offset_top = HUD_FRAME_HEIGHT + 2
 	system_buttons.offset_bottom = HUD_FRAME_HEIGHT + 44
-	var pause_btn := _button(system_buttons, "Ⅱ", Rect2(0, 0, 44, 40), "#1d3140", 16)
+	var pause_btn := _button(system_buttons, "II", Rect2(0, 0, 44, 40), "#1d3140", 16)
 	pause_btn.name = "PauseButton"
 	pause_btn.pressed.connect(_toggle_pause)
-	var fullscreen_btn := _button(system_buttons, "⛶", Rect2(52, 0, 44, 40), "#1d3140", 18)
+	var fullscreen_btn := _button(system_buttons, "FULL", Rect2(52, 0, 70, 40), "#1d3140", 12)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.pressed.connect(_toggle_fullscreen)
 	message_label = _label(hud_root, "", Rect2(280, 144, 720, 78), 32, Color("#f0f4f3"), HORIZONTAL_ALIGNMENT_CENTER)
@@ -1058,9 +1065,11 @@ func _build_menu() -> void:
 	action_panel.position = Vector2(58, 72)
 	action_panel.size = Vector2(355, 570)
 	menu_root.add_child(action_panel)
-	_label(action_panel, "WORLD FIGHT", Rect2(0, 0, 350, 64), 45, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_LEFT)
-	_panel(action_panel, Rect2(0, 69, 76, 3), Color("#df5968"))
-	_label(action_panel, "MAIN MENU", Rect2(0, 86, 330, 30), 14, Color("#d9b566"), HORIZONTAL_ALIGNMENT_LEFT)
+	var game_title := _label(action_panel, "WORLD FIGHT", Rect2(0, 0, 380, 64), 48, Color("#ffffff"), HORIZONTAL_ALIGNMENT_LEFT)
+	_strong_text(game_title)
+	_panel(action_panel, Rect2(0, 69, 92, 3), ACCENT_GOLD)
+	var caption := _label(action_panel, "MAIN MENU", Rect2(0, 86, 330, 30), 15, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	caption.add_theme_font_override("font", _bold_font())
 	var quick := _menu_text_button(action_panel, "START FIGHT", Rect2(0, 152, 330, 52), 21)
 	quick.name = "SingleFightButton"
 	quick.pressed.connect(func(): _open_select("quick"))
@@ -1071,11 +1080,11 @@ func _build_menu() -> void:
 	model_lab.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/character_debug.tscn"))
 	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
-	var fullscreen_btn := _button(menu_root, "⛶", Rect2(1212, 24, 44, 40), "#233440", 20)
+	var fullscreen_btn := _button(menu_root, "FULL SCREEN", Rect2(1132, 24, 124, 40), "#233440", 12)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.tooltip_text = "FULL SCREEN"
 	fullscreen_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	fullscreen_btn.offset_left = -68
+	fullscreen_btn.offset_left = -148
 	fullscreen_btn.offset_right = -24
 	fullscreen_btn.offset_top = 24
 	fullscreen_btn.offset_bottom = 64
@@ -1083,70 +1092,115 @@ func _build_menu() -> void:
 
 
 func _build_select() -> void:
+	# Console-style fighter select (supplied reference): cyan player half, red
+	# CPU half with a diamond lattice, bracketed player art, an ornate gold
+	# mystery frame, a framed roster dock and a gold CONFIRM FIGHT action.
 	select_root = Control.new()
 	select_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(select_root)
-	_panel(select_root, Rect2(0, 0, 1280, 720), Color("#080e16"))
-	_wash(select_root, Rect2(0, 0, 640, 720), Color(0.025, 0.16, 0.21, 0.32))
-	_wash(select_root, Rect2(640, 0, 640, 720), Color(0.25, 0.035, 0.075, 0.30))
-	_label(select_root, "SELECT YOUR FIGHTER", Rect2(340, 18, 600, 44), 29, Color("#f4f0e7"), HORIZONTAL_ALIGNMENT_CENTER)
-	_label(select_root, "PLAYER 1 SELECTION  ·  CPU RIVAL IS RANDOM", Rect2(390, 58, 500, 20), 10, Color("#a9b7bc"), HORIZONTAL_ALIGNMENT_CENTER)
-	# The player chooses one fighter. The CPU stays concealed until the arena loads.
+	_split_background(select_root)
+	var design := _design_frame(select_root, "SelectDesign")
+	_screen_title(design, "SELECT YOUR ", "FIGHTER", 18)
+	var player_label := _label(design, "PLAYER 1 SELECTION", Rect2(440, 62, 400, 22), 15, Color("#dff3f3"), HORIZONTAL_ALIGNMENT_CENTER)
+	player_label.add_theme_font_override("font", _bold_font())
+	_diamond(design, Vector2(640, 92), 5.0, ACCENT_CYAN)
+	_label(design, "CPU RIVAL IS RANDOM", Rect2(440, 100, 400, 22), 14, Color("#dfe7ea"), HORIZONTAL_ALIGNMENT_CENTER)
+	select_stats_label = _label(design, "", Rect2(300, 122, 680, 22), 12, Color("#c6d1d2"), HORIZONTAL_ALIGNMENT_CENTER)
+	select_stats_label.name = "SelectStats"
+	_ornament(design, "hex", Rect2(450, 150, 380, 240), ACCENT_CYAN)
+	# Player half: grid panel with corner brackets and the fighter card art.
+	var panel_back := _wash(design, Rect2(50, 72, 400, 548), Color(0.02, 0.09, 0.13, 0.55))
+	panel_back.name = "PlayerArtPanel"
+	_ornament(design, "grid", Rect2(50, 72, 400, 548), ACCENT_CYAN)
+	_ornament(design, "brackets", Rect2(50, 76, 400, 540), ACCENT_CYAN)
 	select_portrait = TextureRect.new()
+	select_portrait.name = "SelectPortrait"
 	select_portrait.texture = _fighter_art("bennet")
 	select_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	select_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	select_portrait.position = Vector2(0, 76); select_portrait.size = Vector2(500, 544)
-	select_root.add_child(select_portrait)
-	var right_art := TextureRect.new()
-	right_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	right_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	right_art.position = Vector2(780, 76); right_art.size = Vector2(500, 544); right_art.modulate = Color(0.22, 0.25, 0.30, 1)
-	select_root.add_child(right_art)
-	_wash(select_root, Rect2(0, 76, 500, 544), Color(0.025, 0.10, 0.14, 0.30))
-	_wash(select_root, Rect2(780, 76, 500, 544), Color(0.18, 0.025, 0.055, 0.48))
-	select_name_label = _label(select_root, "BENNET", Rect2(34, 300, 410, 56), 39, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_LEFT)
-	select_style_label = _label(select_root, "THE FOUNDER  /  COMBO STRIKER", Rect2(36, 354, 410, 24), 11, Color("#76ded8"), HORIZONTAL_ALIGNMENT_LEFT)
-	var mystery_mark := _label(select_root, "?", Rect2(894, 128, 300, 220), 144, Color("#e7c27a"), HORIZONTAL_ALIGNMENT_CENTER)
+	select_portrait.position = Vector2(30, 70)
+	select_portrait.size = Vector2(470, 556)
+	select_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	design.add_child(select_portrait)
+	var name_shade := _wash(design, Rect2(30, 286, 470, 112), Color(0.01, 0.03, 0.05, 0.0))
+	name_shade.name = "NameShade"
+	select_name_label = _label(design, "BENNET", Rect2(32, 292, 560, 64), 46, Color("#ffffff"), HORIZONTAL_ALIGNMENT_LEFT)
+	select_name_label.name = "SelectName"
+	_strong_text(select_name_label)
+	_panel(design, Rect2(34, 356, 92, 3), ACCENT_CYAN)
+	select_style_label = _label(design, "", Rect2(34, 364, 600, 24), 13, ACCENT_CYAN.lightened(0.15), HORIZONTAL_ALIGNMENT_LEFT)
+	select_style_label.name = "SelectCallout"
+	select_style_label.add_theme_font_override("font", _bold_font())
+	select_style_label.add_theme_color_override("font_outline_color", Color(0.01, 0.03, 0.05, 0.9))
+	select_style_label.add_theme_constant_override("outline_size", 4)
+	_diamond(design, Vector2(40, 400), 5.0, ACCENT_CYAN)
+	# CPU half: ornate gold frame, framed question mark and the hidden rival.
+	_ornament(design, "gold_frame", Rect2(830, 78, 436, 546), ACCENT_GOLD)
+	select_rival_portrait = TextureRect.new()
+	select_rival_portrait.name = "RivalPortrait"
+	select_rival_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	select_rival_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	select_rival_portrait.position = Vector2(840, 88)
+	select_rival_portrait.size = Vector2(416, 526)
+	select_rival_portrait.modulate = Color(0.22, 0.25, 0.30, 1)
+	design.add_child(select_rival_portrait)
+	_ornament(design, "gold_frame", Rect2(990, 168, 96, 132), ACCENT_GOLD)
+	var mystery_mark := _label(design, "?", Rect2(960, 150, 156, 170), 128, Color("#f2c35a"), HORIZONTAL_ALIGNMENT_CENTER)
 	mystery_mark.name = "MysteryCpuMark"
-	select_rival_name = _label(select_root, "RANDOM OPPONENT", Rect2(830, 300, 410, 56), 27, Color("#f7f4eb"), HORIZONTAL_ALIGNMENT_RIGHT)
-	select_rival_style = _label(select_root, "REVEALED IN THE ARENA", Rect2(830, 354, 410, 24), 11, Color("#f49b9d"), HORIZONTAL_ALIGNMENT_RIGHT)
-	select_rival_portrait = right_art
-	select_stats_label = _label(select_root, "STYLE  ·  Close-range pressure\nSIGNATURE  ·  Founder’s Rush", Rect2(430, 92, 420, 52), 11, Color("#c6d1d2"), HORIZONTAL_ALIGNMENT_CENTER)
-	var roster_back := _panel(select_root, Rect2(286, 398, 708, 208), Color(0.010, 0.019, 0.031, 0.94))
+	_strong_text(mystery_mark)
+	select_rival_name = _label(design, "RANDOM OPPONENT", Rect2(800, 300, 440, 60), 34, ACCENT_GOLD.lightened(0.1), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_name.name = "RivalName"
+	_strong_text(select_rival_name)
+	select_rival_style = _label(design, "REVEALED IN THE ARENA", Rect2(800, 354, 440, 24), 13, Color("#f19aa0"), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_style.add_theme_font_override("font", _bold_font())
+	# Roster dock.
+	var roster_back := _panel(design, Rect2(284, 398, 712, 214), Color(0.012, 0.024, 0.038, 0.95))
 	roster_back.name = "RosterDock"
-	_panel(roster_back, Rect2(0, 0, 708, 3), Color("#d8b562"))
-	_label(select_root, "FIGHTER ROSTER", Rect2(490, 402, 300, 22), 10, Color("#e2c374"), HORIZONTAL_ALIGNMENT_CENTER)
+	(roster_back.get_theme_stylebox("panel") as StyleBoxFlat).border_color = Color(ACCENT_CYAN, 0.55)
+	(roster_back.get_theme_stylebox("panel") as StyleBoxFlat).set_border_width_all(2)
+	_ornament(design, "brackets", Rect2(292, 406, 696, 198), Color(ACCENT_CYAN, 0.6))
+	var roster_title := _label(design, "FIGHTER ROSTER", Rect2(490, 404, 300, 22), 13, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	roster_title.add_theme_font_override("font", _bold_font())
+	_ornament(design, "hatch", Rect2(538, 410, 40, 10), ACCENT_GOLD)
+	_ornament(design, "hatch", Rect2(706, 410, 40, 10), ACCENT_GOLD)
 	var roster_grid := GridContainer.new()
 	roster_grid.name = "RosterGrid"
-	roster_grid.position = Vector2(308, 430)
-	roster_grid.size = Vector2(664, 168)
+	roster_grid.position = Vector2(311, 432)
+	roster_grid.size = Vector2(658, 170)
 	roster_grid.columns = 7
-	roster_grid.add_theme_constant_override("h_separation", 6)
-	roster_grid.add_theme_constant_override("v_separation", 6)
-	select_root.add_child(roster_grid)
+	roster_grid.add_theme_constant_override("h_separation", 8)
+	roster_grid.add_theme_constant_override("v_separation", 8)
+	design.add_child(roster_grid)
 	for i in range(PLAYABLE_IDS.size()):
 		var fighter_id: String = PLAYABLE_IDS[i]
-		var tile := _button(roster_grid, "", Rect2(0, 0, 88, 78), "#172632", 18)
-		tile.custom_minimum_size = Vector2(88, 78)
+		var tile := _button(roster_grid, "", Rect2(0, 0, 87, 80), "#13212c", 18)
+		tile.custom_minimum_size = Vector2(87, 80)
 		tile.name = "RosterTile_" + fighter_id
 		roster_tiles.append(tile)
 		var face := TextureRect.new()
 		face.texture = load(_fighter_thumbnail_path(fighter_id))
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		face.position = Vector2(3, 3); face.size = Vector2(82, 72); face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.position = Vector2(4, 4); face.size = Vector2(79, 72); face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(face)
 		tile.pressed.connect(func(id: String = fighter_id): _select_fighter(id))
-	_panel(select_root, Rect2(0, 628, 1280, 92), Color(0.012, 0.022, 0.034, 0.96))
-	var back := _button(select_root, "BACK", Rect2(48, 647, 150, 48), "#263844", 14)
+	# Bottom action bar.
+	var bar := _bottom_bar(select_root)
+	var back := _secondary_button(bar, "BACK", Rect2(44, 14, 172, 50))
+	back.anchor_left = 0.0
 	back.pressed.connect(_show_menu)
-	var confirm := _button(select_root, "CONFIRM FIGHT", Rect2(1002, 642, 230, 56), "#a4793b", 16)
+	var confirm := _primary_button(bar, "CONFIRM FIGHT", Rect2(-276, 10, 232, 58))
 	confirm.name = "ConfirmFight"
 	confirm.pressed.connect(_confirm_selection)
-	_label(select_root, "ARROWS  /  SELECT     ENTER  /  CONFIRM", Rect2(453, 649, 374, 30), 10, Color("#9cabb1"), HORIZONTAL_ALIGNMENT_CENTER)
+	var hint := _label(bar, "ARROWS  /  SELECT     |     ENTER  /  CONFIRM", Rect2(-260, 26, 520, 24), 12, Color("#a7b6bc"), HORIZONTAL_ALIGNMENT_CENTER)
+	hint.anchor_left = 0.5
+	hint.anchor_right = 0.5
+	hint.offset_left = -260
+	hint.offset_right = 260
+	# The fighter art may overlap the centre column; keep its text on top.
+	select_stats_label.move_to_front()
 	select_root.visible = false
-	_center_design_children(select_root)
+	_select_fighter_text(selecting)
 	_refresh_roster()
 
 
@@ -1154,14 +1208,17 @@ func _build_map_select() -> void:
 	map_select_root = Control.new()
 	map_select_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(map_select_root)
-	_panel(map_select_root, Rect2(0, 0, 1280, 720), Color("#080e16"))
-	_label(map_select_root, "SELECT YOUR ARENA", Rect2(48, 24, 690, 48), 30, Color("#f4f0e7"), HORIZONTAL_ALIGNMENT_LEFT)
-	_label(map_select_root, "FIVE STAGES · PICK THE SETTING FOR YOUR FIGHT", Rect2(51, 70, 700, 22), 11, Color("#99afb7"), HORIZONTAL_ALIGNMENT_LEFT)
+	_split_background(map_select_root)
+	var design := _design_frame(map_select_root, "MapDesign")
+	_screen_title(design, "SELECT YOUR ", "ARENA", 18)
+	_label(design, "FIVE STAGES  ·  PICK THE SETTING FOR YOUR FIGHT", Rect2(340, 70, 600, 22), 13, Color("#cfdde1"), HORIZONTAL_ALIGNMENT_CENTER)
+	_diamond(design, Vector2(640, 100), 5.0, ACCENT_CYAN)
 	for i in range(STAGES.size()):
 		var col := i % 3
 		var row := i / 3
-		var rect := Rect2(45 + col * 398, 118 + row * 242, 376, 220)
-		var card := _button(map_select_root, "", rect, "#14212c", 15)
+		var rect := Rect2(45 + col * 398, 116 + row * 242, 376, 220)
+		if row == 1: rect.position.x += 199.0
+		var card := _button(design, "", rect, "#14212c", 15)
 		card.name = "StageCard_" + str(i)
 		var art := TextureRect.new()
 		art.name = "StageArt"
@@ -1172,22 +1229,27 @@ func _build_map_select() -> void:
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		art.position = Vector2(4, 4); art.size = Vector2(368, 172); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(art)
-		var shade := _panel(card, Rect2(4, 150, 368, 48), Color(0.015, 0.025, 0.04, 0.91))
+		var shade := _panel(card, Rect2(4, 150, 368, 66), Color(0.015, 0.025, 0.04, 0.91))
 		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var title := _label(card, str(STAGES[i].name), Rect2(14, 151, 348, 23), 14, Color("#f5f1e8"), HORIZONTAL_ALIGNMENT_LEFT)
+		var title := _label(card, str(STAGES[i].name), Rect2(14, 154, 348, 26), 16, Color("#f5f1e8"), HORIZONTAL_ALIGNMENT_LEFT)
+		title.add_theme_font_override("font", _bold_font())
 		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var subtitle := _label(card, str(STAGES[i].subtitle), Rect2(14, 174, 348, 18), 10, Color("#c1cbd0"), HORIZONTAL_ALIGNMENT_LEFT)
+		var subtitle := _label(card, str(STAGES[i].subtitle), Rect2(14, 182, 348, 20), 12, Color("#c1cbd0"), HORIZONTAL_ALIGNMENT_LEFT)
 		subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stage_buttons.append(card)
 		card.pressed.connect(func(id: String = str(STAGES[i].id)): _select_stage(id))
-	_panel(map_select_root, Rect2(0, 622, 1280, 98), Color(0.012, 0.022, 0.034, 0.96))
-	var back := _button(map_select_root, "BACK TO FIGHTERS", Rect2(48, 646, 220, 48), "#263844", 13)
+	var bar := _bottom_bar(map_select_root)
+	var back := _secondary_button(bar, "BACK TO FIGHTERS", Rect2(44, 14, 230, 50))
 	back.pressed.connect(func(): map_select_root.visible = false; select_root.visible = true)
-	_label(map_select_root, "ARROWS TO BROWSE  ·  ENTER TO FIGHT", Rect2(415, 654, 390, 24), 10, Color("#9cabb1"), HORIZONTAL_ALIGNMENT_CENTER)
-	var enter := _button(map_select_root, "ENTER ARENA", Rect2(1000, 642, 230, 56), "#a4793b", 16)
+	var enter := _primary_button(bar, "ENTER ARENA", Rect2(-276, 10, 232, 58))
+	enter.name = "EnterArena"
 	enter.pressed.connect(_start_selected_mode)
+	var hint := _label(bar, "ARROWS  /  BROWSE     |     ENTER  /  FIGHT", Rect2(0, 26, 520, 24), 12, Color("#a7b6bc"), HORIZONTAL_ALIGNMENT_CENTER)
+	hint.anchor_left = 0.5
+	hint.anchor_right = 0.5
+	hint.offset_left = -260
+	hint.offset_right = 260
 	map_select_root.visible = false
-	_center_design_children(map_select_root)
 	_refresh_stage_cards()
 
 
@@ -1206,9 +1268,7 @@ func _select_fighter(id: String) -> void:
 	selecting = id
 	var data: Dictionary = FIGHTER_DATA[id]
 	select_portrait.texture = _fighter_art(id)
-	select_name_label.text = str(data.name)
-	select_style_label.text = str(data.callout)
-	select_stats_label.text = "STYLE  ·  %s\nSIGNATURE  ·  %s" % [data.style, data.signature]
+	_select_fighter_text(id)
 	select_rival_portrait.texture = null
 	select_rival_name.text = "RANDOM OPPONENT"
 	select_rival_style.text = "REVEALED IN THE ARENA"
@@ -1216,14 +1276,25 @@ func _select_fighter(id: String) -> void:
 	_play_sound("menu")
 
 
+func _select_fighter_text(id: String) -> void:
+	var data: Dictionary = FIGHTER_DATA.get(id, FIGHTER_DATA.bennet)
+	select_name_label.text = str(data.name)
+	select_name_label.add_theme_font_size_override("font_size", 38 if str(data.name).length() > 13 else 46)
+	select_style_label.text = (str(data.callout).replace("  /  ", "  •  ") + "  •  " + str(data.style)).to_upper()
+	select_stats_label.text = "STYLE  ·  %s     |     SIGNATURE  ·  %s" % [data.style, data.signature]
+
+
 func _refresh_roster() -> void:
 	for i in range(mini(PLAYABLE_IDS.size(), roster_tiles.size())):
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("#14242e")
 		var is_selected: bool = PLAYABLE_IDS[i] == selecting
-		style.border_color = Color("#4ad4ce") if is_selected else Color("#627681")
+		style.border_color = ACCENT_CYAN.lightened(0.2) if is_selected else Color("#3a5363")
 		style.set_border_width_all(3 if is_selected else 1)
 		style.set_corner_radius_all(3)
+		if is_selected:
+			style.shadow_color = Color(ACCENT_CYAN, 0.55)
+			style.shadow_size = 8
 		roster_tiles[i].add_theme_stylebox_override("normal", style)
 		roster_tiles[i].add_theme_stylebox_override("hover", style)
 
@@ -1271,9 +1342,12 @@ func _refresh_stage_cards() -> void:
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("#172632")
 		var selected := str(STAGES[i].id) == selected_stage_id
-		style.border_color = Color(str(STAGES[i].accent)) if selected else Color("#627681")
+		style.border_color = ACCENT_GOLD.lightened(0.15) if selected else Color("#3a5363")
 		style.set_border_width_all(4 if selected else 1)
 		style.set_corner_radius_all(5)
+		if selected:
+			style.shadow_color = Color(ACCENT_GOLD, 0.45)
+			style.shadow_size = 10
 		stage_buttons[i].add_theme_stylebox_override("normal", style)
 		stage_buttons[i].add_theme_stylebox_override("hover", style)
 
@@ -1329,8 +1403,9 @@ func _build_pause() -> void:
 	box.position = Vector2(58, 116)
 	box.size = Vector2(320, 440)
 	pause_root.add_child(box)
-	_label(box, "FIGHT PAUSED", Rect2(0, 0, 320, 60), 35, Color("#f0f1e9"), HORIZONTAL_ALIGNMENT_LEFT)
-	_panel(box, Rect2(0, 72, 74, 3), Color("#df5968"))
+	var pause_title := _label(box, "FIGHT PAUSED", Rect2(0, 0, 360, 60), 38, Color("#ffffff"), HORIZONTAL_ALIGNMENT_LEFT)
+	_strong_text(pause_title)
+	_panel(box, Rect2(0, 72, 92, 3), ACCENT_GOLD)
 	_label(box, "THE ARENA IS FROZEN", Rect2(0, 90, 320, 24), 11, Color("#a9b8bf"), HORIZONTAL_ALIGNMENT_LEFT)
 	var resume := _menu_text_button(box, "RESUME", Rect2(0, 158, 300, 54), 20)
 	resume.pressed.connect(_toggle_pause)
@@ -1376,6 +1451,7 @@ func _build_result() -> void:
 	_label(content, "FINAL RESULT", Rect2(0, 0, 396, 24), 11, Color("#d9b566"), HORIZONTAL_ALIGNMENT_LEFT)
 	var title := _label(content, "FIGHT OVER", Rect2(0, 24, 396, 70), 56, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_LEFT)
 	title.name = "ResultTitle"
+	_strong_text(title)
 	var winner_name := _label(content, "", Rect2(0, 94, 396, 32), 21, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_LEFT)
 	winner_name.name = "WinnerName"
 	var detail := _label(content, "", Rect2(0, 132, 396, 64), 13, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_LEFT)
@@ -1383,12 +1459,15 @@ func _build_result() -> void:
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var next := _button(result_root, "CONTINUE", Rect2(40, 620, 210, 54), "#1d777a", 16)
 	next.name = "ContinueButton"
+	_style_primary(next)
 	next.pressed.connect(_continue_from_result)
 	var new_opponent := _button(result_root, "NEW OPPONENT", Rect2(262, 620, 210, 54), "#7a4a2a", 14)
 	new_opponent.name = "NewOpponentButton"
+	_style_secondary(new_opponent)
 	new_opponent.pressed.connect(_start_quick_fight)
 	var menu := _button(result_root, "RETURN TO MENU", Rect2(484, 620, 210, 54), "#3b4852", 13)
 	menu.name = "ResultMenuButton"
+	_style_secondary(menu)
 	menu.pressed.connect(_return_to_menu)
 	_label(result_root, "ENTER  /  CONTINUE", Rect2(40, 682, 432, 22), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_LEFT)
 	result_root.visible = false
@@ -1460,6 +1539,184 @@ func _wash(parent: Control, rect: Rect2, color: Color) -> ColorRect:
 	parent.add_child(wash)
 	_fit_design_rect(wash, rect)
 	return wash
+
+
+func _bold_font() -> Font:
+	# Web builds have no system fonts; embolden the built-in font instead.
+	if _bold_font_cache == null:
+		var variation := FontVariation.new()
+		variation.base_font = ThemeDB.fallback_font
+		variation.variation_embolden = 0.85
+		_bold_font_cache = variation
+	return _bold_font_cache
+
+
+func _strong_text(label: Label) -> void:
+	label.add_theme_font_override("font", _bold_font())
+	label.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.04, 0.95))
+	label.add_theme_constant_override("outline_size", 6)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	label.add_theme_constant_override("shadow_offset_y", 3)
+
+
+func _ornament(parent: Control, kind: String, rect: Rect2, tint: Color, mirror: bool = false) -> Control:
+	var ornament = OrnamentScript.new()
+	ornament.setup(kind, rect, tint, mirror)
+	parent.add_child(ornament)
+	return ornament
+
+
+func _diamond(parent: CanvasItem, center: Vector2, radius: float, tint: Color) -> Polygon2D:
+	return _polygon(parent, "Diamond", PackedVector2Array([center + Vector2(0, -radius), center + Vector2(radius, 0), center + Vector2(0, radius), center + Vector2(-radius, 0)]), tint)
+
+
+func _design_frame(root: Control, node_name: String) -> Control:
+	# A 1280x720 layout frame kept centred on any aspect ratio.
+	var frame := Control.new()
+	frame.name = node_name
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(frame)
+	frame.anchor_left = 0.5
+	frame.anchor_right = 0.5
+	frame.anchor_top = 0.5
+	frame.anchor_bottom = 0.5
+	frame.offset_left = -DESIGN_SIZE.x * 0.5
+	frame.offset_right = DESIGN_SIZE.x * 0.5
+	frame.offset_top = -DESIGN_SIZE.y * 0.5
+	frame.offset_bottom = DESIGN_SIZE.y * 0.5
+	return frame
+
+
+func _split_background(root: Control) -> void:
+	# Full-bleed halves: deep cyan for the player, dark red for the CPU.
+	var left := ColorRect.new()
+	left.name = "PlayerHalf"
+	left.color = Color("#06141d")
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(left)
+	left.anchor_left = 0.0
+	left.anchor_right = 0.5
+	left.anchor_bottom = 1.0
+	var right := ColorRect.new()
+	right.name = "CpuHalf"
+	right.color = Color("#220a12")
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(right)
+	right.anchor_left = 0.5
+	right.anchor_right = 1.0
+	right.anchor_bottom = 1.0
+	var lattice = OrnamentScript.new()
+	lattice.setup("diamond_pattern", Rect2(), Color("#ff6b7a"))
+	root.add_child(lattice)
+	lattice.anchor_left = 0.5
+	lattice.anchor_right = 1.0
+	lattice.anchor_bottom = 1.0
+	var glow := ColorRect.new()
+	glow.color = Color(0.20, 0.75, 0.80, 0.05)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(glow)
+	glow.anchor_right = 0.5
+	glow.anchor_bottom = 1.0
+
+
+func _screen_title(parent: Control, white: String, gold: String, top: float) -> RichTextLabel:
+	var title := RichTextLabel.new()
+	title.name = "ScreenTitle"
+	title.bbcode_enabled = true
+	title.fit_content = true
+	title.scroll_active = false
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.add_theme_font_override("normal_font", _bold_font())
+	title.add_theme_font_size_override("normal_font_size", 40)
+	title.add_theme_color_override("font_outline_color", Color(0.01, 0.02, 0.04, 0.95))
+	title.add_theme_constant_override("outline_size", 6)
+	title.text = "[center][color=#ffffff]%s[/color][color=#f2c35a]%s[/color][/center]" % [white, gold]
+	title.position = Vector2(340, top)
+	title.size = Vector2(600, 52)
+	parent.add_child(title)
+	_ornament(parent, "title_rule", Rect2(250, top + 18, 120, 12), ACCENT_GOLD)
+	_ornament(parent, "title_rule", Rect2(910, top + 18, 120, 12), ACCENT_GOLD, true)
+	return title
+
+
+func _bottom_bar(root: Control) -> Control:
+	var bar := Panel.new()
+	bar.name = "BottomBar"
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.01, 0.018, 0.028, 0.97)
+	style.border_color = Color(ACCENT_CYAN, 0.35)
+	style.border_width_top = 2
+	bar.add_theme_stylebox_override("panel", style)
+	root.add_child(bar)
+	bar.anchor_left = 0.0
+	bar.anchor_right = 1.0
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	bar.offset_top = -80
+	bar.offset_bottom = 0
+	return bar
+
+
+func _primary_button(parent: Control, title: String, rect: Rect2) -> Button:
+	# Gold gradient call-to-action. Negative x anchors the button to the right.
+	var button := Button.new()
+	button.text = title
+	_style_primary(button)
+	_place_button(parent, button, rect)
+	return button
+
+
+func _style_primary(button: Button) -> void:
+	button.add_theme_font_override("font", _bold_font())
+	button.add_theme_font_size_override("font_size", 18)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var gradient := Gradient.new()
+		var top_color := Color("#f6d57a") if state != "pressed" else Color("#c9993f")
+		gradient.set_color(0, top_color.lightened(0.08 if state == "hover" else 0.0))
+		gradient.set_color(1, Color("#b67d24"))
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill_from = Vector2(0, 0)
+		texture.fill_to = Vector2(0, 1)
+		var style := StyleBoxTexture.new()
+		style.texture = texture
+		button.add_theme_stylebox_override(state, style)
+	for key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(key, Color("#2a1a06"))
+
+
+func _secondary_button(parent: Control, title: String, rect: Rect2) -> Button:
+	var button := Button.new()
+	button.text = title
+	_style_secondary(button)
+	_place_button(parent, button, rect)
+	return button
+
+
+func _style_secondary(button: Button) -> void:
+	button.add_theme_font_override("font", _bold_font())
+	button.add_theme_font_size_override("font_size", 17)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#263845") if state != "hover" else Color("#30485a")
+		if state == "pressed": style.bg_color = Color("#1b2a35")
+		style.border_color = Color(ACCENT_CYAN, 0.45 if state in ["hover", "focus"] else 0.18)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(3)
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_color_override("font_color", Color("#e8eef0"))
+
+
+func _place_button(parent: Control, button: Button, rect: Rect2) -> void:
+	parent.add_child(button)
+	if rect.position.x < 0.0:
+		button.anchor_left = 1.0
+		button.anchor_right = 1.0
+	button.offset_left = rect.position.x
+	button.offset_right = rect.position.x + rect.size.x
+	button.offset_top = rect.position.y
+	button.offset_bottom = rect.position.y + rect.size.y
 
 
 func _fit_design_rect(control: Control, rect: Rect2) -> void:
@@ -1534,26 +1791,31 @@ func _button(parent: Control, title: String, rect: Rect2, color: String, font_si
 
 
 func _menu_text_button(parent: Control, title: String, rect: Rect2, font_size: int) -> Button:
+	# Menu actions are visible plates (a phone player must see what to tap),
+	# with a cyan edge that turns gold on hover/focus.
 	var button := Button.new()
 	button.text = title
 	button.position = rect.position
 	button.size = rect.size
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_override("font", _bold_font())
 	button.add_theme_font_size_override("font_size", font_size)
 	button.add_theme_color_override("font_color", Color("#edf2f1"))
 	button.add_theme_color_override("font_hover_color", Color.WHITE)
 	button.add_theme_color_override("font_pressed_color", Color("#ffffff"))
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.02, 0.04, 0.065, 0.10)
-		style.border_color = Color(0.87, 0.35, 0.41, 0.0)
+		style.bg_color = Color(0.02, 0.06, 0.09, 0.66)
+		style.border_color = Color(ACCENT_CYAN, 0.75)
 		style.border_width_left = 4
-		style.content_margin_left = 18
+		style.border_width_bottom = 1
+		style.content_margin_left = 20
+		style.skew = Vector2(0.18, 0)
 		if state in ["hover", "focus"]:
-			style.bg_color = Color(0.55, 0.10, 0.17, 0.82)
-			style.border_color = Color("#f06a75")
+			style.bg_color = Color(0.09, 0.22, 0.27, 0.86)
+			style.border_color = ACCENT_GOLD
 		elif state == "pressed":
-			style.bg_color = Color(0.38, 0.06, 0.11, 0.94)
+			style.bg_color = Color(0.30, 0.22, 0.06, 0.92)
 			style.border_color = Color("#ffd18a")
 		button.add_theme_stylebox_override(state, style)
 	parent.add_child(button)
@@ -1663,8 +1925,8 @@ func _start_round() -> void:
 	match_state = MatchState.Value.ROUND_INTRO
 	_cancel_special_hold()
 	round_ready = false
-	player.reset_round(-1.85, player.max_health())
-	enemy.reset_round(1.85, enemy.max_health())
+	player.reset_round(-1.85, player.max_health(), true)
+	enemy.reset_round(1.85, enemy.max_health(), true)
 	player_health_bar.max_value = player.max_health()
 	enemy_health_bar.max_value = enemy.max_health()
 	player_health_bar.value = player.health

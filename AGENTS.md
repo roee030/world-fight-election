@@ -17,7 +17,10 @@ Build a polished satirical 2.5D fighting game in Godot 4. The quality target is 
 - The gold HUD bar is Special Energy. UI text must identify it.
 - A match finisher deals 30% of the rival's max HP; it ends a round only when that empties the bar and celebrates only when it wins the match. Phone controls are `JAB`, `CROSS`, `MAX` (55%), `SP` (100%) and `GUARD`; every touch action dispatches once, on press.
 - The window uses the `expand` stretch aspect: never assume the viewport is exactly 1280×720. Anchor HUD/touch elements to edges and centre 1280-wide screens.
-- Keep `tests/test_combat_fairness.gd` green when tuning AI or damage.
+- Keep `tests/test_combat_fairness.gd` green when tuning AI or damage. CPU behaviour lives in `scripts/cpu_brain.gd`; Special Energy carries over between rounds of one match.
+- The UI must stay left-to-right on RTL locales (Hebrew users); never remove the forced LTR layout direction.
+- Punch clips (`jab`, `cross`, `hook`) must never contain the kick frame (frame 6 of the 12-frame contract).
+- Menus share the console style helpers in `main.gd` (`_screen_title`, `_split_background`, `_bottom_bar`, `_primary_button`, `_secondary_button`) and `scripts/ui/ornament.gd`. The bundled font lacks symbols such as ← ✓ ⛶; use plain text.
 - Player selection chooses only the player fighter. Quick Fight chooses a different CPU rival randomly.
 - Pause freezes combat, timers, AI, animations and round transitions.
 - Do not commit `.godot`, exports, browser traces, temporary renders, portable tools or the raw `Universal Base Characters[Standard]` folder.

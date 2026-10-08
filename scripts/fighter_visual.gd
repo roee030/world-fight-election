@@ -118,7 +118,7 @@ static func _make_frames(character_id: String) -> SpriteFrames:
 
 static func _clip_map(character_id: String) -> Dictionary:
 	if character_id in TWELVE_FRAME_IDS:
-		return {"idle": [0, 0], "walk_forward": [1, 2], "walk_back": [2, 1], "crouch": [3], "jab": [0, 4, 4, 0], "cross": [0, 5, 5, 0], "hook": [0, 5, 6, 0], "kick": [0, 6, 6, 0], "block": [7], "hit": [8], "knockdown": [8, 9, 10], "getup": [10, 11, 0], "jump_start": [3, 0], "jump_air": [6], "jump_land": [3, 0]}
+		return {"idle": [0, 0], "walk_forward": [1, 2], "walk_back": [2, 1], "crouch": [3], "jab": [0, 4, 4, 0], "cross": [0, 5, 5, 0], "hook": [0, 5, 5, 0], "kick": [0, 6, 6, 0], "block": [7], "hit": [8], "knockdown": [8, 9, 10], "getup": [10, 11, 0], "jump_start": [3, 0], "jump_air": [6], "jump_land": [3, 0]}
 	if character_id in ["bibi", "yair_golan"]:
 		return {"idle": [0, 0], "walk_forward": [1, 0], "walk_back": [0, 1], "crouch": [2], "jab": [0, 3, 3, 0], "cross": [0, 3, 4, 0], "hook": [0, 4, 4, 0], "kick": [0, 5, 5, 0], "block": [2], "hit": [0], "knockdown": [0, 5, 2], "getup": [2, 0], "jump_start": [2, 0], "jump_air": [5], "jump_land": [2, 0]}
 	return {"idle": [0, 1], "walk_forward": [8, 9, 10, 11], "walk_back": [12, 13, 14, 15], "crouch": [0], "jab": [16, 17, 18, 19], "cross": [17, 18, 19, 16], "hook": [20, 21, 22, 23], "kick": [1, 4, 4, 7], "block": [6], "hit": [5], "knockdown": [5, 6, 7], "getup": [7, 6, 0], "jump_start": [0, 2], "jump_air": [4], "jump_land": [2, 0]}

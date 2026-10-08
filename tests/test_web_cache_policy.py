@@ -88,6 +88,9 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("worldFightHeartbeat", patched)
             self.assertIn("webglcontextlost", patched)
             self.assertIn("worldFightGraphicsReset", patched)
+            # The diagnostics GPU probe must run once and release its context.
+            self.assertEqual(patched.count("getContext('webgl2')"), 1)
+            self.assertIn("loseContext()", patched)
             self.assertNotIn('data-action="quick"', patched)
             self.assertLess(
                 patched.index('<div id="world-fight-startup"'),

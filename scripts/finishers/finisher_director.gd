@@ -201,6 +201,7 @@ func _dispatch(event: Dictionary) -> void:
 				sequence_finished.emit(lethal)
 				return
 			_cleanup_presentation()
+			_restore_fight_camera()
 			_celebrating = true
 			var id := str(_definition.get("celebration_id", ""))
 			timeline.start(_celebration(id))
@@ -310,12 +311,22 @@ func _camera_preset(preset: String) -> void:
 			_camera.size = _camera_size
 			_camera.fov = _camera_fov
 		"victory_low":
-			_camera.size = _camera_size * 0.92
-			_camera.fov = _camera_fov * 0.95
-			if _camera.projection == Camera3D.PROJECTION_PERSPECTIVE:
-				_camera.position.y -= 0.25
-				_camera.look_at(Vector3(0, 1.0, 0), Vector3.UP)
+			# Celebrations keep the exact fight framing. The painted stage floor
+			# is a camera-attached backplate, so lowering or zooming the camera
+			# here lifted the winner off the floor line they fought on.
+			_camera.size = _camera_size
+			_camera.fov = _camera_fov
 		_: _fail("Unknown camera preset: " + preset)
+
+func _restore_fight_camera() -> void:
+	# Celebrations play in the fight framing so fighters stay on the painted
+	# floor of the camera-attached stage backplate.
+	if not _camera: return
+	_camera_mode = "wide_stage"
+	_camera.transform = _camera_transform
+	_camera.size = _camera_size
+	_camera.fov = _camera_fov
+
 
 func _set_fighter_art(fighter: GameFighter, event: Dictionary) -> bool:
 	var texture = ResourceLoader.load(str(event.asset))
