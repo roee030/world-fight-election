@@ -533,7 +533,7 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 	if not blocked:
 		facing = -signf(direction)
 		_visual.sprite.flip_h = facing < 0.0
-	if not blocked and kind == "special":
+	if not defeated_now and not blocked and kind == "special":
 		# A special knockback ends in a brief grounded knockdown and visible get-up.
 		knockdown_time = 0.62
 		getup_pending = true
