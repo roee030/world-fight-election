@@ -21,20 +21,29 @@ html,body{display:flex;align-items:center;justify-content:center;width:100%;heig
 
 CHROME_MENU = """<style id="chrome-start-menu-style">
 #chrome-start-menu{display:none;position:fixed;inset:0;z-index:9999;pointer-events:none;color:#f7f2e8;font-family:Arial,sans-serif}
-#chrome-start-menu .wf-actions{position:absolute;left:max(28px,5vw);top:50%;transform:translateY(-50%);width:min(340px,70vw);pointer-events:auto;text-shadow:0 2px 12px #000}
-#chrome-start-menu h1{font-size:clamp(34px,5vw,62px);line-height:.9;margin:0 0 28px;letter-spacing:2px}
-#chrome-start-menu button{display:block;width:100%;margin:5px 0;padding:13px 12px;border:0;border-left:4px solid transparent;background:rgba(5,12,23,.52);color:#f7f2e8;text-align:left;font-size:clamp(16px,2vw,22px);letter-spacing:1px;cursor:pointer}
+#chrome-start-menu .wf-actions{position:absolute;pointer-events:auto;text-shadow:0 2px 12px #000}
+#chrome-start-menu button{display:block;width:100%;margin:3px 0;padding:7px 10px;border:0;border-left:3px solid transparent;background:rgba(5,12,23,.70);color:#f7f2e8;text-align:left;font-size:clamp(12px,1.35vw,20px);letter-spacing:1px;cursor:pointer}
 #chrome-start-menu button:hover,#chrome-start-menu button:active{border-left-color:#e15367;background:rgba(160,35,58,.75)}
-#chrome-start-menu small{display:block;margin-top:18px;color:#abc0c8;letter-spacing:1px}
 </style>
 <script id="chrome-start-menu-script">
 document.addEventListener('DOMContentLoaded', () => {
   if (!/(Chrome|CriOS)/.test(navigator.userAgent)) return;
   const menu = document.createElement('div');
   menu.id = 'chrome-start-menu';
-  menu.innerHTML = '<div class="wf-actions"><h1>WORLD<br>FIGHT</h1><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><small>CHROME START MENU</small></div>';
+  menu.innerHTML = '<div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button></div>';
   document.body.appendChild(menu);
   menu.style.display = 'block';
+  const place = () => {
+    const canvas = document.getElementById('canvas');
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const actions = menu.querySelector('.wf-actions');
+    actions.style.left = `${rect.left + rect.width * 0.043}px`;
+    actions.style.top = `${rect.top + rect.height * 0.275}px`;
+    actions.style.width = `${Math.max(180, rect.width * 0.285)}px`;
+  };
+  place();
+  window.addEventListener('resize', place);
   menu.querySelectorAll('button').forEach((button) => button.addEventListener('click', () => {
     const action = button.dataset.action;
     window.worldFightPendingAction = action;
