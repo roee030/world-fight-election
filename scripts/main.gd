@@ -259,10 +259,6 @@ func _physics_process(_delta: float) -> void:
 	var kick := _consume("kick", KEY_NONE, KEY_NONE)
 	var special_action := _sample_special_input(_delta)
 	var special := special_action == "special"
-	if special and player.meter >= 55.0:
-		message_label.text = "MAX SPECIAL!"
-		message_label.visible = true
-		special_feedback_time = 1.25
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		if _finisher_director.active:
@@ -316,11 +312,10 @@ func _submit_touch_special() -> void:
 	if _finisher_eligible():
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		return
-	if player.meter < 100.0:
+	if player.meter < float(_current_finisher_definition().get("meter_cost", 100.0)):
 		_show_special_feedback("FINISH NEEDS 100% SPECIAL ENERGY")
 		return
-	var hint := _current_finisher_hint()
-	_show_special_feedback("FINISH: WAIT FOR BOTH FIGHTERS TO RECOVER" if hint.begins_with("FINISH READY") else hint)
+	_show_special_feedback(_current_finisher_hint())
 
 
 func _show_special_feedback(text: String) -> void:
@@ -381,17 +376,27 @@ func _sample_special_input(delta: float) -> String:
 
 
 func _finisher_eligible() -> bool:
-	if not fight_live or not round_ready or not is_instance_valid(player) or not is_instance_valid(enemy):
+	var context := _current_finisher_context()
+	if context.is_empty():
 		return false
+	return FinisherRules.is_eligible(context, _current_finisher_definition())
+
+
+func _current_finisher_context() -> Dictionary:
+	if not fight_live or not round_ready or not is_instance_valid(player) or not is_instance_valid(enemy):
+		return {}
 	var dx := enemy.position.x - player.position.x
-	return FinisherRules.is_eligible({
+	return {
 		"state": MatchState.Value.FIGHTING if match_state == MatchState.Value.FINISHER_PROMPT else match_state,
-		"paused": paused, "match_point": FinisherRules.match_point_for(0, player_rounds, enemy_rounds),
-		"health_ratio": enemy.health / enemy.max_health(), "meter": player.meter,
-		"distance": player.position.distance_to(enemy.position), "facing_correct": dx * player.facing > 0.0,
+		"paused": paused,
+		"match_point": FinisherRules.match_point_for(0, player_rounds, enemy_rounds),
+		"health_ratio": enemy.health / enemy.max_health(),
+		"meter": player.meter,
+		"distance": player.position.distance_to(enemy.position),
+		"facing_correct": dx * player.facing > 0.0,
 		"grounded": player.is_on_floor() and enemy.is_on_floor(),
-		"actionable": player.busy <= 0.0 and enemy.busy <= 0.0 and player.stun <= 0.0 and enemy.stun <= 0.0 and player.knockdown_time <= 0.0 and enemy.knockdown_time <= 0.0 and player.recovery_time <= 0.0 and enemy.recovery_time <= 0.0 and not player.round_over and not enemy.round_over
-	}, _current_finisher_definition())
+		"actionable": player.busy <= 0.0 and enemy.busy <= 0.0 and player.stun <= 0.0 and enemy.stun <= 0.0 and player.knockdown_time <= 0.0 and enemy.knockdown_time <= 0.0 and player.recovery_time <= 0.0 and enemy.recovery_time <= 0.0 and not player.round_over and not enemy.round_over,
+	}
 
 
 func _update_special_hold(delta: float, pressed: bool, released: bool) -> String:
@@ -422,13 +427,28 @@ func _finisher_hint_text(match_point: bool, rival_low: bool, in_range: bool) -> 
 
 
 func _current_finisher_hint() -> String:
-	if not is_instance_valid(player) or not is_instance_valid(enemy):
+	var context := _current_finisher_context()
+	if context.is_empty():
 		return "SPECIAL ENERGY"
-	if player.meter < 100.0:
-		return "SPECIAL ENERGY · %d%%" % int(player.meter)
 	var definition := _current_finisher_definition()
-	var distance_ok := player.position.distance_to(enemy.position) <= float(definition.get("activation_range", 1.75))
-	return _finisher_hint_text(FinisherRules.match_point_for(0, player_rounds, enemy_rounds), enemy.health / enemy.max_health() <= float(definition.get("trigger_health_ratio", 0.15)), distance_ok)
+	if float(context.meter) < float(definition.get("meter_cost", 100.0)):
+		return "SPECIAL ENERGY · %d%%" % int(context.meter)
+	var basic_hint := _finisher_hint_text(
+		bool(context.match_point),
+		float(context.health_ratio) <= float(definition.get("trigger_health_ratio", 0.15)),
+		float(context.distance) <= float(definition.get("activation_range", 1.75))
+	)
+	if not basic_hint.begins_with("FINISH READY"):
+		return basic_hint
+	if not bool(context.facing_correct):
+		return "FINISH: FACE THE RIVAL"
+	if not bool(context.grounded):
+		return "FINISH: BOTH FIGHTERS MUST BE GROUNDED"
+	if not bool(context.actionable):
+		return "FINISH: WAIT FOR BOTH FIGHTERS TO RECOVER"
+	if bool(context.paused) or int(context.state) != MatchState.Value.FIGHTING:
+		return "FINISH NOT AVAILABLE"
+	return "FINISH READY: HOLD L / TAP FINISH"
 
 
 func _cancel_special_hold() -> void:
@@ -1383,6 +1403,8 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	enemy.defeated.connect(_on_defeated)
 	player.combo_changed.connect(_on_combo_changed)
 	enemy.combo_changed.connect(_on_combo_changed)
+	player.attack_started.connect(_on_attack_started)
+	enemy.attack_started.connect(_on_attack_started)
 	player.strike_landed.connect(_on_strike_landed)
 	enemy.strike_landed.connect(_on_strike_landed)
 	player_rounds = 0
@@ -1480,6 +1502,11 @@ func _on_combo_changed(who: int, hits: int) -> void:
 			combo_label.add_theme_color_override("font_color", Color("#72e8dc"))
 		else:
 			combo_label.add_theme_color_override("font_color", Color("#ffe1a0"))
+
+
+func _on_attack_started(attacker: int, move: String) -> void:
+	if attacker == 0 and move == "special":
+		_show_special_feedback("SPECIAL ATTACK!")
 
 
 func _on_strike_landed(attacker: int, defender: int, move: String, blocked: bool, combo: int) -> void:

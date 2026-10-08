@@ -29,6 +29,34 @@ func _run() -> void:
 	main.player_rounds = 1
 	main.match_state = main.MatchState.Value.FIGHTING
 	main.round_ready = true
+	main.player.facing = -1.0
+	assert(main._current_finisher_hint() == "FINISH: FACE THE RIVAL", "HUD claimed FINISH READY while the attacker faced away")
+	main.player.facing = 1.0
+	main.player.busy = 0.2
+	assert(main._current_finisher_hint() == "FINISH: WAIT FOR BOTH FIGHTERS TO RECOVER", "HUD claimed FINISH READY while the attacker was busy")
+	main.player.busy = 0.0
+	main.player_rounds = 0
+	main.enemy.health = main.enemy.max_health()
+	main.message_label.visible = false
+	main._input_down["special"] = true
+	main.player.busy = 1.0
+	main._physics_process(0.016)
+	assert(not main.message_label.visible, "MAX confirmation appeared before the fighter actually started the attack")
+	main.player.attack_request = ""
+	main.player.buffered_attack = ""
+	main.player.buffer_time = 0.0
+	main.player.busy = 0.0
+	main.message_label.visible = false
+	main._input_down["special"] = true
+	main._physics_process(0.016)
+	assert(not main.message_label.visible, "Special feedback must wait for the real attack start")
+	main.player._physics_process(0.016)
+	assert(main.player.attack_kind == "special", "full-meter Special input did not start the fighter animation")
+	assert(main.message_label.visible and main.message_label.text.contains("SPECIAL ATTACK") and not main.message_label.text.contains("MAX"), "ordinary Special was presented as a finisher")
+	main.player._finish_attack()
+	main.player.meter = 100.0
+	main.enemy.health = 10.0
+	main.player_rounds = 1
 	main.buttons.special.emit_signal("button_down")
 	assert(main.match_state == main.MatchState.Value.FINISHER_CINEMATIC)
 	assert(main._finisher_director.active, "real MAX tap triggers the match director")

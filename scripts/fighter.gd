@@ -6,6 +6,7 @@ signal meter_changed(who: int, value: float)
 signal defeated(who: int)
 signal combo_changed(who: int, hits: int)
 signal strike_landed(attacker: int, defender: int, move: String, blocked: bool, combo: int)
+signal attack_started(attacker: int, move: String)
 
 const MOVES := {
 	"light": {"duration": 0.46, "startup": 0.12, "active": 0.09, "cancel_from": 0.205, "cancel_to": 0.34, "damage": 7.0, "reach": 1.32, "lunge": 2.45, "clip": "jab"},
@@ -425,6 +426,7 @@ func _start_attack(kind: String, chained: bool = false) -> void:
 	_visual.sprite.set_frame_and_progress(0, 0.0)
 	_visual.sprite.play()
 	_animate()
+	attack_started.emit(who, kind)
 
 
 func _can_chain_now(move: Dictionary, elapsed: float) -> bool:
