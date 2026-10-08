@@ -46,7 +46,7 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
 
-In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, mobile detection uses browser touch points and viewport size as fallbacks, so the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls remain available even when the browser reports no touchscreen through Godot.
+In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface.
 
 ## Project structure
 

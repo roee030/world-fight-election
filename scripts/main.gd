@@ -648,8 +648,11 @@ func _build_touch_controls() -> void:
 	_set_touch_controls_visible(_detect_mobile_input())
 
 
-func _mobile_input_available(touchscreen: bool, web_touch_points: int, short_edge: int) -> bool:
-	return touchscreen or web_touch_points > 0 or short_edge <= 600
+func _mobile_input_available(touchscreen: bool, web_build: bool, web_touch_points: int, short_edge: int) -> bool:
+	# Godot's touchscreen flag and JavaScript bridge values vary between mobile
+	# browsers. Web controls stay available during combat; the HUD parent keeps
+	# them out of menus and desktop players can continue using the keyboard.
+	return touchscreen or web_build or web_touch_points > 0 or short_edge <= 600
 
 
 func _detect_mobile_input() -> bool:
@@ -658,7 +661,7 @@ func _detect_mobile_input() -> bool:
 	if OS.has_feature("web"):
 		touch_points = int(JavaScriptBridge.eval("navigator.maxTouchPoints || 0"))
 		short_edge = int(JavaScriptBridge.eval("Math.min(window.innerWidth, window.innerHeight)"))
-	return _mobile_input_available(DisplayServer.is_touchscreen_available(), touch_points, short_edge)
+	return _mobile_input_available(DisplayServer.is_touchscreen_available(), OS.has_feature("web"), touch_points, short_edge)
 
 
 func _set_touch_controls_visible(value: bool) -> void:
