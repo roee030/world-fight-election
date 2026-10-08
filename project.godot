@@ -23,11 +23,19 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=1
 
 [filesystem]
 
 import/blender/enabled=false
+
+[importer_defaults]
+
+texture={
+"compress/lossy_quality": 0.82,
+"compress/mode": 1
+}
 
 [physics]
 

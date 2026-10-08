@@ -482,3 +482,17 @@ Pause input clarification: confirmation time freezes while paused. Releasing Spe
 Execution ruling: this managed worktree has a detached HEAD. Preserve it and publish using `git push origin HEAD:main` after integrating remote updates normally. No forced pushes.
 
 The feature is complete when all 13 finishers and celebrations satisfy the data contract, pass shared and per-fighter tests, have reviewed desktop and phone captures, preserve ordinary Special behavior, pause correctly, resolve the match once and are deployed successfully through GitHub Pages.
+
+
+## Amendment 2026-10-08: finisher damage share and best-of-three flow
+
+Requested directly by the product owner after phone play-testing ("a finisher should be a strong blow, not kill the rival, and must not end the match while rounds remain").
+
+- In a match, `main.gd` passes `damage_budget = 0.30 × rival max HP` and `celebrate_on_lethal = (player_rounds + 1 >= 2)` to `FinisherDirector.begin(...)`.
+- Non-final authored hits keep their small authored damage (never lethal). The final hit deals the rest of the budget instead of `max(damage, health)`.
+- If the rival survives, the director cleans up at `celebration_start` and emits `sequence_finished(false)`; the rival takes a grounded knockdown with a normal get-up and the round continues. No round is awarded.
+- If the blow empties the bar before match point, the director emits `sequence_finished(true)`; the round is awarded once and the next round starts after the normal KO hold.
+- Only a match-winning lethal finisher continues into the authored celebration and result card.
+- Fight Lab previews pass no damage budget and keep the original always-lethal preview behaviour, so hit ownership, cleanup and celebration contracts are unchanged there.
+- Phone button renamed `FINISH` → `SP` (round gold button with an electric aura at 100%); the 55% special move is the separate `MAX` button.
+- Regression: `tests/test_finisher_match_integration.gd` covers miss, 30% survive, round-one lethal (next round), match-point lethal (celebration → result) and same-rival rematch.

@@ -1,16 +1,30 @@
-"""Patch the generated Godot Web shell for reliable responsive startup."""
+"""Patch the generated Godot Web shell for reliable phone startup.
+
+The shell owns only browser concerns: a full-viewport canvas, an honest
+loading screen with retry, the portrait rotate gate, the mandatory landscape
+fullscreen gate on phones, optional diagnostics (``?diag=1``) and retiring the
+old PWA worker. Game layout is handled inside Godot (``expand`` stretch aspect).
+
+Every injected block is wrapped in ``<!--wf:NAME-->`` markers and replaced on
+each run, so patching an already patched (or older) shell is idempotent.
+"""
 
 from pathlib import Path
+import re
 from shutil import copyfile
 from typing import Mapping
 
 
-ASPECT_RATIO = 16.0 / 9.0
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
 
 
 def fit_viewport(width: float, height: float, insets: Mapping[str, float] | None = None) -> dict[str, float | bool]:
-    """Fit an uncropped 16:9 canvas inside the safe visible viewport."""
+    """Return the canvas rectangle: the whole safe landscape viewport.
+
+    The game uses Godot's ``expand`` aspect, so it fills any landscape shape
+    without bars, cropping or stretching. Portrait returns an empty rectangle
+    because the rotate gate is shown instead of a tiny canvas.
+    """
     safe = {"left": 0.0, "right": 0.0, "top": 0.0, "bottom": 0.0}
     if insets:
         safe.update({key: max(0.0, float(value)) for key, value in insets.items() if key in safe})
@@ -18,15 +32,7 @@ def fit_viewport(width: float, height: float, insets: Mapping[str, float] | None
     usable_height = max(0.0, float(height) - safe["top"] - safe["bottom"])
     if usable_height > usable_width:
         return {"portrait": True, "left": safe["left"], "top": safe["top"], "width": 0.0, "height": 0.0}
-    canvas_width = min(usable_width, usable_height * ASPECT_RATIO)
-    canvas_height = canvas_width / ASPECT_RATIO
-    return {
-        "portrait": False,
-        "left": max(safe["left"], safe["left"] + (usable_width - canvas_width) * 0.5),
-        "top": max(safe["top"], safe["top"] + (usable_height - canvas_height) * 0.5),
-        "width": canvas_width,
-        "height": canvas_height,
-    }
+    return {"portrait": False, "left": safe["left"], "top": safe["top"], "width": usable_width, "height": usable_height}
 
 
 CACHE_RETIREMENT = """<script id="world-fight-cache-retirement">
@@ -39,102 +45,188 @@ if ('caches' in window) {
 </script>
 """
 
-RESPONSIVE_SHELL = r"""<style id="world-fight-responsive-style">
-:root{--wf-safe-left:env(safe-area-inset-left,0px);--wf-safe-right:env(safe-area-inset-right,0px);--wf-safe-top:env(safe-area-inset-top,0px);--wf-safe-bottom:env(safe-area-inset-bottom,0px);--wf-canvas-left:0px;--wf-canvas-top:0px;--wf-canvas-width:100vw;--wf-canvas-height:100vh}
-html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden;background:#050810}
-#canvas{position:fixed!important;left:var(--wf-canvas-left)!important;top:var(--wf-canvas-top)!important;width:var(--wf-canvas-width)!important;height:var(--wf-canvas-height)!important;margin:0!important;max-width:none!important;max-height:none!important;touch-action:none}
+HEAD_SHELL = r"""<style id="world-fight-responsive-style">
+html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden;background:#050810;touch-action:none;-webkit-user-select:none;user-select:none}
+#canvas{position:fixed!important;left:0!important;top:0!important;width:100%!important;height:100%!important;margin:0!important;max-width:none!important;max-height:none!important;touch-action:none}
+#status{display:none!important}
 .wf-portrait #canvas{visibility:hidden!important}
-#world-fight-startup{position:fixed;left:var(--wf-canvas-left);top:var(--wf-canvas-top);width:var(--wf-canvas-width);height:var(--wf-canvas-height);z-index:9999;overflow:hidden;pointer-events:none;color:#f7f2e8;font-family:Arial,sans-serif}
-#world-fight-startup .wf-loading{position:absolute;left:50%;bottom:10%;transform:translateX(-50%);margin:0;color:#a9bdc6;font-size:12px;letter-spacing:.08em;text-shadow:0 2px 10px #000;white-space:nowrap}
-#worldFightRotateGate{display:none;position:fixed;inset:0;z-index:10000;align-items:flex-end;justify-content:center;padding:calc(24px + var(--wf-safe-top)) calc(20px + var(--wf-safe-right)) calc(30px + var(--wf-safe-bottom)) calc(20px + var(--wf-safe-left));box-sizing:border-box;background-color:#050810;background-image:linear-gradient(180deg,rgba(2,6,13,0) 42%,#050810 78%),url('rotate-device-ensemble.webp');background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat;color:#f7f2e8;text-align:center;font-family:Arial,sans-serif}
-#worldFightRotateGate .wf-rotate-card{width:min(390px,calc(100vw - 40px));border:1px solid rgba(92,218,215,.65);padding:18px 20px;background:rgba(5,14,24,.9);box-shadow:0 12px 36px rgba(0,0,0,.72);backdrop-filter:blur(5px)}
+.wf-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;color:#f7f2e8;font-family:Arial,Helvetica,sans-serif;text-align:center}
+#world-fight-startup{z-index:9998;background:radial-gradient(ellipse at 50% 35%,#13293a 0%,#050810 70%)}
+#world-fight-startup[hidden]{display:none}
+#world-fight-startup .wf-title{font-size:clamp(28px,7vmin,54px);font-weight:900;letter-spacing:.06em}
+#world-fight-startup .wf-sub{margin:6px 0 22px;color:#d9b566;font-size:clamp(11px,2.4vmin,15px);letter-spacing:.3em}
+#world-fight-startup .wf-track{width:min(420px,70vw);height:10px;border:1px solid rgba(102,217,212,.6);background:rgba(4,12,20,.9);transform:skewX(-18deg)}
+#world-fight-startup .wf-fill{height:100%;width:0;background:linear-gradient(90deg,#2ab8b3,#7ff4ee);transition:width .2s}
+#world-fight-startup .wf-loading{margin-top:12px;color:#a9c3cb;font-size:13px;letter-spacing:.08em;min-height:18px}
+#world-fight-startup .wf-error{display:none;max-width:420px;margin-top:14px;color:#ffb3b8;font-size:13px;line-height:1.5}
+#world-fight-startup button{margin-top:16px;min-height:48px;padding:0 28px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:15px;letter-spacing:.1em}
+#world-fight-startup .wf-retry{display:none}
+#worldFightRotateGate{display:none;z-index:10000;justify-content:flex-end;padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(30px + env(safe-area-inset-bottom,0px));background-color:#050810;background-image:linear-gradient(180deg,rgba(2,6,13,0) 42%,#050810 78%),url('rotate-device-ensemble.webp');background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat}
+.wf-portrait #worldFightRotateGate{display:flex}
+#worldFightRotateGate .wf-rotate-card{width:min(390px,calc(100vw - 40px));max-height:60dvh;overflow:auto;border:1px solid rgba(92,218,215,.65);padding:18px 20px;background:rgba(5,14,24,.92);box-shadow:0 12px 36px rgba(0,0,0,.72)}
 #worldFightRotateGate strong{display:block;font-size:25px;margin-bottom:10px;color:#66d9d4}
 #worldFightRotateGate span{display:block;line-height:1.55}
-#worldFightFullscreenButton{width:100%;min-height:48px;margin-top:14px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:16px;letter-spacing:.08em;cursor:pointer}
+#worldFightFullscreenGate{display:none;z-index:9999;background:rgba(3,7,13,.86);cursor:pointer}
+.wf-needs-fullscreen #worldFightFullscreenGate{display:flex}
+#worldFightFullscreenGate strong{font-size:clamp(30px,8vmin,60px);font-weight:900;letter-spacing:.08em;color:#fff3c4;text-shadow:0 0 24px rgba(255,200,80,.55)}
+#worldFightFullscreenGate span{margin-top:10px;color:#a9c3cb;font-size:14px;letter-spacing:.12em}
+#worldFightDiag{position:fixed;left:6px;bottom:6px;z-index:10001;max-width:60vw;padding:6px 8px;background:rgba(0,0,0,.78);color:#9ff;font:11px/1.35 monospace;white-space:pre-wrap;pointer-events:none}
 </style>
 <script id="world-fight-responsive-script">
 (() => {
-  const state = { ready: false, menuVisible: true };
+  const state = { ready: false, fullscreenSeen: false, stage: 'download', errors: [] };
+  const params = new URLSearchParams(location.search);
+  const diagnostics = params.has('diag');
+  const fullscreenSupported = () => Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  const isFullscreen = () => Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  const isTouchPhone = () => (navigator.maxTouchPoints || 0) > 0 && Math.min(screen.width, screen.height) <= 900;
   window.worldFightPendingAction = '';
   window.worldFightFitViewport = (width, height, insets = {}) => {
     const safe = { left: Math.max(0, Number(insets.left)||0), right: Math.max(0, Number(insets.right)||0), top: Math.max(0, Number(insets.top)||0), bottom: Math.max(0, Number(insets.bottom)||0) };
     const usableWidth = Math.max(0, width-safe.left-safe.right), usableHeight = Math.max(0, height-safe.top-safe.bottom);
     if (usableHeight > usableWidth) return {portrait:true,left:safe.left,top:safe.top,width:0,height:0};
-    const canvasWidth = Math.min(usableWidth, usableHeight*16/9), canvasHeight = canvasWidth*9/16;
-    return {portrait:false,left:Math.max(safe.left,safe.left+(usableWidth-canvasWidth)/2),top:Math.max(safe.top,safe.top+(usableHeight-canvasHeight)/2),width:canvasWidth,height:canvasHeight};
+    return {portrait:false,left:safe.left,top:safe.top,width:usableWidth,height:usableHeight};
   };
-  const readSafeInsets = () => {
-    const probe=document.createElement('div');
-    probe.style.cssText='position:fixed;visibility:hidden;pointer-events:none;padding:var(--wf-safe-top) var(--wf-safe-right) var(--wf-safe-bottom) var(--wf-safe-left)';
-    document.body.appendChild(probe); const style=getComputedStyle(probe);
-    const value={top:parseFloat(style.paddingTop)||0,right:parseFloat(style.paddingRight)||0,bottom:parseFloat(style.paddingBottom)||0,left:parseFloat(style.paddingLeft)||0};
-    probe.remove(); return value;
+  const renderDiagnostics = () => {
+    if (!diagnostics) return;
+    let panel = document.getElementById('worldFightDiag');
+    if (!panel) { panel = document.createElement('div'); panel.id = 'worldFightDiag'; document.body.appendChild(panel); }
+    let renderer = '?';
+    try { const gl = document.createElement('canvas').getContext('webgl2'); const info = gl && gl.getExtension('WEBGL_debug_renderer_info'); renderer = gl ? (info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : 'webgl2') : 'NO WEBGL2'; } catch (error) { renderer = String(error); }
+    const viewport = window.visualViewport;
+    panel.textContent = `stage: ${state.stage}  ready: ${state.ready}\nwindow: ${innerWidth}x${innerHeight}  visual: ${viewport ? Math.round(viewport.width)+'x'+Math.round(viewport.height) : '-'}  dpr: ${devicePixelRatio}\nfullscreen: ${isFullscreen()}  touch: ${navigator.maxTouchPoints||0}  memory: ${navigator.deviceMemory||'?'}GB\ngpu: ${renderer}\n${state.errors.slice(-3).join('\n')}`;
   };
+  const recordError = (message) => { state.errors.push(String(message).slice(0, 180)); renderDiagnostics(); };
+  window.addEventListener('error', (event) => recordError(event.message || event));
+  window.addEventListener('unhandledrejection', (event) => recordError(event.reason || 'rejected promise'));
   window.layoutWorldFightViewport = () => {
-    const canvas=document.getElementById('canvas'), startup=document.getElementById('world-fight-startup'), rotate=document.getElementById('worldFightRotateGate');
-    if (!canvas||!startup||!rotate) return;
-    const viewport=window.visualViewport, width=viewport?viewport.width:window.innerWidth, height=viewport?viewport.height:window.innerHeight;
-    const offsetLeft=viewport?viewport.offsetLeft:0, offsetTop=viewport?viewport.offsetTop:0;
-    const fit=window.worldFightFitViewport(width,height,readSafeInsets());
-    document.documentElement.classList.toggle('wf-portrait',fit.portrait);
-    rotate.style.display=fit.portrait?'flex':'none';
-    if (fit.portrait) { startup.style.display='none'; return; }
-    const left=offsetLeft+fit.left, top=offsetTop+fit.top;
-    const root=document.documentElement.style;
-    root.setProperty('--wf-canvas-left',`${left}px`); root.setProperty('--wf-canvas-top',`${top}px`);
-    root.setProperty('--wf-canvas-width',`${fit.width}px`); root.setProperty('--wf-canvas-height',`${fit.height}px`);
-    startup.style.display=(state.menuVisible&&!state.ready)?'block':'none';
-    const loading=startup.querySelector('.wf-loading'); if (loading) loading.hidden=state.ready;
+    const portrait = innerHeight > innerWidth;
+    document.documentElement.classList.toggle('wf-portrait', portrait);
+    const needsFullscreen = state.ready && !state.fullscreenRefused && !portrait && isTouchPhone() && fullscreenSupported() && !isFullscreen();
+    document.documentElement.classList.toggle('wf-needs-fullscreen', needsFullscreen);
+    renderDiagnostics();
   };
-  window.worldFightSetReady = (ready) => { state.ready=Boolean(ready); window.layoutWorldFightViewport(); };
-  window.worldFightSetMenuVisible = (visible) => { state.menuVisible=Boolean(visible); window.layoutWorldFightViewport(); };
   window.requestWorldFightFullscreen = () => {
-    if (document.fullscreenElement||!document.documentElement.requestFullscreen) return Promise.resolve();
-    return document.documentElement.requestFullscreen().then(()=>screen.orientation?.lock?.('landscape')).catch(()=>{});
+    const root = document.documentElement;
+    let request;
+    try { request = root.requestFullscreen ? root.requestFullscreen({ navigationUI: 'hide' }) : root.webkitRequestFullscreen?.(); } catch (error) { request = Promise.reject(error); }
+    // A browser that refuses (or never answers) the fullscreen request must not
+    // leave the gate blocking play: one tap always lets the player in.
+    setTimeout(() => { if (!isFullscreen()) state.fullscreenRefused = true; window.layoutWorldFightViewport(); }, 1200);
+    return Promise.resolve(request)
+      .then(() => screen.orientation?.lock?.('landscape')?.catch?.(() => {}))
+      .catch((error) => { state.fullscreenRefused = true; recordError('fullscreen refused: ' + (error && error.message || error)); })
+      .finally(window.layoutWorldFightViewport);
   };
-  window.worldFightAcknowledgeAction = (action) => {
-    window.worldFightPendingAction=''; state.menuVisible=false;
+  window.worldFightSetReady = (ready) => {
+    state.ready = Boolean(ready);
+    state.stage = state.ready ? 'menu ready' : state.stage;
+    const startup = document.getElementById('world-fight-startup');
+    if (startup && state.ready) startup.hidden = true;
     window.layoutWorldFightViewport();
+  };
+  window.worldFightSetMenuVisible = () => {};
+  window.worldFightAcknowledgeAction = () => { window.worldFightPendingAction = ''; };
+  const watchEngineLoader = () => {
+    // Mirror Godot's own loader into the branded loading screen.
+    const progress = document.getElementById('status-progress');
+    const notice = document.getElementById('status-notice');
+    const fill = document.querySelector('#world-fight-startup .wf-fill');
+    const label = document.querySelector('#world-fight-startup .wf-loading');
+    const error = document.querySelector('#world-fight-startup .wf-error');
+    const retry = document.querySelector('#world-fight-startup .wf-retry');
+    const started = Date.now();
+    let engineStartedAt = 0;
+    const timer = setInterval(() => {
+      if (state.ready) { clearInterval(timer); return; }
+      const failed = notice && notice.style.display === 'block' && notice.textContent.trim();
+      if (failed) {
+        state.stage = 'error';
+        error.textContent = notice.textContent.trim();
+        error.style.display = 'block';
+        retry.style.display = 'inline-block';
+        label.textContent = 'THE GAME COULD NOT START';
+        recordError(error.textContent);
+        clearInterval(timer);
+        return;
+      }
+      if (!document.getElementById('status')) {
+        engineStartedAt = engineStartedAt || Date.now();
+        // The game normally reports ready itself; never trap a running game.
+        if (Date.now() - engineStartedAt > 10000) { window.worldFightSetReady(true); return; }
+        state.stage = 'starting engine';
+        fill.style.width = '100%';
+        label.textContent = 'STARTING THE ARENA…';
+      } else if (progress && progress.max > 0) {
+        const ratio = Math.min(1, progress.value / progress.max);
+        fill.style.width = `${Math.round(ratio * 100)}%`;
+        label.textContent = `LOADING ${Math.round(ratio * 100)}%  ·  ${(progress.value / 1048576).toFixed(1)} / ${(progress.max / 1048576).toFixed(1)} MB` + ((Date.now() - started > 12000 && ratio < 0.6) ? '  ·  SLOW CONNECTION' : '');
+      }
+      renderDiagnostics();
+    }, 200);
   };
   window.initializeWorldFightShell = () => {
-    const startup=document.getElementById('world-fight-startup');
-    if (!startup) return;
-    if (startup.dataset.initialized) { window.layoutWorldFightViewport(); return; }
-    startup.dataset.initialized='true';
-    document.getElementById('worldFightFullscreenButton')?.addEventListener('click',window.requestWorldFightFullscreen);
-    document.addEventListener('pointerup',()=>{ if (innerWidth>innerHeight) window.requestWorldFightFullscreen(); },{once:true,passive:true});
-    window.addEventListener('resize',window.layoutWorldFightViewport); window.addEventListener('orientationchange',()=>{ window.layoutWorldFightViewport(); if (innerWidth>innerHeight) window.requestWorldFightFullscreen(); });
-    if (window.visualViewport) { window.visualViewport.addEventListener('resize',window.layoutWorldFightViewport); window.visualViewport.addEventListener('scroll',window.layoutWorldFightViewport); }
+    const startup = document.getElementById('world-fight-startup');
+    if (!startup || startup.dataset.initialized) { window.layoutWorldFightViewport(); return; }
+    startup.dataset.initialized = 'true';
+    startup.querySelector('.wf-retry')?.addEventListener('click', () => location.reload());
+    // pointerup, not click: the engine cancels touch defaults, so a tap may
+    // never synthesize a click. A touch pointerup still grants user activation.
+    for (const id of ['worldFightFullscreenGate', 'worldFightFullscreenButton']) {
+      document.getElementById(id)?.addEventListener('pointerup', (event) => { event.preventDefault(); event.stopPropagation(); window.requestWorldFightFullscreen(); });
+    }
+    const onFullscreenChange = () => {
+      if (isFullscreen()) state.fullscreenSeen = true;
+      else if (state.fullscreenSeen && typeof window.worldFightPauseRequest === 'function') window.worldFightPauseRequest('fullscreen');
+      window.layoutWorldFightViewport();
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    window.addEventListener('resize', window.layoutWorldFightViewport);
+    window.addEventListener('orientationchange', window.layoutWorldFightViewport);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', window.layoutWorldFightViewport);
+    document.addEventListener('DOMContentLoaded', watchEngineLoader);
     window.layoutWorldFightViewport();
   };
-  document.addEventListener('DOMContentLoaded', window.initializeWorldFightShell);
 })();
 </script>
 """
 
-STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-loading">LOADING GAME…</div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><script>window.initializeWorldFightShell()</script>"""
+BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><script>window.initializeWorldFightShell()</script>"""
 
-RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests. */
+RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests.
+   It never navigates open pages: a forced reload would download the game twice. */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
   event.waitUntil(Promise.all([
     caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))),
     self.registration.unregister()
-  ]).then(() => self.clients.claim())
-    .then(() => self.clients.matchAll({ type: 'window' }))
-    .then((clients) => Promise.all(clients.map((client) => client.navigate(client.url)))));
+  ]).then(() => self.clients.claim()));
 });
 """
 
+# Blocks written by older patcher versions without markers.
+LEGACY_PATTERNS = (
+    re.compile(r'<script id="world-fight-cache-retirement">.*?</script>\s*', re.S),
+    re.compile(r'<style id="world-fight-responsive-style">.*?</style>\s*', re.S),
+    re.compile(r'<script id="world-fight-responsive-script">.*?</script>\s*', re.S),
+    re.compile(r'<div id="world-fight-startup">.*?<script>window\.initializeWorldFightShell\(\)</script>', re.S),
+)
+
+
+def _strip(html: str) -> str:
+    html = re.sub(r"<!--wf:(\w+)-->.*?<!--/wf:\1-->", "", html, flags=re.S)
+    for pattern in LEGACY_PATTERNS:
+        html = pattern.sub("", html)
+    return html
+
 
 def patch(path: Path) -> None:
-    html = path.read_text(encoding="utf-8")
-    if "world-fight-cache-retirement" not in html:
-        html = html.replace("</head>", CACHE_RETIREMENT + "</head>", 1)
-    if "world-fight-responsive-script" not in html:
-        html = html.replace("</head>", RESPONSIVE_SHELL + "</head>", 1)
-    if 'id="world-fight-startup"' not in html:
-        html = html.replace("<body>", "<body>" + STARTUP_MARKUP, 1)
+    html = _strip(path.read_text(encoding="utf-8"))
+    head = "<!--wf:head-->" + CACHE_RETIREMENT + HEAD_SHELL + "<!--/wf:head-->"
+    body = "<!--wf:body-->" + BODY_SHELL + "<!--/wf:body-->"
+    html = html.replace("</head>", head + "</head>", 1)
+    html = re.sub(r"<body([^>]*)>", lambda match: "<body" + match.group(1) + ">" + body, html, count=1)
     path.write_text(html, encoding="utf-8")
     if ROTATE_ART.is_file():
         copyfile(ROTATE_ART, path.with_name("rotate-device-ensemble.webp"))

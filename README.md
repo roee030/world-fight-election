@@ -13,7 +13,7 @@ This repository is the source of truth for the game. New contributors and agents
 - Keyboard and touch controls.
 - Fighter Sprite Lab for inspecting every animation outside a match.
 
-The lower gold bar in the combat HUD is **Special Energy**. It fills when attacks connect. At 100%, the special attack is available.
+The thin gold bar under each health bar in the combat HUD is **Special Energy** (labelled `SPECIAL ENERGY` with a percentage). Clean hits charge the attacker, blocked hits charge it a little, and the defender gains comeback energy from damage taken. At 55% the `MAX` special move unlocks; at 100% the `SP` finisher unlocks and its button lights up with an electric aura.
 
 ## Controls
 
@@ -23,12 +23,17 @@ The lower gold bar in the combat HUD is **Special Energy**. It fills when attack
 | Jump | `W` or Up |
 | Guard | `S` / `H` |
 | Crouch | `C` |
-| Jab: fast, short-range combo starter | `J` / `1` |
-| Heavy: slower, longer-range high-damage hit | `K` / `2` |
-| Special / Finisher: normal Special below 100%; one-press Finish at 100% | `L` / `3` |
+| Jab (`JAB`): fast, short-range combo starter | `J` / `1` |
+| Cross (`CROSS`): slower, longer-range high-damage hit | `K` / `2` |
+| Kick (keyboard only) | `U` / `4` |
+| `MAX` special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3` |
 | Pause / back | `Esc` |
 
-Finisher controls: fill Special Energy to 100%, then press `L` / `3` once or tap `FINISH` on touch screens. No prior round win or rival-health threshold is required. The authored sequence always starts and spends the full meter; it damages the rival only when the fighters were inside the configured activation range at the instant of the press. An out-of-range attempt plays as an opening miss, deals no damage and resumes combat. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
+Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `MAX`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. `MAX` stays dim below 55% energy and never falls back to another attack.
+
+Finisher controls: fill Special Energy to 100%, then press `L` / `3` once or tap `SP` on touch screens. No prior round win or rival-health threshold is required. The authored sequence always starts and spends the full meter; it damages the rival only when the fighters were inside the configured activation range at the instant of the press. An out-of-range attempt plays as an opening miss, deals no damage and resumes combat. **A finisher is a heavy blow, not an automatic win:** in a match it deals 30% of the rival's max HP. If the rival survives, it falls, gets up and the round continues. If the blow empties the bar, it is a normal round KO; the match ends (and the celebration plays) only when that KO wins the best-of-three. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `REMATCH` / `TRY AGAIN` replays the same rival; `NEW OPPONENT` draws a different random rival. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
+
+The Quick Fight CPU (level 1) guards about a third of attacks it can read, with a short cooldown so it cannot block every hit of a chain; campaign rivals guard more often. `tests/test_combat_fairness.gd` runs a scripted average player against the level-1 CPU and fails if the CPU wins most rounds, out-damages the player or blocks most attacks.
 
 ## Run the project
 
@@ -44,9 +49,11 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 ## Play on a phone
 
-Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser and rotate to landscape. During engine startup the Web shell shows loading status only; the real Godot menu appears as soon as it is ready, so duplicate floating menu controls cannot overlap the game. The centered 16:9 canvas follows the live visual viewport, respects notches and browser safe areas, and displays touch controls automatically without cropping.
+Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser and rotate to landscape. While the engine downloads, a branded loading screen shows the percentage and megabytes, warns about slow connections and offers `RETRY` if the engine fails. The game fills the entire landscape screen: Godot uses the `expand` stretch aspect on a 1280×720 design canvas, so wider phones show more arena instead of black bars; the HUD panels and touch controls anchor to the screen edges, and menus stay centred. On Android phones a `TAP TO FIGHT` gate enters fullscreen and locks landscape; leaving fullscreen pauses the fight and shows the gate again. Browsers without the fullscreen API (iPhone Safari) or that refuse it skip the gate. Add `?diag=1` to the URL for an on-screen diagnostics panel (load stage, viewport, GPU and last errors).
 
-In portrait orientation the page now shows a dedicated illustrated rotate gate: the complete fighter roster surrounds a landscape-phone cue beneath the Knesset menorah, with a visible `FULL SCREEN` button. Rotating to landscape triggers a best-effort browser full-screen request, and the first landscape tap also retries it; mobile browsers that require a user gesture retain the button as the reliable fallback. In landscape, every Web fight exposes the movement joystick plus `PUNCH`, `KICK`, `FINISH`, `JUMP` and `GUARD`. The exported canvas is constrained to a centered 16:9 rectangle inside the browser's current visual viewport, keeping the full menu and every touch target inside its safe edges. CSS ownership of the canvas bounds prevents Godot's adaptive resize pass from shifting an oversized canvas beyond the right edge. Editor-only 3D sources, raw sprite sheets, reference images and tests are excluded from the Web package to reduce its initial download without removing runtime fighters, stages or finishers. The web export replaces the former PWA worker with a self-retiring cleanup worker, unregisters it and clears its old caches. This also repairs Chrome installations that retained the obsolete `index.service.worker.js`; after the migration deployment, close and reopen an already-open game tab once.
+Images are imported as lossy WebP by default (`[importer_defaults]` in `project.godot`), which cut the downloaded package from about 65 MB to about 15 MB. Textures decode to the same GPU format, so runtime performance is unchanged.
+
+In portrait orientation the page now shows a dedicated illustrated rotate gate: the complete fighter roster surrounds a landscape-phone cue beneath the Knesset menorah, with a visible `FULL SCREEN` button. Rotating to landscape triggers a best-effort browser full-screen request, and the first landscape tap also retries it; mobile browsers that require a user gesture retain the button as the reliable fallback. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, `SP` and `GUARD`. Editor-only 3D sources, raw sprite sheets, reference images and tests are excluded from the Web package to reduce its initial download without removing runtime fighters, stages or finishers. The web export replaces the former PWA worker with a self-retiring cleanup worker that unregisters itself and clears old caches without reloading open tabs (a forced reload used to download the game twice).
 
 ## Project structure
 
@@ -109,7 +116,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - The defeated fighter falls on the lethal hit and remains grounded. Results stay hidden while the winner celebrates unobstructed for at least three seconds at 40% speed, then reveal one compact result card.
 - Per-stage visual alignment keeps feet on the visible floor.
 
-On phones, `FINISH` launches a finisher with one tap whenever Special Energy is full. Distance determines hit or miss rather than whether the sequence starts. Chrome web exports include temporary loading actions that forward Start Fight, Campaign and Fighter Lab to Godot, then disappear when the real menu is ready.
+On phones, `SP` launches a finisher with one tap whenever Special Energy is full. Distance determines hit or miss rather than whether the sequence starts. The Web loading screen disappears as soon as the real Godot menu reports ready.
 
 The shared finisher and celebration system is complete for all 13 fighters: one MAX/Special press at 100% triggers the authored timeline, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows the complete roster at once with a dedicated `FINISH` button for each fighter, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. `LIVE VERSUS TEST` creates a production fighter and a selectable rival with full Special Energy; use the normal keyboard controls or the lab action buttons, then `F` or `FINISH NOW` to validate in-range hits and out-of-range misses. The authoritative delivery record is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 

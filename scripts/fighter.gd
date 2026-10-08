@@ -16,6 +16,17 @@ const MOVES := {
 }
 const INPUT_BUFFER_SECONDS := 0.34
 const MAX_COMBO_HITS := 3
+# Special Energy economy. MAX spends SPECIAL_COST; FINISH (SP) needs the full
+# bar. Clean hits charge the attacker, blocked hits charge it a little, and the
+# defender receives comeback energy from the damage it actually takes.
+const SPECIAL_COST := 55.0
+const METER_HIT_BASE := 3.0
+const METER_HIT_DAMAGE_SCALE := 0.4
+const METER_BLOCKED_ATTACKER := 2.5
+const METER_DEFENDER_DAMAGE_SCALE := 0.32
+# Reactive guard chance per CPU level (index = level - 1). Level 1 is the
+# Quick Fight rival and must not read and block most player attacks.
+const CPU_REACTIVE_BLOCK_CHANCE := [0.32, 0.44, 0.56, 0.68]
 
 var who := 0
 var character_id := "bennet"
@@ -64,6 +75,7 @@ var arena_depth_bounds := 0.82
 var ai_clock := 0.0
 var ai_block_time := 0.0
 var ai_attack_cooldown := 0.0
+var ai_guard_cooldown := 0.0
 var _visual: Dictionary
 var _body_mesh: Node3D
 var _animation_paused := false
@@ -345,6 +357,7 @@ func _physics_process(delta: float) -> void:
 func _run_cpu(delta: float) -> void:
 	ai_clock += delta
 	ai_attack_cooldown = maxf(0.0, ai_attack_cooldown - delta)
+	ai_guard_cooldown = maxf(0.0, ai_guard_cooldown - delta)
 	var distance := absf(global_position.x - rival.global_position.x)
 	var enemy_attacking := rival.attack_kind != "" and rival.attack_time > 0.0
 	var dir := signf(rival.global_position.x - global_position.x)
@@ -362,17 +375,21 @@ func _run_cpu(delta: float) -> void:
 	var enemy_elapsed := rival.attack_duration - rival.attack_time if not enemy_move.is_empty() else 0.0
 	var reaction_window := maxf(0.025, float(enemy_move.get("startup", 0.0)) - (0.035 + cpu_level * 0.012))
 	if enemy_attacking and distance < 1.82 and absf(rival.global_position.z - global_position.z) < 0.85 and not enemy_move.is_empty():
-		if enemy_elapsed >= reaction_window and enemy_elapsed <= float(enemy_move.startup) + float(enemy_move.active) and randf() < (0.50 + 0.10 * cpu_level):
-			block = true
-			ai_block_time = 0.20 + cpu_level * 0.025
+		if ai_guard_cooldown <= 0.0 and ai_block_time <= 0.0 and enemy_elapsed >= reaction_window and enemy_elapsed <= float(enemy_move.startup) + float(enemy_move.active):
+			# One guard decision per incoming attack; a cooldown stops the CPU from
+			# reading every hit of a player chain.
+			ai_guard_cooldown = maxf(0.12, 0.42 - 0.08 * cpu_level)
+			if randf() < cpu_block_chance():
+				block = true
+				ai_block_time = 0.20 + cpu_level * 0.025
 	if ai_block_time > 0.0:
 		ai_block_time -= delta
 		block = true
 	var elapsed := attack_duration - attack_time
 	var current_move: Dictionary = MOVES.get(attack_kind, {})
 	var cancel_window: bool = not current_move.is_empty() and attack_confirmed and elapsed >= float(current_move.cancel_from) and elapsed <= float(current_move.cancel_to)
-	if cancel_window and combo_count < MAX_COMBO_HITS and randf() < delta * (1.7 + cpu_level * 0.8):
-		request = "heavy" if attack_kind == "light" else ("special" if meter >= 55.0 else "heavy")
+	if cancel_window and combo_count < MAX_COMBO_HITS and randf() < delta * (1.0 + cpu_level * 0.7):
+		request = "heavy" if attack_kind == "light" else ("special" if meter >= SPECIAL_COST else "heavy")
 	elif not block and distance > (1.48 + 0.06 * cpu_level):
 		ai_mode = "approach"
 		if absf(rival.global_position.z - global_position.z) > 0.54: crouch = false
@@ -387,7 +404,7 @@ func _run_cpu(delta: float) -> void:
 			var roll := randf()
 			if roll < 0.57: request = "light"
 			elif roll < 0.84: request = "heavy"
-			elif meter >= 55.0: request = "special"
+			elif meter >= SPECIAL_COST: request = "special"
 			else: request = "light"
 			ai_attack_cooldown = 0.28 if request == "light" else 0.42
 		if not block and cpu_level >= 2 and rival.attack_kind == "heavy" and distance < 1.82 and enemy_elapsed >= reaction_window and randf() < delta * (1.1 + cpu_level * 0.28):
@@ -402,12 +419,12 @@ func _run_cpu(delta: float) -> void:
 
 
 func _start_attack(kind: String, chained: bool = false) -> void:
-	if kind == "special" and meter < 55.0: kind = "heavy"
+	if kind == "special" and meter < SPECIAL_COST: return
 	if not MOVES.has(kind): return
 	if chained and not _can_chain_to(kind): return
 	if not chained and combo_count > 0: _clear_combo()
 	if kind == "special":
-		meter -= 55.0
+		meter -= SPECIAL_COST
 		meter_changed.emit(who, meter)
 	var move: Dictionary = MOVES[kind]
 	attack_kind = kind
@@ -473,8 +490,7 @@ func _try_hit() -> void:
 		# damage. Previously this branch only charged the attacker's meter, so a
 		# guarding CPU looked completely immune and its HP bar never moved.
 		rival.receive_hit(float(move.damage), attack_facing, attack_kind)
-		meter = minf(100.0, meter + 11.0)
-		meter_changed.emit(who, meter)
+		_gain_meter(METER_BLOCKED_ATTACKER)
 		rival.stun = maxf(rival.stun, 0.18)
 		rival.hit_stop = maxf(rival.hit_stop, 0.045)
 		hit_stop = maxf(hit_stop, 0.045)
@@ -496,8 +512,8 @@ func _try_hit() -> void:
 	rival.receive_hit(damage, attack_facing, attack_kind)
 	rival.hit_stop = maxf(rival.hit_stop, 0.075 if attack_kind != "light" else 0.055)
 	hit_stop = maxf(hit_stop, 0.055 if attack_kind == "light" else 0.075)
-	meter = minf(100.0, meter + 16.0 + damage * 0.45)
-	meter_changed.emit(who, meter)
+	if attack_kind != "special":
+		_gain_meter(METER_HIT_BASE + damage * METER_HIT_DAMAGE_SCALE)
 	strike_landed.emit(who, rival.who, attack_kind, false, combo_count)
 
 
@@ -524,7 +540,9 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 		buffered_attack = ""
 		buffer_time = 0.0
 		attack_request = ""
+	var taken := minf(health, damage)
 	health = maxf(0.0, health - damage)
+	if taken > 0.0: _gain_meter(taken * METER_DEFENDER_DAMAGE_SCALE)
 	var defeated_now := health <= 0.0
 	if defeated_now:
 		round_over = true
@@ -588,6 +606,8 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 	knockdown_rotation = 0.0
 	jump_crossing = false
 	ai_attack_cooldown = 0.0
+	ai_guard_cooldown = 0.0
+	ai_block_time = 0.0
 	jump_phase = ""
 	jump_phase_time = 0.0
 	_collider.disabled = false
@@ -612,6 +632,36 @@ func reset_round(position_x: float, health_value: float = 100.0) -> void:
 		_visual.motion.play_state("idle", true)
 	combo_changed.emit(who, 0)
 	health_changed.emit(who, health)
+	meter_changed.emit(who, meter)
+
+
+func knock_down_and_recover() -> void:
+	# A survivable heavy blow (finisher that did not KO): brief grounded
+	# knockdown, then the normal get-up with a short invulnerability window.
+	attack_kind = ""
+	attack_clip = ""
+	attack_time = 0.0
+	buffered_attack = ""
+	buffer_time = 0.0
+	attack_request = ""
+	knockdown_time = 0.62
+	getup_pending = true
+	stun = knockdown_time
+	busy = knockdown_time
+	velocity = Vector3.ZERO
+	if not _visual.is_empty():
+		_visual.sprite.rotation.z = 0.0
+		_visual.sprite.position.y = float(_visual.ground_y)
+	_animate()
+
+
+func cpu_block_chance() -> float:
+	return float(CPU_REACTIVE_BLOCK_CHANCE[clampi(cpu_level, 1, CPU_REACTIVE_BLOCK_CHANCE.size()) - 1])
+
+
+func _gain_meter(amount: float) -> void:
+	if amount <= 0.0: return
+	meter = minf(100.0, meter + amount)
 	meter_changed.emit(who, meter)
 
 

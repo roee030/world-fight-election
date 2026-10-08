@@ -1,6 +1,6 @@
 # Agent onboarding
 
-Read `README.md`, `docs/character-pipeline.md`, `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md` and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
+Read `README.md`, `docs/character-pipeline.md`, `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md` (including its 2026-10-08 amendment) and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
 
 ## Product goal
 
@@ -15,6 +15,9 @@ Build a polished satirical 2.5D fighting game in Godot 4. The quality target is 
 - Shadows remain on the world floor during jumps.
 - An attack counts only during its active window, within reach and in the correct facing direction.
 - The gold HUD bar is Special Energy. UI text must identify it.
+- A match finisher deals 30% of the rival's max HP; it ends a round only when that empties the bar and celebrates only when it wins the match. Phone controls are `JAB`, `CROSS`, `MAX` (55%), `SP` (100%) and `GUARD`; every touch action dispatches once, on press.
+- The window uses the `expand` stretch aspect: never assume the viewport is exactly 1280×720. Anchor HUD/touch elements to edges and centre 1280-wide screens.
+- Keep `tests/test_combat_fairness.gd` green when tuning AI or damage.
 - Player selection chooses only the player fighter. Quick Fight chooses a different CPU rival randomly.
 - Pause freezes combat, timers, AI, animations and round transitions.
 - Do not commit `.godot`, exports, browser traces, temporary renders, portable tools or the raw `Universal Base Characters[Standard]` folder.

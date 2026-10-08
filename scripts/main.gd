@@ -16,6 +16,14 @@ var _finisher_catalog: RefCounted
 const FinisherDirectorScript = preload("res://scripts/finishers/finisher_director.gd")
 var _finisher_director: Node
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
+const TouchActionButtonScript = preload("res://scripts/touch_action_button.gd")
+const SlantBarScript = preload("res://scripts/hud/slant_bar.gd")
+const CIRCLE_MASK_SHADER = preload("res://scripts/hud/circle_mask.gdshader")
+const DESIGN_SIZE := Vector2(1280, 720)
+const HUD_FRAME_HEIGHT := 132.0
+const HUD_PANEL_SIZE := Vector2(540, 124)
+const HUD_HP_BAR_X := 126.0
+const HUD_HP_BAR_WIDTH := 390.0
 const CONTROL_BINDINGS := {
 	"move": [KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT],
 	"jump": [KEY_W, KEY_UP],
@@ -23,6 +31,7 @@ const CONTROL_BINDINGS := {
 	"crouch": [KEY_C],
 	"light": [KEY_J, KEY_1],
 	"heavy": [KEY_K, KEY_2],
+	"kick": [KEY_U, KEY_4],
 	"special": [KEY_L, KEY_3],
 	"pause": [KEY_ESCAPE]
 }
@@ -31,12 +40,21 @@ const ARENA_EDGE := 5.8
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
+# A finisher is a heavy blow, not an automatic win: it deals this share of the
+# rival's max HP. It only ends a round when that damage empties the bar, and only
+# a match-winning KO plays the celebration.
+const FINISHER_DAMAGE_RATIO := 0.30
+# Phone action cluster, matching the supplied HUD reference. Centres are measured
+# from the bottom-right corner (x = from the right edge, y = from the bottom) so
+# the cluster stays anchored on every aspect ratio. Diamonds are 116 px wide and
+# sit 64 px apart on the diagonal grid, leaving a visible gap between hit areas.
+const TOUCH_PAD_SIZE := Vector2(360, 290)
 const TOUCH_CONTROL_LAYOUT := [
-	{"action": "special", "title": "FINISH", "pos": Vector2(945, 400), "size": Vector2(100, 100), "color": "#b56b27", "shape": "diamond"},
-	{"action": "kick", "title": "KICK", "pos": Vector2(1128, 400), "size": Vector2(100, 100), "color": "#b53f57", "shape": "diamond"},
-	{"action": "light", "title": "PUNCH", "pos": Vector2(1015, 500), "size": Vector2(100, 100), "color": "#239f9b", "shape": "diamond"},
-	{"action": "jump", "title": "JUMP", "pos": Vector2(1138, 500), "size": Vector2(100, 100), "color": "#80671d", "shape": "round"},
-	{"action": "block", "title": "GUARD", "pos": Vector2(1035, 600), "size": Vector2(150, 100), "color": "#3e5968", "shape": "diamond"}
+	{"action": "max", "title": "MAX", "center": Vector2(206, 210), "size": Vector2(116, 116), "color": "#d9792b", "shape": "diamond", "icon": "bolt"},
+	{"action": "heavy", "title": "CROSS", "center": Vector2(78, 210), "size": Vector2(116, 116), "color": "#d24a5c", "shape": "diamond", "icon": "cross"},
+	{"action": "light", "title": "JAB", "center": Vector2(270, 146), "size": Vector2(116, 116), "color": "#1f9e95", "shape": "diamond", "icon": "fist"},
+	{"action": "special", "title": "SP", "center": Vector2(142, 146), "size": Vector2(80, 80), "color": "#c79a22", "shape": "circle", "icon": "spark"},
+	{"action": "block", "title": "GUARD", "center": Vector2(206, 82), "size": Vector2(116, 116), "color": "#4e6573", "shape": "diamond", "icon": "shield"}
 ]
 
 var player: GameFighter
@@ -61,16 +79,16 @@ var select_rival_style: Label
 var roster_tiles: Array[Button] = []
 var pause_root: Control
 var result_root: Control
-var player_health_bar: ProgressBar
-var enemy_health_bar: ProgressBar
-var player_health_glow: ColorRect
-var enemy_health_glow: ColorRect
-var player_recoverable_bar: ProgressBar
-var enemy_recoverable_bar: ProgressBar
-var player_meter_bar: ProgressBar
-var enemy_meter_bar: ProgressBar
+var player_health_bar: SlantBarScript
+var enemy_health_bar: SlantBarScript
+var player_recoverable_bar: SlantBarScript
+var enemy_recoverable_bar: SlantBarScript
+var player_meter_bar: SlantBarScript
+var enemy_meter_bar: SlantBarScript
 var player_meter_label: Label
 var enemy_meter_label: Label
+var player_meter_percent: Label
+var enemy_meter_percent: Label
 var player_hud_portrait: TextureRect
 var enemy_hud_portrait: TextureRect
 var player_round_markers: Array[Panel] = []
@@ -82,6 +100,7 @@ var combo_label: Label
 var result_winner_art: TextureRect
 var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
+var _web_pause_callback: JavaScriptObject
 var combo_label_time := 0.0
 var special_feedback_time := 0.0
 var fight_live := false
@@ -96,7 +115,6 @@ var intermission := 0.0
 var campaign_wins := 0
 var stick: VirtualStick
 var buttons: Dictionary = {}
-var touch_decorations: Dictionary = {}
 var _input_down := {}
 var _attack_key_held := {}
 var _arena: Node3D
@@ -115,6 +133,8 @@ var _celebration_clear_elapsed := 0.0
 var _celebration_result_marked := false
 var _celebration_won := false
 var _touch_special_consumed := false
+var current_rival_id := ""
+var current_level := 1
 
 const BOUTS := [
 	{"name": "Avigdor", "id": "avigdor", "level": 1, "title": "THE QUIET ROOM"},
@@ -163,7 +183,9 @@ func _ready() -> void:
 	_finisher_director.celebration_started.connect(_on_celebration_started)
 	_finisher_director.result_ready.connect(_on_celebration_result_ready)
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
+	_finisher_director.sequence_finished.connect(_on_finisher_sequence_finished)
 	_build_ui()
+	get_viewport().size_changed.connect(_fit_stage_backdrop.bind(null))
 	_create_audio()
 	_show_menu()
 	_install_web_menu_bridge()
@@ -256,9 +278,14 @@ func _physics_process(_delta: float) -> void:
 			depth_axis = -stick.axis.y
 	var light := _consume("light", KEY_J, KEY_1)
 	var heavy := _consume("heavy", KEY_K, KEY_2)
-	var kick := _consume("kick", KEY_NONE, KEY_NONE)
+	var kick := _consume("kick", KEY_U, KEY_4)
+	var max_move := bool(_input_down.get("max", false))
 	var special_action := _sample_special_input(_delta)
-	var special := special_action == "special"
+	var special := special_action == "special" or max_move
+	if special and player.meter < GameFighterScript.SPECIAL_COST:
+		# MAX never silently downgrades to another attack.
+		special = false
+		_show_special_feedback("MAX NEEDS %d%% SPECIAL ENERGY" % int(GameFighterScript.SPECIAL_COST))
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		if _finisher_director.active:
@@ -272,7 +299,7 @@ func _physics_process(_delta: float) -> void:
 		depth_axis
 	)
 	_input_down["jump"] = false
-	for action in ["light", "heavy", "kick", "special"]: _input_down[action] = false
+	for action in ["light", "heavy", "kick", "special", "max"]: _input_down[action] = false
 
 
 func _consume(action: String, key: Key, alt_key: Key) -> bool:
@@ -292,11 +319,17 @@ func _current_finisher_definition() -> Dictionary:
 
 
 func _on_touch_action_down(action: String) -> void:
+	# Every touch action dispatches exactly once, on press. Release only ends a
+	# hold (GUARD); it never queues a second attack.
 	if action == "special":
 		_submit_touch_special()
 		return
+	if action == "max" and is_instance_valid(player) and player.meter < GameFighterScript.SPECIAL_COST:
+		_show_special_feedback("MAX NEEDS %d%% SPECIAL ENERGY" % int(GameFighterScript.SPECIAL_COST))
+		return
 	_input_down[action] = true
 	_input_held[action] = true
+	_vibrate(12 if action != "block" else 0)
 
 
 func _submit_touch_special() -> void:
@@ -307,13 +340,13 @@ func _submit_touch_special() -> void:
 	_input_held["special"] = false
 	_special_release_pending = false
 	if paused or not fight_live or not round_ready or match_state not in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT] or not is_instance_valid(player) or not is_instance_valid(enemy):
-		_show_special_feedback("FINISH NOT AVAILABLE")
+		_show_special_feedback("SP NOT AVAILABLE")
 		return
 	if _finisher_eligible():
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		return
 	if player.meter < float(_current_finisher_definition().get("meter_cost", 100.0)):
-		_show_special_feedback("FINISH NEEDS 100% SPECIAL ENERGY")
+		_show_special_feedback("SP NEEDS 100% SPECIAL ENERGY")
 		return
 	_show_special_feedback(_current_finisher_hint())
 
@@ -330,13 +363,22 @@ func _install_web_menu_bridge() -> void:
 	if not OS.has_feature("web"):
 		return
 	_web_menu_callback = JavaScriptBridge.create_callback(_on_web_menu_action)
+	_web_pause_callback = JavaScriptBridge.create_callback(_on_web_pause_request)
 	var window := JavaScriptBridge.get_interface("window")
 	if window != null:
 		window.worldFightMenuAction = _web_menu_callback
+		window.worldFightPauseRequest = _web_pause_callback
 		JavaScriptBridge.eval("window.worldFightSetReady?.(true); window.worldFightSetMenuVisible?.(true);")
 		var pending = window.worldFightPendingAction
 		if pending != null and not str(pending).is_empty():
 			_on_web_menu_action([str(pending)])
+
+
+func _on_web_pause_request(_arguments: Array) -> void:
+	# The browser left fullscreen (or the tab lost the game surface): freeze the
+	# fight until the player taps back into fullscreen and resumes.
+	if fight_live and not paused:
+		_toggle_pause()
 
 
 func _on_web_menu_action(arguments: Array) -> void:
@@ -407,8 +449,6 @@ func _update_special_hold(delta: float, pressed: bool, released: bool) -> String
 		match_state = MatchState.Value.FINISHER_PROMPT
 	elif match_state == MatchState.Value.FINISHER_PROMPT:
 		match_state = MatchState.Value.FIGHTING
-	if is_instance_valid(player_meter_label):
-		player_meter_label.text = _current_finisher_hint()
 	return result
 
 
@@ -420,12 +460,12 @@ func _current_finisher_hint() -> String:
 	if float(context.meter) < float(definition.get("meter_cost", 100.0)):
 		return "SPECIAL ENERGY · %d%%" % int(context.meter)
 	if bool(context.paused) or int(context.state) != MatchState.Value.FIGHTING:
-		return "FINISH NOT AVAILABLE"
+		return "SP NOT AVAILABLE"
 	if not bool(context.attacker_actionable):
-		return "FINISH: WAIT FOR YOUR FIGHTER TO RECOVER"
+		return "SP: WAIT FOR YOUR FIGHTER TO RECOVER"
 	if float(context.distance) > float(definition.get("activation_range", 1.75)):
-		return "FINISH READY: TOO FAR — ATTACK WILL MISS"
-	return "FINISH READY: TAP FINISH"
+		return "SP READY: GET CLOSER OR IT WILL MISS"
+	return "SP READY: TAP SP"
 
 
 func _cancel_special_hold() -> void:
@@ -438,7 +478,10 @@ func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definitio
 	if not _finisher_eligible() or attacker != player or defender != enemy:
 		return false
 	var opening_in_range := attacker.position.distance_to(defender.position) <= float(definition.get("activation_range", 1.75))
-	if not _finisher_director.begin(attacker, defender, definition, opening_in_range):
+	var match_definition := definition.duplicate(true)
+	match_definition["damage_budget"] = defender.max_health() * FINISHER_DAMAGE_RATIO
+	match_definition["celebrate_on_lethal"] = player_rounds + 1 >= 2
+	if not _finisher_director.begin(attacker, defender, match_definition, opening_in_range):
 		return false
 	match_state = MatchState.Value.FINISHER_CINEMATIC
 	round_ready = false
@@ -450,12 +493,40 @@ func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definitio
 func _on_finisher_final_hit(who: int) -> void:
 	if match_state != MatchState.Value.FINISHER_CINEMATIC:
 		return
+	var defender: GameFighter = player if who == 0 else enemy
+	if is_instance_valid(defender) and defender.health > 0.0:
+		return
 	match_state = MatchState.Value.KO_HOLD
 	if who == 0:
 		enemy_rounds += 1
 	else:
 		player_rounds += 1
 	_update_scores()
+
+
+func _on_finisher_sequence_finished(lethal: bool) -> void:
+	if not fight_live:
+		return
+	_input_down.clear()
+	_cancel_special_hold()
+	if lethal:
+		# The finisher won this round but not the match: hold the KO, then the
+		# next round starts exactly like an ordinary knockout.
+		match_state = MatchState.Value.KO_HOLD
+		round_ready = false
+		for fighter in [player, enemy]:
+			if is_instance_valid(fighter): fighter.round_over = true
+		message_label.text = "ROUND FOR YOU" if player_rounds > enemy_rounds else "ROUND LOST"
+		message_label.visible = true
+		intermission = 1.55
+		return
+	match_state = MatchState.Value.FIGHTING
+	round_ready = true
+	if is_instance_valid(enemy) and enemy.health > 0.0:
+		enemy.round_over = false
+		enemy.knock_down_and_recover()
+	if is_instance_valid(player):
+		player.round_over = false
 
 
 func _on_celebration_started(_id: String) -> void:
@@ -556,12 +627,14 @@ func _build_stage(stage_id: String = "") -> void:
 	var backdrop_mesh := QuadMesh.new()
 	var distance := 18.0
 	var frame_height := 2.0 * distance * tan(deg_to_rad(_fight_camera.fov * 0.5))
-	var frame_aspect := get_viewport().get_visible_rect().size.x / maxf(1.0, get_viewport().get_visible_rect().size.y)
-	var backdrop_scale := float(stage.get("backdrop_scale", 1.0))
-	backdrop_mesh.size = Vector2(frame_height * frame_aspect, frame_height) * backdrop_scale
+	var backdrop_texture := load(str(stage.image)) as Texture2D
 	backdrop.mesh = backdrop_mesh
+	backdrop.set_meta("frame_height", frame_height)
+	backdrop.set_meta("scale", float(stage.get("backdrop_scale", 1.0)))
+	backdrop.set_meta("texture_aspect", float(backdrop_texture.get_width()) / maxf(1.0, float(backdrop_texture.get_height())) if backdrop_texture != null else 16.0 / 9.0)
+	_fit_stage_backdrop(backdrop)
 	var backdrop_material := StandardMaterial3D.new()
-	backdrop_material.albedo_texture = load(str(stage.image))
+	backdrop_material.albedo_texture = backdrop_texture
 	backdrop_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	backdrop_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	backdrop_material.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -578,6 +651,21 @@ func _build_stage(stage_id: String = "") -> void:
 	floor_shape.position.y = -0.12
 	floor_body.add_child(floor_shape)
 	_arena.add_child(floor_body)
+
+
+func _fit_stage_backdrop(backdrop: MeshInstance3D = null) -> void:
+	# Cover the camera frame without distorting the art: on wider phones the
+	# plate grows to the frame width and crops a little top and bottom.
+	if backdrop == null and is_instance_valid(_fight_camera):
+		backdrop = _fight_camera.get_node_or_null("FullFrameStageBackdrop") as MeshInstance3D
+	if backdrop == null or not backdrop.mesh is QuadMesh:
+		return
+	var visible_size := get_viewport().get_visible_rect().size
+	var frame_aspect := visible_size.x / maxf(1.0, visible_size.y)
+	var frame_height := float(backdrop.get_meta("frame_height", 1.0))
+	var texture_aspect := float(backdrop.get_meta("texture_aspect", 16.0 / 9.0))
+	var height := maxf(frame_height, frame_height * frame_aspect / texture_aspect)
+	(backdrop.mesh as QuadMesh).size = Vector2(height * texture_aspect, height) * float(backdrop.get_meta("scale", 1.0))
 
 
 func _glow_material(color: Color, energy: float) -> StandardMaterial3D:
@@ -632,119 +720,66 @@ func _build_ui() -> void:
 
 
 func _build_hud() -> void:
-	var shadow := _panel(hud_root, Rect2(12, 12, 1256, 110), Color(0.0, 0.0, 0.0, 0.48))
-	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var top := _panel(hud_root, Rect2(8, 6, 1264, 110), Color(0.008, 0.014, 0.024, 0.92))
-	top.name = "CombatHUDFrame"
-	_polygon(top, "PlayerHUDWingPlate", PackedVector2Array([Vector2(88, 4), Vector2(568, 4), Vector2(586, 22), Vector2(566, 108), Vector2(88, 108), Vector2(70, 88)]), Color(0.025, 0.075, 0.11, 0.94))
-	_polygon(top, "EnemyHUDWingPlate", PackedVector2Array([Vector2(696, 22), Vector2(714, 4), Vector2(1194, 4), Vector2(1212, 88), Vector2(1194, 108), Vector2(716, 108)]), Color(0.09, 0.035, 0.06, 0.94))
-	_panel(top, Rect2(0, 0, 1264, 3), Color("#e4bd6a"))
-	_panel(top, Rect2(0, 3, 4, 107), Color("#35cfca"))
-	_panel(top, Rect2(1260, 3, 4, 107), Color("#df5968"))
-	var left_wing := _panel(top, Rect2(96, 35, 468, 4), Color(0.93, 0.77, 0.39, 0.88))
-	left_wing.name = "LeftHealthWing"
-	var right_wing := _panel(top, Rect2(700, 35, 468, 4), Color(0.93, 0.77, 0.39, 0.88))
-	right_wing.name = "RightHealthWing"
+	# Layout follows the supplied HUD reference: two angled fighter panels with a
+	# circular portrait, a segmented slanted health bar and a Special Energy row,
+	# and an octagonal round clock between them. Panels anchor to the screen
+	# edges and the clock to the centre, so wide phones get no gaps or overlap.
+	var frame := Control.new()
+	frame.name = "CombatHUDFrame"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_root.add_child(frame)
+	frame.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	frame.offset_left = 0
+	frame.offset_right = 0
+	frame.offset_top = 0
+	frame.offset_bottom = HUD_FRAME_HEIGHT
+	var player_group := _build_fighter_panel(frame, true)
+	var enemy_group := _build_fighter_panel(frame, false)
+	player_group.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	player_group.offset_left = 10
+	player_group.offset_right = 10 + HUD_PANEL_SIZE.x
+	player_group.offset_top = 6
+	player_group.offset_bottom = 6 + HUD_PANEL_SIZE.y
+	enemy_group.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	enemy_group.offset_left = -10 - HUD_PANEL_SIZE.x
+	enemy_group.offset_right = -10
+	enemy_group.offset_top = 6
+	enemy_group.offset_bottom = 6 + HUD_PANEL_SIZE.y
 
-	var player_portrait_frame := _panel(top, Rect2(12, 10, 76, 78), Color("#102b33"))
-	_polygon(top, "PlayerPortraitRing", _octagon_points(Vector2(50, 49), 45.0, 0.77), Color(0.16, 0.88, 0.88, 0.72))
-	player_portrait_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player_hud_portrait = TextureRect.new()
-	player_hud_portrait.name = "PlayerPortrait"
-	player_hud_portrait.texture = load(_fighter_thumbnail_path("bennet"))
-	player_hud_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	player_hud_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	player_hud_portrait.position = Vector2(16, 14)
-	player_hud_portrait.size = Vector2(68, 70)
-	player_hud_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player_portrait_frame.add_child(player_hud_portrait)
-	player_hud_portrait.reparent(top)
-	player_hud_portrait.position = Vector2(16, 14)
+	var timer_group := Control.new()
+	timer_group.name = "TimerMedallion"
+	timer_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(timer_group)
+	timer_group.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	timer_group.offset_left = -75
+	timer_group.offset_right = 75
+	timer_group.offset_top = 4
+	timer_group.offset_bottom = 124
+	var octagon := PackedVector2Array([Vector2(34, 0), Vector2(116, 0), Vector2(150, 28), Vector2(150, 92), Vector2(122, 120), Vector2(28, 120), Vector2(0, 92), Vector2(0, 28)])
+	_polygon(timer_group, "TimerHexPlate", octagon, Color(0.02, 0.05, 0.08, 0.93))
+	_outline(timer_group, "TimerHexOutline", octagon, Color(0.40, 0.86, 0.90, 0.75), 2.5)
+	timer_label = _label(timer_group, "60", Rect2(0, 6, 150, 74), 60, Color("#e9fbff"), HORIZONTAL_ALIGNMENT_CENTER)
+	timer_label.name = "TimerLabel"
+	timer_label.add_theme_color_override("font_outline_color", Color(0.10, 0.55, 0.62, 0.9))
+	timer_label.add_theme_constant_override("outline_size", 4)
+	round_label = _label(timer_group, "BEST OF 3  ·  ROUND 1", Rect2(0, 84, 150, 22), 11, Color("#d3e3e8"), HORIZONTAL_ALIGNMENT_CENTER)
+	round_label.name = "RoundLabel"
 
-	var enemy_portrait_frame := _panel(top, Rect2(1176, 10, 76, 78), Color("#351923"))
-	_polygon(top, "EnemyPortraitRing", _octagon_points(Vector2(1214, 49), 45.0, 0.77), Color(0.95, 0.25, 0.36, 0.72))
-	enemy_portrait_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	enemy_hud_portrait = TextureRect.new()
-	enemy_hud_portrait.name = "EnemyPortrait"
-	enemy_hud_portrait.texture = load(_fighter_thumbnail_path("avigdor"))
-	enemy_hud_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	enemy_hud_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	enemy_hud_portrait.flip_h = true
-	enemy_hud_portrait.position = Vector2(1180, 14)
-	enemy_hud_portrait.size = Vector2(68, 70)
-	enemy_hud_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(enemy_hud_portrait)
-
-	var left_name := _label(top, "BENNET", Rect2(100, 5, 372, 28), 23, Color("#f2f6f3"), HORIZONTAL_ALIGNMENT_LEFT)
-	left_name.name = "PlayerName"
-	var right_name := _label(top, "AVIGDOR", Rect2(792, 5, 372, 28), 23, Color("#f2f6f3"), HORIZONTAL_ALIGNMENT_RIGHT)
-	right_name.name = "EnemyName"
-	_label(top, "PLAYER 1", Rect2(486, 8, 66, 18), 8, Color("#65d8d3"), HORIZONTAL_ALIGNMENT_RIGHT)
-	_label(top, "CPU", Rect2(712, 8, 66, 18), 8, Color("#ed8e98"), HORIZONTAL_ALIGNMENT_LEFT)
-	_panel(top, Rect2(96, 39, 468, 38), Color("#05090f"))
-	_panel(top, Rect2(700, 39, 468, 38), Color("#05090f"))
-	player_recoverable_bar = _bar(top, Rect2(104, 45, 452, 26), Color("#9b7839"))
-	player_recoverable_bar.name = "PlayerRecoverableHealth"
-	enemy_recoverable_bar = _bar(top, Rect2(708, 45, 452, 26), Color("#9b7839"))
-	enemy_recoverable_bar.name = "EnemyRecoverableHealth"
-	enemy_recoverable_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_health_bar = _bar(top, Rect2(104, 45, 452, 26), Color("#27cfd0"))
-	enemy_health_bar = _bar(top, Rect2(708, 45, 452, 26), Color("#e14c62"))
-	enemy_health_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_health_glow = _wash(top, Rect2(108, 48, 444, 3), Color(0.83, 1.0, 1.0, 0.72))
-	player_health_glow.name = "PlayerHealthGlow"
-	enemy_health_glow = _wash(top, Rect2(712, 48, 444, 3), Color(1.0, 0.83, 0.86, 0.72))
-	enemy_health_glow.name = "EnemyHealthGlow"
-	for i in range(1, 10):
-		var left_cut := _panel(top, Rect2(104 + i * 45, 45, 2, 26), Color(0.01, 0.03, 0.05, 0.58))
-		left_cut.name = "PlayerHealthCut%d" % i
-		left_cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var right_cut := _panel(top, Rect2(708 + i * 45, 45, 2, 26), Color(0.08, 0.015, 0.025, 0.58))
-		right_cut.name = "EnemyHealthCut%d" % i
-		right_cut.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player_meter_bar = _bar(top, Rect2(104, 82, 286, 9), Color("#e4b950"), 100)
-	enemy_meter_bar = _bar(top, Rect2(874, 82, 286, 9), Color("#e4b950"), 100)
-	enemy_meter_bar.fill_mode = ProgressBar.FILL_END_TO_BEGIN
-	player_meter_label = _label(top, "SPECIAL ENERGY  0%", Rect2(112, 88, 286, 24), 12, Color("#fff1bf"), HORIZONTAL_ALIGNMENT_LEFT)
-	player_meter_label.add_theme_color_override("font_outline_color", Color("#121c22"))
-	player_meter_label.add_theme_constant_override("outline_size", 3)
-	player_meter_label.name = "PlayerSpecialLabel"
-	enemy_meter_label = _label(top, "SPECIAL ENERGY  0%", Rect2(884, 88, 276, 24), 12, Color("#f0d48a"), HORIZONTAL_ALIGNMENT_RIGHT)
-	enemy_meter_label.name = "EnemySpecialLabel"
-
-	var timer_medallion := _panel(top, Rect2(576, 3, 112, 91), Color("#172431"))
-	timer_medallion.name = "TimerMedallion"
-	_polygon(top, "TimerHexPlate", PackedVector2Array([Vector2(594, 1), Vector2(670, 1), Vector2(690, 22), Vector2(690, 78), Vector2(670, 99), Vector2(594, 99), Vector2(574, 78), Vector2(574, 22)]), Color(0.05, 0.16, 0.22, 0.82))
-	timer_medallion.move_to_front()
-	_panel(timer_medallion, Rect2(7, 5, 98, 70), Color("#080f18"))
-	timer_label = _label(top, "60", Rect2(588, 8, 88, 54), 43, Color("#ffe9ba"), HORIZONTAL_ALIGNMENT_CENTER)
-	round_label = _label(top, "ROUND 1", Rect2(542, 93, 180, 16), 9, Color("#c6cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
-
-	var player_markers := Control.new()
-	player_markers.name = "PlayerRoundMarkers"
-	player_markers.position = Vector2(408, 84)
-	player_markers.size = Vector2(70, 18)
-	top.add_child(player_markers)
-	var enemy_markers := Control.new()
-	enemy_markers.name = "EnemyRoundMarkers"
-	enemy_markers.position = Vector2(786, 84)
-	enemy_markers.size = Vector2(70, 18)
-	top.add_child(enemy_markers)
-	for i in range(2):
-		var player_marker := _panel(player_markers, Rect2(i * 26, 1, 18, 10), Color("#263943"))
-		player_marker.name = "Round%d" % (i + 1)
-		player_round_markers.append(player_marker)
-		var enemy_marker := _panel(enemy_markers, Rect2(52 - i * 26, 1, 18, 10), Color("#432630"))
-		enemy_marker.name = "Round%d" % (i + 1)
-		enemy_round_markers.append(enemy_marker)
-
-	var pause_btn := _button(top, "Ⅱ", Rect2(1168, 82, 36, 25), "#253847", 12)
+	# Pause and fullscreen sit under the CPU panel, out of the action area.
+	var system_buttons := Control.new()
+	system_buttons.name = "SystemButtons"
+	frame.add_child(system_buttons)
+	system_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	system_buttons.offset_left = -112
+	system_buttons.offset_right = -14
+	system_buttons.offset_top = HUD_FRAME_HEIGHT + 2
+	system_buttons.offset_bottom = HUD_FRAME_HEIGHT + 44
+	var pause_btn := _button(system_buttons, "Ⅱ", Rect2(0, 0, 44, 40), "#1d3140", 16)
+	pause_btn.name = "PauseButton"
 	pause_btn.pressed.connect(_toggle_pause)
-	var fullscreen_btn := _button(top, "⛶", Rect2(1210, 82, 36, 25), "#253847", 14)
+	var fullscreen_btn := _button(system_buttons, "⛶", Rect2(52, 0, 44, 40), "#1d3140", 18)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.pressed.connect(_toggle_fullscreen)
-	var side_score := _label(top, "0  —  0", Rect2(582, 64, 100, 16), 9, Color("#9daab0"), HORIZONTAL_ALIGNMENT_CENTER)
-	side_score.name = "Score"
 	message_label = _label(hud_root, "", Rect2(280, 144, 720, 78), 32, Color("#f0f4f3"), HORIZONTAL_ALIGNMENT_CENTER)
 	message_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
@@ -754,50 +789,189 @@ func _build_hud() -> void:
 	combo_label.add_theme_constant_override("shadow_offset_x", 2)
 	combo_label.add_theme_constant_override("shadow_offset_y", 3)
 	combo_label.visible = false
+	for overlay in [message_label, combo_label]:
+		var rect := Rect2(overlay.position, overlay.size)
+		overlay.anchor_left = 0.5
+		overlay.anchor_right = 0.5
+		overlay.offset_left = rect.position.x - DESIGN_SIZE.x * 0.5
+		overlay.offset_right = rect.end.x - DESIGN_SIZE.x * 0.5
 	_build_touch_controls()
 	hud_root.visible = false
 
 
+func _build_fighter_panel(frame: Control, is_player: bool) -> Control:
+	var side := "Player" if is_player else "Enemy"
+	var accent := Color("#46dcd8") if is_player else Color("#f0566b")
+	var w := HUD_PANEL_SIZE.x
+	var h := HUD_PANEL_SIZE.y
+	# x positions are authored for the player panel and mirrored for the CPU.
+	var mx := func(x: float, width: float = 0.0) -> float: return x if is_player else w - x - width
+	var group := Control.new()
+	group.name = side + "HUDGroup"
+	group.size = HUD_PANEL_SIZE
+	group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(group)
+	var plate_points := PackedVector2Array([Vector2(20, 0), Vector2(w - 16, 0), Vector2(w, 16), Vector2(w, h - 30), Vector2(w - 30, h), Vector2(0, h), Vector2(0, 20)])
+	if not is_player:
+		for i in range(plate_points.size()): plate_points[i].x = w - plate_points[i].x
+	_polygon(group, side + "HUDWingPlate", plate_points, Color(0.015, 0.035, 0.055, 0.88))
+	_outline(group, side + "HUDWingOutline", plate_points, Color(accent, 0.55), 2.0)
+	var portrait_center := Vector2(mx.call(64.0), 62.0)
+	_polygon(group, side + "PortraitRing", _circle_points(portrait_center, 53.0, 40), Color(accent, 0.85))
+	_polygon(group, side + "PortraitWell", _circle_points(portrait_center, 48.0, 40), Color(0.03, 0.07, 0.10, 1.0))
+	var accent_arc := Line2D.new()
+	accent_arc.name = side + "PortraitArc"
+	accent_arc.width = 4.0
+	accent_arc.default_color = accent.lightened(0.35)
+	var arc_from := PI * 1.05 if is_player else -PI * 0.05
+	for i in range(13):
+		accent_arc.add_point(portrait_center + Vector2.RIGHT.rotated(arc_from + (PI * 0.45 if is_player else -PI * 0.45) * float(i) / 12.0) * 58.0)
+	group.add_child(accent_arc)
+	var portrait := TextureRect.new()
+	portrait.name = side + "Portrait"
+	portrait.texture = load(_fighter_thumbnail_path("bennet" if is_player else "avigdor"))
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	portrait.position = portrait_center - Vector2(46, 46)
+	portrait.size = Vector2(92, 92)
+	portrait.flip_h = not is_player
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mask := ShaderMaterial.new()
+	mask.shader = CIRCLE_MASK_SHADER
+	portrait.material = mask
+	group.add_child(portrait)
+	var align := HORIZONTAL_ALIGNMENT_LEFT if is_player else HORIZONTAL_ALIGNMENT_RIGHT
+	var tag := _label(group, "PLAYER 1" if is_player else "CPU", Rect2(mx.call(128.0, 200.0), 4, 200, 20), 14, accent.lightened(0.15), align)
+	tag.name = side + "Tag"
+	var name_label := _label(group, "BENNET" if is_player else "AVIGDOR", Rect2(mx.call(128.0, 322.0), 22, 322, 38), 28, Color("#f6f8f6"), align)
+	name_label.name = side + "Name"
+	name_label.clip_text = true
+	var markers := Control.new()
+	markers.name = side + "RoundMarkers"
+	markers.position = Vector2(mx.call(458.0, 64.0), 30)
+	markers.size = Vector2(64, 20)
+	group.add_child(markers)
+	for i in range(2):
+		var pip := _panel(markers, Rect2((i * 30) if is_player else (34 - i * 30), 2, 22, 12), Color("#263943"))
+		pip.name = "Round%d" % (i + 1)
+		(player_round_markers if is_player else enemy_round_markers).append(pip)
+	var bar_rect := Rect2(mx.call(HUD_HP_BAR_X, HUD_HP_BAR_WIDTH), 64, HUD_HP_BAR_WIDTH, 28)
+	var recoverable := _slant_bar(group, side + "RecoverableHealth", bar_rect, Color(0.96, 0.82, 0.45, 0.72), not is_player, 7, 12.0)
+	var health := _slant_bar(group, side + "HealthBar", bar_rect, accent, not is_player, 7, 12.0)
+	health.show_back = false
+	var meter_title := _label(group, "SPECIAL ENERGY", Rect2(mx.call(HUD_HP_BAR_X + 4.0, 200.0), 94, 200, 18), 12, Color("#e8c45c"), align)
+	meter_title.name = side + "SpecialLabel"
+	var meter := _slant_bar(group, side + "SpecialBar", Rect2(mx.call(HUD_HP_BAR_X + 4.0, 290.0), 112, 290, 8), Color("#f2c94c"), not is_player, 1, 4.0)
+	meter.max_value = 100.0
+	meter.value = 0.0
+	meter.tail_stripes = 0
+	var percent := _label(group, "0%", Rect2(mx.call(HUD_HP_BAR_X + 300.0, 90.0), 100, 90, 24), 15, Color("#f6e6b0"), HORIZONTAL_ALIGNMENT_LEFT if is_player else HORIZONTAL_ALIGNMENT_RIGHT)
+	percent.name = side + "SpecialPercent"
+	if is_player:
+		player_hud_portrait = portrait
+		player_recoverable_bar = recoverable
+		player_health_bar = health
+		player_meter_bar = meter
+		player_meter_label = meter_title
+		player_meter_percent = percent
+	else:
+		enemy_hud_portrait = portrait
+		enemy_recoverable_bar = recoverable
+		enemy_health_bar = health
+		enemy_meter_bar = meter
+		enemy_meter_label = meter_title
+		enemy_meter_percent = percent
+	return group
+
+
+func _slant_bar(parent: Control, node_name: String, rect: Rect2, color: Color, mirrored: bool, segment_count: int, slant: float) -> SlantBarScript:
+	var bar := SlantBarScript.new()
+	bar.name = node_name
+	bar.position = rect.position
+	bar.size = rect.size
+	bar.max_value = 112.0
+	bar.value = 112.0
+	bar.fill_color = color
+	bar.mirrored = mirrored
+	bar.segments = segment_count
+	bar.skew = slant
+	parent.add_child(bar)
+	return bar
+
+
+func _outline(parent: CanvasItem, node_name: String, points: PackedVector2Array, color: Color, width: float) -> Line2D:
+	var line := Line2D.new()
+	line.name = node_name
+	line.points = points
+	line.closed = true
+	line.width = width
+	line.default_color = color
+	line.joint_mode = Line2D.LINE_JOINT_SHARP
+	parent.add_child(line)
+	return line
+
+
+func _circle_points(center: Vector2, radius: float, count: int) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in range(count):
+		points.append(center + Vector2.RIGHT.rotated(TAU * float(i) / float(count)) * radius)
+	return points
+
+
+func _hud_node(node_name: String) -> Node:
+	return hud_root.get_node("CombatHUDFrame").find_child(node_name, true, false)
+
+
 func _build_touch_controls() -> void:
 	stick = VirtualStickScript.new()
-	stick.position = Vector2(66, 466)
-	stick.size = Vector2(218, 218)
+	stick.name = "MoveStick"
 	stick.visible = false
 	hud_root.add_child(stick)
+	# Bottom-left anchor: 50 px from the left edge, 36 px above the bottom.
+	stick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	stick.offset_left = 50
+	stick.offset_right = 50 + 218
+	stick.offset_top = -36 - 218
+	stick.offset_bottom = -36
+	var pad := Control.new()
+	pad.name = "TouchActionPad"
+	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud_root.add_child(pad)
+	pad.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	pad.offset_left = -TOUCH_PAD_SIZE.x
+	pad.offset_top = -TOUCH_PAD_SIZE.y
+	pad.offset_right = 0
+	pad.offset_bottom = 0
 	for spec in TOUCH_CONTROL_LAYOUT:
-		var rect := Rect2(spec.pos, spec.size)
-		var b := _button(hud_root, spec.title, rect, spec.color, 15)
-		b.name = "Touch_" + str(spec.action).capitalize()
-		if spec.shape == "diamond":
-			var center: Vector2 = rect.position + rect.size * 0.5
-			var plate_color := Color(str(spec.color))
-			plate_color.a = 0.88
-			var plate := _polygon(hud_root, "TouchDiamond_" + str(spec.action).capitalize(), PackedVector2Array([center + Vector2(0, -rect.size.y * 0.54), center + Vector2(rect.size.x * 0.54, 0), center + Vector2(0, rect.size.y * 0.54), center + Vector2(-rect.size.x * 0.54, 0)]), plate_color)
-			plate.z_index = -1
-			var outline := Line2D.new()
-			outline.name = "Outline"
-			outline.points = PackedVector2Array([plate.polygon[0], plate.polygon[1], plate.polygon[2], plate.polygon[3], plate.polygon[0]])
-			outline.width = 3.0
-			outline.default_color = Color(str(spec.color)).lightened(0.42)
-			outline.z_index = 1
-			plate.add_child(outline)
-			touch_decorations[spec.action] = plate
-			_make_button_transparent(b)
-		else:
-			_round_button(b, Color(spec.color))
+		var center: Vector2 = TOUCH_PAD_SIZE - spec.center
+		var button_size: Vector2 = spec.size
+		var b = TouchActionButtonScript.new()
+		b.configure(str(spec.action), str(spec.title), str(spec.shape), str(spec.icon), Color(str(spec.color)), Rect2(center - button_size * 0.5, button_size))
 		b.visible = false
+		pad.add_child(b)
 		b.button_down.connect(func():
 			_on_touch_action_down(spec.action)
 		)
 		b.button_up.connect(func():
 			_on_touch_action_up(spec.action)
 		)
-		b.pressed.connect(func():
-			if spec.action in ["light", "kick"]:
-				_input_down[spec.action] = true
-		)
 		buttons[spec.action] = b
 	_set_touch_controls_visible(_detect_mobile_input())
+
+
+func _refresh_touch_energy_state() -> void:
+	if not is_instance_valid(player) or buttons.is_empty():
+		return
+	var max_ready := player.meter >= GameFighterScript.SPECIAL_COST
+	var finish_ready := player.meter >= float(_current_finisher_definition().get("meter_cost", 100.0))
+	if buttons.has("max"): buttons.max.set_state(max_ready, false)
+	if buttons.has("special"): buttons.special.set_state(finish_ready, finish_ready)
+
+
+func _vibrate(milliseconds: int) -> void:
+	if milliseconds <= 0 or not OS.has_feature("web"):
+		return
+	JavaScriptBridge.eval("navigator.vibrate && navigator.vibrate(%d)" % milliseconds)
 
 
 func _mobile_input_available(touchscreen: bool, web_build: bool, web_touch_points: int, short_edge: int) -> bool:
@@ -822,8 +996,6 @@ func _set_touch_controls_visible(value: bool) -> void:
 	for action in buttons:
 		if is_instance_valid(buttons[action]):
 			buttons[action].visible = value
-		if touch_decorations.has(action) and is_instance_valid(touch_decorations[action]):
-			touch_decorations[action].visible = value
 
 
 func _build_menu() -> void:
@@ -861,6 +1033,11 @@ func _build_menu() -> void:
 	var fullscreen_btn := _button(menu_root, "⛶", Rect2(1212, 24, 44, 40), "#233440", 20)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.tooltip_text = "FULL SCREEN"
+	fullscreen_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	fullscreen_btn.offset_left = -68
+	fullscreen_btn.offset_right = -24
+	fullscreen_btn.offset_top = 24
+	fullscreen_btn.offset_bottom = 64
 	fullscreen_btn.pressed.connect(_toggle_fullscreen)
 
 
@@ -928,6 +1105,7 @@ func _build_select() -> void:
 	confirm.pressed.connect(_confirm_selection)
 	_label(select_root, "ARROWS  /  SELECT     ENTER  /  CONFIRM", Rect2(453, 649, 374, 30), 10, Color("#9cabb1"), HORIZONTAL_ALIGNMENT_CENTER)
 	select_root.visible = false
+	_center_design_children(select_root)
 	_refresh_roster()
 
 
@@ -965,6 +1143,7 @@ func _build_map_select() -> void:
 	var enter := _button(map_select_root, "ENTER ARENA", Rect2(1000, 642, 230, 56), "#a4793b", 16)
 	enter.pressed.connect(_start_selected_mode)
 	map_select_root.visible = false
+	_center_design_children(map_select_root)
 	_refresh_stage_cards()
 
 
@@ -1118,6 +1297,11 @@ func _build_result() -> void:
 	result_winner_art.modulate = Color(1, 1, 1, 0.42)
 	result_winner_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	result_root.add_child(result_winner_art)
+	result_winner_art.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	result_winner_art.offset_left = -490
+	result_winner_art.offset_right = -20
+	result_winner_art.offset_top = 55
+	result_winner_art.offset_bottom = -55
 	result_accent = _panel(result_root, Rect2(40, 112, 6, 244), Color("#39cbc6"))
 	result_accent.name = "ResultAccent"
 	var content := Control.new()
@@ -1136,7 +1320,10 @@ func _build_result() -> void:
 	var next := _button(result_root, "CONTINUE", Rect2(40, 620, 210, 54), "#1d777a", 16)
 	next.name = "ContinueButton"
 	next.pressed.connect(_continue_from_result)
-	var menu := _button(result_root, "RETURN TO MENU", Rect2(262, 620, 210, 54), "#3b4852", 13)
+	var new_opponent := _button(result_root, "NEW OPPONENT", Rect2(262, 620, 210, 54), "#7a4a2a", 14)
+	new_opponent.name = "NewOpponentButton"
+	new_opponent.pressed.connect(_start_quick_fight)
+	var menu := _button(result_root, "RETURN TO MENU", Rect2(484, 620, 210, 54), "#3b4852", 13)
 	menu.name = "ResultMenuButton"
 	menu.pressed.connect(_return_to_menu)
 	_label(result_root, "ENTER  /  CONTINUE", Rect2(40, 682, 432, 22), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_LEFT)
@@ -1157,6 +1344,7 @@ func _panel(parent: Control, rect: Rect2, color: Color) -> Panel:
 	style.set_border_width_all(1)
 	panel.add_theme_stylebox_override("panel", style)
 	parent.add_child(panel)
+	_fit_design_rect(panel, rect)
 	return panel
 
 
@@ -1206,7 +1394,41 @@ func _wash(parent: Control, rect: Rect2, color: Color) -> ColorRect:
 	wash.color = color
 	wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(wash)
+	_fit_design_rect(wash, rect)
 	return wash
+
+
+func _fit_design_rect(control: Control, rect: Rect2) -> void:
+	# The game is authored on a 1280x720 canvas and the window uses the
+	# "expand" aspect, so wider phones add width. Full-screen and full-height
+	# layers stretch with the window; everything else keeps its authored spot.
+	if rect.position.x == 0.0 and rect.size.x == DESIGN_SIZE.x:
+		control.anchor_right = 1.0
+		control.offset_right = 0.0
+	if rect.position.y == 0.0 and rect.size.y == DESIGN_SIZE.y:
+		control.anchor_bottom = 1.0
+		control.offset_bottom = 0.0
+
+
+func _center_design_children(root: Control) -> void:
+	# Keep a 1280x720 screen centred on wider (or taller) windows. Full-screen
+	# backgrounds already stretch; every other control keeps its offset from
+	# the design centre.
+	for child in root.get_children():
+		if not child is Control:
+			continue
+		var control := child as Control
+		var rect := Rect2(control.position, control.size)
+		if not is_equal_approx(control.anchor_right, 1.0):
+			control.anchor_left = 0.5
+			control.anchor_right = 0.5
+			control.offset_left = rect.position.x - DESIGN_SIZE.x * 0.5
+			control.offset_right = rect.end.x - DESIGN_SIZE.x * 0.5
+		if not is_equal_approx(control.anchor_bottom, 1.0):
+			control.anchor_top = 0.5
+			control.anchor_bottom = 0.5
+			control.offset_top = rect.position.y - DESIGN_SIZE.y * 0.5
+			control.offset_bottom = rect.end.y - DESIGN_SIZE.y * 0.5
 
 
 func _label(parent: Control, content: String, rect: Rect2, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
@@ -1274,31 +1496,6 @@ func _menu_text_button(parent: Control, title: String, rect: Rect2, font_size: i
 	return button
 
 
-func _bar(parent: Control, rect: Rect2, color: Color, maximum: float = 112.0) -> ProgressBar:
-	var bar := ProgressBar.new()
-	bar.position = rect.position
-	bar.size = rect.size
-	bar.max_value = maximum
-	bar.value = maximum
-	bar.show_percentage = false
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color("#26333d")
-	bg.corner_radius_top_left = 5
-	bg.corner_radius_top_right = 5
-	bg.corner_radius_bottom_left = 5
-	bg.corner_radius_bottom_right = 5
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = color
-	fill.corner_radius_top_left = 5
-	fill.corner_radius_top_right = 5
-	fill.corner_radius_bottom_left = 5
-	fill.corner_radius_bottom_right = 5
-	bar.add_theme_stylebox_override("background", bg)
-	bar.add_theme_stylebox_override("fill", fill)
-	parent.add_child(bar)
-	return bar
-
-
 func _show_menu() -> void:
 	if is_instance_valid(_finisher_director):
 		_finisher_director.cancel()
@@ -1345,16 +1542,17 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	result_root.visible = false
 	pause_root.visible = false
 	hud_root.visible = true
+	current_rival_id = rival_id
+	current_level = level
 	_build_stage(selected_stage_id)
-	var names := hud_root.get_node("CombatHUDFrame")
-	(names.get_node("PlayerName") as Label).text = _fighter_name(player_id)
-	(names.get_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and bout == 3 else "")
+	(_hud_node("PlayerName") as Label).text = _fighter_name(player_id)
+	(_hud_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and bout == 3 else "")
 	player_hud_portrait.texture = load(_fighter_thumbnail_path(player_id))
 	enemy_hud_portrait.texture = load(_fighter_thumbnail_path(rival_id))
 	var player_name_text := _fighter_name(player_id)
 	var enemy_name_text := _fighter_name(rival_id)
-	(names.get_node("PlayerName") as Label).add_theme_font_size_override("font_size", 18 if player_name_text.length() > 17 else (20 if player_name_text.length() > 11 else 24))
-	(names.get_node("EnemyName") as Label).add_theme_font_size_override("font_size", 18 if enemy_name_text.length() > 17 else (20 if enemy_name_text.length() > 11 else 24))
+	(_hud_node("PlayerName") as Label).add_theme_font_size_override("font_size", 21 if player_name_text.length() > 17 else (24 if player_name_text.length() > 11 else 28))
+	(_hud_node("EnemyName") as Label).add_theme_font_size_override("font_size", 21 if enemy_name_text.length() > 17 else (24 if enemy_name_text.length() > 11 else 28))
 	message_label.text = stage_title
 	message_label.visible = true
 	if is_instance_valid(player): player.queue_free()
@@ -1403,10 +1601,10 @@ func _start_round() -> void:
 	enemy.reset_round(1.85, enemy.max_health())
 	player_health_bar.max_value = player.max_health()
 	enemy_health_bar.max_value = enemy.max_health()
-	player_health_glow.position.x = 108.0
-	player_health_glow.size.x = 444.0
-	enemy_health_glow.position.x = 712.0
-	enemy_health_glow.size.x = 444.0
+	player_health_bar.value = player.health
+	enemy_health_bar.value = enemy.health
+	player_health_bar.set_fill_color(Color("#46dcd8"))
+	enemy_health_bar.set_fill_color(Color("#f0566b"))
 	player_recoverable_bar.max_value = player.max_health()
 	player_recoverable_bar.value = player.max_health()
 	enemy_recoverable_bar.max_value = enemy.max_health()
@@ -1422,7 +1620,7 @@ func _start_round() -> void:
 	combo_label.visible = false
 	combo_label_time = 0.0
 	var round_num := player_rounds + enemy_rounds + 1
-	round_label.text = "BEST OF 3   ·   ROUND %d" % round_num
+	round_label.text = "BEST OF 3  ·  ROUND %d" % round_num
 	_update_scores()
 	message_label.text = "ROUND %d" % round_num
 	message_label.visible = true
@@ -1444,15 +1642,8 @@ func _on_health_changed(who: int, value: float) -> void:
 	else:
 		enemy_recover_delay = 0.32
 	var ratio := value / maxf(1.0, bar.max_value)
-	if who == 0:
-		player_health_glow.position.x = 108.0
-		player_health_glow.size.x = 444.0 * ratio
-	else:
-		enemy_health_glow.size.x = 444.0 * ratio
-		enemy_health_glow.position.x = 1156.0 - enemy_health_glow.size.x
-	var fill := bar.get_theme_stylebox("fill") as StyleBoxFlat
-	if fill != null:
-		fill.bg_color = Color("#38d3ce") if ratio > 0.55 and who == 0 else (Color("#df5968") if ratio > 0.55 else (Color("#e1b957") if ratio > 0.25 else Color("#f03f47")))
+	var healthy := Color("#46dcd8") if who == 0 else Color("#f0566b")
+	bar.set_fill_color(healthy if ratio > 0.55 else (Color("#e9bf55") if ratio > 0.25 else Color("#ff3b47")))
 	if round_ready:
 		_spawn_hit_flash(who)
 
@@ -1530,9 +1721,14 @@ func _spawn_hit_flash(victim_index: int) -> void:
 func _on_meter_changed(who: int, value: float) -> void:
 	var bar := player_meter_bar if who == 0 else enemy_meter_bar
 	var label := player_meter_label if who == 0 else enemy_meter_label
+	var percent := player_meter_percent if who == 0 else enemy_meter_percent
 	bar.value = value
-	label.text = "SPECIAL ENERGY  READY" if value >= 100.0 else "SPECIAL ENERGY  %d%%" % roundi(value)
-	label.add_theme_color_override("font_color", Color("#ffe18c") if value >= 100.0 else Color("#d8c184"))
+	label.text = "SPECIAL ENERGY"
+	percent.text = "SP READY" if value >= 100.0 else "%d%%" % roundi(value)
+	percent.add_theme_color_override("font_color", Color("#fff1a8") if value >= 100.0 else Color("#f6e6b0"))
+	(bar as SlantBarScript).set_fill_color(Color("#ffe066") if value >= 100.0 else (Color("#f2a53a") if value >= GameFighterScript.SPECIAL_COST else Color("#f2c94c")))
+	if who == 0:
+		_refresh_touch_energy_state()
 
 
 func _on_defeated(who: int) -> void:
@@ -1567,8 +1763,6 @@ func _end_round(reason: String) -> void:
 
 
 func _update_scores() -> void:
-	var top := hud_root.get_node("CombatHUDFrame")
-	(top.get_node("Score") as Label).text = "%d  —  %d" % [player_rounds, enemy_rounds]
 	for i in range(player_round_markers.size()):
 		var player_style := StyleBoxFlat.new()
 		player_style.bg_color = Color("#43d7cf") if i < player_rounds else Color("#263943")
@@ -1597,6 +1791,7 @@ func _show_result(won: bool) -> void:
 	var detail: Label = content.get_node("ResultDetail")
 	var button: Button = result_root.get_node("ContinueButton")
 	var backdrop_word: Label = result_root.get_node("ResultBackdropWord")
+	(result_root.get_node("NewOpponentButton") as Button).visible = not campaign_mode
 	var winner_id := selecting
 	if won and is_instance_valid(player):
 		winner_id = player.character_id
@@ -1650,7 +1845,7 @@ func _show_result_with_celebration(won: bool) -> void:
 
 func _continue_from_result() -> void:
 	if not campaign_mode:
-		_start_quick_fight()
+		_rematch()
 		return
 	if player_rounds < 2:
 		var retry_data: Dictionary = BOUTS[bout]
@@ -1668,6 +1863,15 @@ func _continue_from_result() -> void:
 	else:
 		campaign_mode = false
 		_show_menu()
+
+
+func _rematch() -> void:
+	# REMATCH / TRY AGAIN replays the same rival on the same stage.
+	if current_rival_id.is_empty() or current_rival_id == selecting:
+		_start_quick_fight()
+		return
+	campaign_mode = false
+	_setup_bout(selecting, current_rival_id, current_level, "REMATCH")
 
 
 func _toggle_pause() -> void:

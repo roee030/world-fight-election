@@ -6,6 +6,9 @@ signal final_hit(defender_index: int)
 signal celebration_started(id: String)
 signal result_ready(winner_index: int)
 signal cancelled(reason: String)
+## Emitted when a match finisher ends without a celebration: the rival survived
+## the damage budget, or the KO only ended a round.
+signal sequence_finished(lethal: bool)
 
 var catalog: Variant
 const TimelineScript = preload("res://scripts/finishers/finisher_timeline.gd")
@@ -39,6 +42,12 @@ var _impact_remaining := 0.0
 var _impact_origin := Vector3.ZERO
 var _lifetimes: Dictionary = {}
 var _clocks: Array[Dictionary] = []
+# Match finishers carry a damage budget (a share of the rival's max HP). Without
+# one (Fight Lab previews) the final hit keeps the authored always-lethal rule.
+var _damage_budget := 0.0
+var _celebrate_on_lethal := true
+var _dealt := 0.0
+var _lethal := false
 
 func configure(host: Node, arena: Node3D, camera: Camera3D) -> void:
 	_host = host
@@ -59,6 +68,10 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary,
 	_lightbox = false
 	_hit_ids.clear()
 	_paused = false
+	_damage_budget = maxf(0.0, float(definition.get("damage_budget", 0.0)))
+	_celebrate_on_lethal = bool(definition.get("celebrate_on_lethal", true))
+	_dealt = 0.0
+	_lethal = false
 	_opening_miss = force_opening_miss or not opening_in_range
 	active = true
 	diagnostic = ""
@@ -107,6 +120,10 @@ func begin_celebration(winner: GameFighter, loser: GameFighter, celebration_id: 
 	timeline.start(celebration)
 	celebration_started.emit(celebration_id)
 	return true
+
+func last_sequence_lethal() -> bool:
+	return _lethal
+
 
 func is_celebrating() -> bool:
 	return active and _celebrating
@@ -159,7 +176,8 @@ func _dispatch(event: Dictionary) -> void:
 			if _hit_ids.has(id): return
 			var ending := bool(event.get("final", false))
 			var damage := float(event.get("damage", 0))
-			if ending: damage = maxf(damage, _defender.health)
+			if ending and _damage_budget > 0.0: damage = maxf(1.0, _damage_budget - _dealt)
+			elif ending: damage = maxf(damage, _defender.health)
 			else: damage = minf(damage, maxf(0, _defender.health - 1))
 			if not ending and damage <= 0 and _defender.health > 0:
 				_hit_ids.append(id)
@@ -168,12 +186,19 @@ func _dispatch(event: Dictionary) -> void:
 				_fail("Authored hit rejected: " + id)
 				return
 			_hit_ids.append(id)
+			_dealt += damage
 			if ending:
 				_final = true
+				_lethal = _defender.health <= 0.0
 				final_hit.emit(_defender.who)
 		"celebration_start":
 			if not _final or _celebrating:
 				_fail("Celebration requires one final hit")
+				return
+			if _damage_budget > 0.0 and not (_lethal and _celebrate_on_lethal):
+				var lethal := _lethal
+				cancel()
+				sequence_finished.emit(lethal)
 				return
 			_cleanup_presentation()
 			_celebrating = true

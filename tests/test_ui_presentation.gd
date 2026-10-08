@@ -46,35 +46,36 @@ func _run() -> void:
 		if not main._fighter_thumbnail_path(id).contains("/portraits/"):
 			return _fail("fighter select does not use face portrait for %s" % id)
 
-	var frame: Node = main.hud_root.get_node_or_null("CombatHUDFrame")
+	var frame: Control = main.hud_root.get_node_or_null("CombatHUDFrame") as Control
 	if frame == null:
 		return _fail("combat HUD frame is missing")
-	if frame.size.y > 112.0:
+	if frame.size.y > 140.0:
 		return _fail("combat HUD is not thin enough")
 	if main.player_health_bar.size.y < 24.0 or main.enemy_health_bar.size.y < 24.0:
 		return _fail("combat health bars are too thin to read like the supplied fighting-game reference")
-	if main.player_meter_bar.size.y < 8.0 or main.enemy_meter_bar.size.y < 8.0:
+	if main.player_meter_bar.size.y < 6.0 or main.enemy_meter_bar.size.y < 6.0:
 		return _fail("special meters are too thin to distinguish from the health bars")
-	if frame.get_node_or_null("PlayerHealthGlow") == null or frame.get_node_or_null("EnemyHealthGlow") == null:
-		return _fail("combat HUD is missing the bright inner health highlights")
-	if frame.get_node_or_null("FullscreenButton") == null:
-		return _fail("combat HUD has no fullscreen control for phone browsers")
-	for node_name in ["PlayerPortrait", "EnemyPortrait", "TimerMedallion", "PlayerRoundMarkers", "EnemyRoundMarkers", "PlayerRecoverableHealth", "EnemyRecoverableHealth", "LeftHealthWing", "RightHealthWing"]:
-		if frame.get_node_or_null(node_name) == null:
+	if main.player_health_bar.segments < 5 or not main.enemy_health_bar.mirrored:
+		return _fail("health bars must be segmented and mirrored like the reference")
+	for node_name in ["PlayerPortrait", "EnemyPortrait", "TimerMedallion", "TimerLabel", "RoundLabel", "PlayerRoundMarkers", "EnemyRoundMarkers", "PlayerRecoverableHealth", "EnemyRecoverableHealth", "PlayerHUDWingPlate", "EnemyHUDWingPlate", "TimerHexPlate", "PlayerPortraitRing", "EnemyPortraitRing", "PlayerTag", "EnemyTag", "FullscreenButton", "PauseButton"]:
+		if frame.find_child(node_name, true, false) == null:
 			return _fail("combat HUD is missing %s" % node_name)
-	for node_name in ["PlayerHUDWingPlate", "EnemyHUDWingPlate", "TimerHexPlate", "PlayerPortraitRing", "EnemyPortraitRing"]:
-		if frame.get_node_or_null(node_name) == null:
-			return _fail("combat HUD is missing the angular reference element %s" % node_name)
 	for node_name in ["PlayerSpecialLabel", "EnemySpecialLabel"]:
-		if frame.get_node_or_null(node_name) == null:
-			return _fail("combat HUD does not explain the special meter")
-	for i in range(1, 10):
-		if frame.get_node_or_null("PlayerHealthCut%d" % i) == null or frame.get_node_or_null("EnemyHealthCut%d" % i) == null:
-			return _fail("health bars are missing segment %d" % i)
-	if frame.get_node("PlayerRoundMarkers").get_child_count() != 2:
+		var special_label := frame.find_child(node_name, true, false) as Label
+		if special_label == null or special_label.text != "SPECIAL ENERGY":
+			return _fail("combat HUD does not identify the gold bar as Special Energy")
+	if not main.round_label.text.begins_with("BEST OF 3"):
+		return _fail("round clock does not show the best-of-three round")
+	if (frame.find_child("PlayerRoundMarkers", true, false) as Node).get_child_count() != 2:
 		return _fail("player round markers are incomplete")
-	if frame.get_node("EnemyRoundMarkers").get_child_count() != 2:
+	if (frame.find_child("EnemyRoundMarkers", true, false) as Node).get_child_count() != 2:
 		return _fail("enemy round markers are incomplete")
+	var enemy_group := frame.find_child("EnemyHUDGroup", true, false) as Control
+	if enemy_group == null or not is_equal_approx(enemy_group.anchor_left, 1.0):
+		return _fail("CPU panel must anchor to the right edge on wide phones")
+	main._on_meter_changed(0, 100.0)
+	if main.player_meter_percent.text != "SP READY":
+		return _fail("full Special Energy does not announce SP")
 
 	var result_art := main.result_root.get_node_or_null("ResultWinnerArt") as TextureRect
 	if result_art == null:
