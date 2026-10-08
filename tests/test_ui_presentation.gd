@@ -59,6 +59,9 @@ func _run() -> void:
 	for node_name in ["PlayerPortrait", "EnemyPortrait", "TimerMedallion", "PlayerRoundMarkers", "EnemyRoundMarkers", "PlayerRecoverableHealth", "EnemyRecoverableHealth", "LeftHealthWing", "RightHealthWing"]:
 		if frame.get_node_or_null(node_name) == null:
 			return _fail("combat HUD is missing %s" % node_name)
+	for node_name in ["PlayerHUDWingPlate", "EnemyHUDWingPlate", "TimerHexPlate", "PlayerPortraitRing", "EnemyPortraitRing"]:
+		if frame.get_node_or_null(node_name) == null:
+			return _fail("combat HUD is missing the angular reference element %s" % node_name)
 	for node_name in ["PlayerSpecialLabel", "EnemySpecialLabel"]:
 		if frame.get_node_or_null(node_name) == null:
 			return _fail("combat HUD does not explain the special meter")

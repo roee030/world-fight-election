@@ -21,6 +21,14 @@ func _run() -> void:
 	for action in ["light", "heavy", "special", "jump", "block"]:
 		assert(main.buttons.has(action), "missing touch action: " + action)
 		assert(main.buttons[action].visible, "hidden touch action: " + action)
+	for action in ["light", "heavy", "special", "block"]:
+		var diamond: Polygon2D = main.hud_root.get_node_or_null("TouchDiamond_" + action.capitalize()) as Polygon2D
+		assert(diamond != null and diamond.polygon.size() == 4, "touch %s must use a four-point diamond plate" % action)
+	assert(main.buttons.light.text == "JAB")
+	assert(main.buttons.heavy.text == "CROSS")
+	assert(main.buttons.special.text == "MAX")
+	assert(main.buttons.block.text == "GUARD")
+	assert(main.buttons.special.size.x >= 88.0 and main.buttons.special.size.y >= 88.0, "MAX touch target is too small")
 	assert(main.CONTROL_BINDINGS == {
 		"move": [KEY_A, KEY_D, KEY_LEFT, KEY_RIGHT],
 		"jump": [KEY_W, KEY_UP],

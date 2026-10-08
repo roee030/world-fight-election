@@ -46,7 +46,7 @@ The project disables Blender import in `project.godot`; gameplay uses the sprite
 
 Every push to `main` exports the Godot Web build and deploys it to GitHub Pages at [roee030.github.io/world-fight-election](https://roee030.github.io/world-fight-election/). Open it in a phone browser, rotate to landscape and tap the `⛶` button to enter full screen. The layout fills the browser viewport, respects screen safe areas and displays touch controls automatically.
 
-In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `HEAVY`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The web export unregisters the former PWA service worker and clears its old caches on load, preventing an earlier GitHub Pages build from remaining stuck on a phone; after this migration deployment, close and reopen an already-open game tab once.
+In portrait orientation the page now shows a bilingual rotate/full-screen gate instead of shrinking the 16:9 game into an unreadable strip. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, jump and guard controls, so browser touchscreen detection cannot hide the mobile interface. The web export replaces the former PWA worker with a self-retiring cleanup worker, unregisters it and clears its old caches. This also repairs Chrome installations that retained the obsolete `index.service.worker.js`; after the migration deployment, close and reopen an already-open game tab once.
 
 ## Project structure
 
@@ -105,7 +105,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 
 - Full-screen cinematic title art with a small floating text menu.
 - Fighter selection shows all fighters at once with face-focused portraits.
-- Thin fighting-game HUD with portraits, segmented health, round markers, timer and a clearly named special meter.
+- Angular fighting-game HUD with edge portraits, segmented cyan/red health, round markers, a central timer and a thin gold `SPECIAL ENERGY` meter. Phone controls use a large left joystick and a right-side diamond cluster matching the supplied console-fighter reference.
 - Results and pause screens preserve the arena behind cinematic overlays.
 - Per-stage visual alignment keeps feet on the visible floor.
 

@@ -85,6 +85,7 @@ var intermission := 0.0
 var campaign_wins := 0
 var stick: VirtualStick
 var buttons: Dictionary = {}
+var touch_decorations: Dictionary = {}
 var _input_down := {}
 var _attack_key_held := {}
 var _arena: Node3D
@@ -528,6 +529,8 @@ func _build_hud() -> void:
 	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var top := _panel(hud_root, Rect2(8, 6, 1264, 110), Color(0.008, 0.014, 0.024, 0.92))
 	top.name = "CombatHUDFrame"
+	_polygon(top, "PlayerHUDWingPlate", PackedVector2Array([Vector2(88, 4), Vector2(568, 4), Vector2(586, 22), Vector2(566, 108), Vector2(88, 108), Vector2(70, 88)]), Color(0.025, 0.075, 0.11, 0.94))
+	_polygon(top, "EnemyHUDWingPlate", PackedVector2Array([Vector2(696, 22), Vector2(714, 4), Vector2(1194, 4), Vector2(1212, 88), Vector2(1194, 108), Vector2(716, 108)]), Color(0.09, 0.035, 0.06, 0.94))
 	_panel(top, Rect2(0, 0, 1264, 3), Color("#e4bd6a"))
 	_panel(top, Rect2(0, 3, 4, 107), Color("#35cfca"))
 	_panel(top, Rect2(1260, 3, 4, 107), Color("#df5968"))
@@ -537,6 +540,7 @@ func _build_hud() -> void:
 	right_wing.name = "RightHealthWing"
 
 	var player_portrait_frame := _panel(top, Rect2(12, 10, 76, 78), Color("#102b33"))
+	_polygon(top, "PlayerPortraitRing", _octagon_points(Vector2(50, 49), 45.0, 0.77), Color(0.16, 0.88, 0.88, 0.72))
 	player_portrait_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	player_hud_portrait = TextureRect.new()
 	player_hud_portrait.name = "PlayerPortrait"
@@ -551,6 +555,7 @@ func _build_hud() -> void:
 	player_hud_portrait.position = Vector2(16, 14)
 
 	var enemy_portrait_frame := _panel(top, Rect2(1176, 10, 76, 78), Color("#351923"))
+	_polygon(top, "EnemyPortraitRing", _octagon_points(Vector2(1214, 49), 45.0, 0.77), Color(0.95, 0.25, 0.36, 0.72))
 	enemy_portrait_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	enemy_hud_portrait = TextureRect.new()
 	enemy_hud_portrait.name = "EnemyPortrait"
@@ -602,6 +607,8 @@ func _build_hud() -> void:
 
 	var timer_medallion := _panel(top, Rect2(576, 3, 112, 91), Color("#172431"))
 	timer_medallion.name = "TimerMedallion"
+	_polygon(top, "TimerHexPlate", PackedVector2Array([Vector2(594, 1), Vector2(670, 1), Vector2(690, 22), Vector2(690, 78), Vector2(670, 99), Vector2(594, 99), Vector2(574, 78), Vector2(574, 22)]), Color(0.05, 0.16, 0.22, 0.82))
+	timer_medallion.move_to_front()
 	_panel(timer_medallion, Rect2(7, 5, 98, 70), Color("#080f18"))
 	timer_label = _label(top, "60", Rect2(588, 8, 88, 54), 43, Color("#ffe9ba"), HORIZONTAL_ALIGNMENT_CENTER)
 	round_label = _label(top, "ROUND 1", Rect2(542, 93, 180, 16), 9, Color("#c6cdd0"), HORIZONTAL_ALIGNMENT_CENTER)
@@ -646,20 +653,38 @@ func _build_hud() -> void:
 
 func _build_touch_controls() -> void:
 	stick = VirtualStickScript.new()
-	stick.position = Vector2(40, 486)
-	stick.size = Vector2(194, 194)
+	stick.position = Vector2(30, 478)
+	stick.size = Vector2(210, 210)
 	stick.visible = false
 	hud_root.add_child(stick)
 	var specs := [
-		{"action": "light", "title": "JAB", "pos": Vector2(1090, 543), "color": "#2b8c8f"},
-		{"action": "heavy", "title": "HEAVY", "pos": Vector2(1172, 474), "color": "#ae565d"},
-		{"action": "special", "title": "MAX", "pos": Vector2(1010, 466), "color": "#906341"},
-		{"action": "jump", "title": "↑", "pos": Vector2(953, 564), "color": "#334a58"},
-		{"action": "block", "title": "GUARD", "pos": Vector2(1161, 618), "color": "#445761"}
+		{"action": "special", "title": "MAX", "pos": Vector2(994, 454), "size": Vector2(94, 94), "color": "#b56b27", "shape": "diamond"},
+		{"action": "heavy", "title": "CROSS", "pos": Vector2(1156, 486), "size": Vector2(94, 94), "color": "#b53f57", "shape": "diamond"},
+		{"action": "light", "title": "JAB", "pos": Vector2(1070, 548), "size": Vector2(94, 94), "color": "#239f9b", "shape": "diamond"},
+		{"action": "jump", "title": "JUMP", "pos": Vector2(1172, 574), "size": Vector2(68, 68), "color": "#80671d", "shape": "round"},
+		{"action": "block", "title": "GUARD", "pos": Vector2(1136, 626), "size": Vector2(108, 78), "color": "#3e5968", "shape": "diamond"}
 	]
 	for spec in specs:
-		var b := _button(hud_root, spec.title, Rect2(spec.pos.x, spec.pos.y, 72 if spec.action != "block" else 94, 72 if spec.action != "block" else 52), spec.color, 15)
+		var rect := Rect2(spec.pos, spec.size)
+		var b := _button(hud_root, spec.title, rect, spec.color, 15)
 		b.name = "Touch_" + str(spec.action).capitalize()
+		if spec.shape == "diamond":
+			var center: Vector2 = rect.position + rect.size * 0.5
+			var plate_color := Color(str(spec.color))
+			plate_color.a = 0.88
+			var plate := _polygon(hud_root, "TouchDiamond_" + str(spec.action).capitalize(), PackedVector2Array([center + Vector2(0, -rect.size.y * 0.54), center + Vector2(rect.size.x * 0.54, 0), center + Vector2(0, rect.size.y * 0.54), center + Vector2(-rect.size.x * 0.54, 0)]), plate_color)
+			plate.z_index = -1
+			var outline := Line2D.new()
+			outline.name = "Outline"
+			outline.points = PackedVector2Array([plate.polygon[0], plate.polygon[1], plate.polygon[2], plate.polygon[3], plate.polygon[0]])
+			outline.width = 3.0
+			outline.default_color = Color(str(spec.color)).lightened(0.42)
+			outline.z_index = 1
+			plate.add_child(outline)
+			touch_decorations[spec.action] = plate
+			_make_button_transparent(b)
+		else:
+			_round_button(b, Color(spec.color))
 		b.visible = false
 		b.button_down.connect(func():
 			_on_touch_action_down(spec.action)
@@ -697,6 +722,8 @@ func _set_touch_controls_visible(value: bool) -> void:
 	for action in buttons:
 		if is_instance_valid(buttons[action]):
 			buttons[action].visible = value
+		if touch_decorations.has(action) and is_instance_valid(touch_decorations[action]):
+			touch_decorations[action].visible = value
 
 
 func _build_menu() -> void:
@@ -1031,6 +1058,45 @@ func _panel(parent: Control, rect: Rect2, color: Color) -> Panel:
 	panel.add_theme_stylebox_override("panel", style)
 	parent.add_child(panel)
 	return panel
+
+
+func _polygon(parent: CanvasItem, node_name: String, points: PackedVector2Array, color: Color) -> Polygon2D:
+	var polygon := Polygon2D.new()
+	polygon.name = node_name
+	polygon.polygon = points
+	polygon.color = color
+	parent.add_child(polygon)
+	return polygon
+
+
+func _octagon_points(center: Vector2, radius: float, diagonal_ratio: float) -> PackedVector2Array:
+	var diagonal := radius * diagonal_ratio
+	return PackedVector2Array([
+		center + Vector2(-diagonal, -diagonal), center + Vector2(0, -radius), center + Vector2(diagonal, -diagonal), center + Vector2(radius, 0),
+		center + Vector2(diagonal, diagonal), center + Vector2(0, radius), center + Vector2(-diagonal, diagonal), center + Vector2(-radius, 0)
+	])
+
+
+func _make_button_transparent(button: Button) -> void:
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0, 0, 0, 0)
+		style.border_color = Color(1, 1, 1, 0)
+		button.add_theme_stylebox_override(state, style)
+	button.add_theme_color_override("font_outline_color", Color(0.02, 0.04, 0.06, 0.92))
+	button.add_theme_constant_override("outline_size", 5)
+
+
+func _round_button(button: Button, color: Color) -> void:
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = color.lightened(0.12) if state == "hover" else color
+		if state == "pressed":
+			style.bg_color = color.darkened(0.18)
+		style.border_color = Color("#ffe06b")
+		style.set_border_width_all(3)
+		style.set_corner_radius_all(40)
+		button.add_theme_stylebox_override(state, style)
 
 
 func _wash(parent: Control, rect: Rect2, color: Color) -> ColorRect:

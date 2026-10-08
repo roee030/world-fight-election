@@ -1,5 +1,8 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
+
+from tools.patch_web_export import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +18,17 @@ class WebCachePolicyTests(unittest.TestCase):
         self.assertIn("getRegistrations()", patcher)
         self.assertIn("caches.keys()", patcher)
         self.assertIn("python tools/patch_web_export.py", workflow)
+
+    def test_pages_build_replaces_the_old_worker_with_a_self_destructing_worker(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            html = root / "index.html"
+            html.write_text("<html><head></head><body></body></html>", encoding="utf-8")
+            patch(html)
+            worker = (root / "index.service.worker.js").read_text(encoding="utf-8")
+            self.assertIn("self.registration.unregister()", worker)
+            self.assertIn("caches.keys()", worker)
+            self.assertIn("self.clients.claim()", worker)
 
 
 if __name__ == "__main__":

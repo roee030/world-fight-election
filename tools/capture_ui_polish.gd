@@ -19,6 +19,7 @@ func _run() -> void:
 
 	main.selected_stage_id = "knesset_exterior"
 	main._setup_bout("yair_lapid", "itamar_ben_gvir", 2, "VISUAL QA")
+	main._set_touch_controls_visible(true)
 	for _i in range(8):
 		await process_frame
 	get_root().get_texture().get_image().save_png("res://output/ui-fight-hud-qa.png")
