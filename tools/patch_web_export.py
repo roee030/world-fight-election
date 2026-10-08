@@ -41,7 +41,7 @@ RESPONSIVE_SHELL = r"""<style id="world-fight-responsive-style">
 :root{--wf-safe-left:env(safe-area-inset-left,0px);--wf-safe-right:env(safe-area-inset-right,0px);--wf-safe-top:env(safe-area-inset-top,0px);--wf-safe-bottom:env(safe-area-inset-bottom,0px)}
 html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden;background:#050810}
 #canvas{position:fixed!important;margin:0!important;max-width:none!important;max-height:none!important;touch-action:none}
-#world-fight-startup{position:fixed;z-index:9999;overflow:hidden;pointer-events:none;color:#f7f2e8;font-family:Arial,sans-serif}
+#world-fight-startup{position:fixed;inset:0;width:100%;height:100%;z-index:9999;overflow:hidden;pointer-events:none;color:#f7f2e8;font-family:Arial,sans-serif}
 #world-fight-startup .wf-actions{position:absolute;left:5%;top:20.5%;width:28.5%;min-width:180px;pointer-events:auto;text-shadow:0 2px 12px #000}
 #world-fight-startup button{display:block;width:100%;min-height:44px;margin:3px 0;padding:7px 10px;border:0;border-left:3px solid transparent;background:rgba(5,12,23,.72);color:#f7f2e8;text-align:left;font-size:clamp(12px,1.35vw,20px);letter-spacing:1px;cursor:pointer}
 #world-fight-startup button:hover,#world-fight-startup button:active{border-left-color:#e15367;background:rgba(160,35,58,.82)}
@@ -91,8 +91,10 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     document.querySelectorAll('#world-fight-startup button').forEach((button)=>button.setAttribute('aria-busy','false'));
     window.layoutWorldFightViewport();
   };
-  document.addEventListener('DOMContentLoaded', () => {
+  window.initializeWorldFightShell = () => {
     const startup=document.getElementById('world-fight-startup');
+    if (!startup || startup.dataset.initialized) return;
+    startup.dataset.initialized='true';
     startup.querySelectorAll('button').forEach((button)=>button.addEventListener('click',()=>{
       if (state.pending) return; state.pending=button.dataset.action; window.worldFightPendingAction=state.pending; button.setAttribute('aria-busy','true');
       if (typeof window.worldFightMenuAction==='function') window.worldFightMenuAction(state.pending);
@@ -100,12 +102,13 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     window.addEventListener('resize',window.layoutWorldFightViewport); window.addEventListener('orientationchange',window.layoutWorldFightViewport);
     if (window.visualViewport) { window.visualViewport.addEventListener('resize',window.layoutWorldFightViewport); window.visualViewport.addEventListener('scroll',window.layoutWorldFightViewport); }
     window.layoutWorldFightViewport();
-  });
+  };
+  document.addEventListener('DOMContentLoaded', window.initializeWorldFightShell);
 })();
 </script>
 """
 
-STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span></div></div>"""
+STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span></div></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests. */
 self.addEventListener('install', () => self.skipWaiting());

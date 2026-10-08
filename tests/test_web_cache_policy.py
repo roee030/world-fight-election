@@ -47,6 +47,11 @@ class WebCachePolicyTests(unittest.TestCase):
                 patched_html.index('<script src="index.js">'),
                 "startup actions must parse before the blocking engine loader",
             )
+            self.assertLess(
+                patched_html.index("window.initializeWorldFightShell()</script>"),
+                patched_html.index('<script src="index.js">'),
+                "startup actions must become interactive before the blocking engine loader",
+            )
             patch(html)
             patched_twice = html.read_text(encoding="utf-8")
             self.assertEqual(patched_twice.count('id="world-fight-responsive-script"'), 1)
