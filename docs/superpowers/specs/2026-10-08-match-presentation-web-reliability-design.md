@@ -1,7 +1,7 @@
 # Match presentation and Web reliability — system design
 
 **Date:** 2026-10-08  
-**Status:** Approved in chat; awaiting written-spec review  
+**Status:** Approved for implementation
 **Scope:** Normal-match KO and celebration flow, result presentation, combat HUD and touch controls, MAX input, and the Chrome startup shell.
 
 ## Purpose
@@ -79,6 +79,21 @@ The combat HUD remains authored on the 1280×720 reference canvas and follows th
 
 The implementation will use named layout constants or a compact data table for the shared control geometry instead of unrelated positional corrections.
 
+## Phone responsiveness contract
+
+The Web build must adapt to the usable viewport of current phones rather than target one captured device size.
+
+- Godot keeps one 1280×720 gameplay coordinate system. Responsive behavior scales and positions that reference canvas; it does not maintain separate combat implementations per device.
+- The HTML shell measures `window.visualViewport` when available and falls back to the layout viewport. Browser address bars, toolbars and keyboard changes therefore cannot push the canvas or startup controls outside the visible area.
+- CSS safe-area insets (`env(safe-area-inset-*)`) are removed from the usable rectangle before fitting the 16:9 canvas. Notches, rounded corners and home indicators cannot cover required controls.
+- In landscape, the largest centered 16:9 rectangle that fits inside the usable viewport is used. Letterboxing is allowed; stretching or cropping the reference canvas is not.
+- In portrait, the game shows a bilingual rotate/full-screen gate instead of shrinking combat into an unreadable strip. Startup actions remain available only when they fit without conflicting with that gate.
+- Orientation changes, browser chrome expansion/collapse, full-screen entry/exit and `visualViewport` resize/scroll events trigger one shared layout function.
+- The touch cluster uses a protected lower-left and lower-right safe zone. Every required action remains visible, non-overlapping and physically usable after scaling; the smallest round action is increased where necessary so it does not fall below a 44-CSS-pixel target on the supported small-phone matrix.
+- Desktop and mouse-only Web sessions may hide the combat touch controls, while every touch-capable landscape Web session shows them.
+
+The acceptance matrix covers at least these CSS viewports in both relevant orientations: 568×320, 667×375, 740×360, 844×390, 915×412, 1024×600 and 1280×720. The layout must also be formula-driven for intermediate sizes rather than selected from device-specific branches.
+
 ## Chrome startup shell
 
 The HTML shell is a recovery surface, not an independently positioned permanent duplicate of the Godot menu.
@@ -105,7 +120,8 @@ Generated HTML will be tested structurally and then exercised in an actual brows
 - Pause freezes celebration playback and the clear-view timer.
 - Real MAX button signals start one normal Special at 55+ energy, one eligible finisher at 100 energy, and provide failure feedback when unavailable.
 - HUD nodes and hit targets stay inside the 1280×720 safe frame with no overlap in the action cluster.
-- The patched Web shell contains the readiness handshake, pending-action queue, responsive canvas measurement and cache retirement behavior.
+- The patched Web shell contains the readiness handshake, pending-action queue, responsive canvas measurement, safe-area handling, portrait gate and cache retirement behavior.
+- The phone viewport matrix preserves a centered uncropped 16:9 canvas in landscape and a readable rotate gate in portrait.
 
 Run the focused regressions first, then every Godot test and:
 
@@ -124,6 +140,7 @@ Capture and inspect:
 5. The later compact `YOU WIN` card over the still-readable arena.
 6. The corresponding `YOU LOSE` flow.
 7. Chrome first paint, startup actions, click-before-ready behavior and the selected Godot screen after handoff.
+8. The full phone viewport matrix, including a notched safe-area simulation and browser-toolbar resize.
 
 No item is complete from node assertions alone. Visual claims require these captures, and Chrome claims require the generated Web build rather than a mocked HTML fragment.
 
@@ -140,4 +157,4 @@ No fighter assets, roster definitions, finisher hit ownership or catalog celebra
 
 ## Definition of complete
 
-The work is complete only when the full automated suites pass, the required desktop and Web captures have been inspected, Chrome exposes working startup actions from first paint, MAX produces an observable documented result, the defeated fighter remains grounded after the final blow, and the winner's celebration is clearly visible before the result card appears.
+The work is complete only when the full automated suites pass, the required desktop and Web captures have been inspected, the phone viewport matrix remains uncropped and usable, Chrome exposes working startup actions from first paint, MAX produces an observable documented result, the defeated fighter remains grounded after the final blow, and the winner's celebration is clearly visible before the result card appears.
