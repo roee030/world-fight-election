@@ -29,6 +29,8 @@ const CONTROL_BINDINGS := {
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
+const CELEBRATION_PLAYBACK_SCALE := 0.40
+const CELEBRATION_CLEAR_SECONDS := 3.0
 
 var player: GameFighter
 var enemy: GameFighter
@@ -101,6 +103,9 @@ var round_ready := false
 var player_recover_delay := 0.0
 var enemy_recover_delay := 0.0
 var _opponent_selector := OpponentSelectorScript.new()
+var _celebration_clear_elapsed := 0.0
+var _celebration_result_marked := false
+var _celebration_won := false
 
 const BOUTS := [
 	{"name": "Avigdor", "id": "avigdor", "level": 1, "title": "THE QUIET ROOM"},
@@ -146,15 +151,8 @@ func _ready() -> void:
 	_finisher_director.configure(self, _arena, _fight_camera)
 	finisher_requested.connect(_try_begin_finisher)
 	_finisher_director.final_hit.connect(_on_finisher_final_hit)
-	_finisher_director.celebration_started.connect(func(_id):
-		match_state = MatchState.Value.RESULT if is_instance_valid(result_root) and result_root.visible else MatchState.Value.CELEBRATION
-	)
-	_finisher_director.result_ready.connect(func(winner):
-		if not result_root.visible:
-			_show_result(winner == 0)
-		else:
-			match_state = MatchState.Value.RESULT
-	)
+	_finisher_director.celebration_started.connect(_on_celebration_started)
+	_finisher_director.result_ready.connect(_on_celebration_result_ready)
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_build_ui()
 	_create_audio()
@@ -163,10 +161,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if match_state == MatchState.Value.CELEBRATION:
+		if not paused:
+			_celebration_clear_elapsed += delta
+			if is_instance_valid(_finisher_director) and _finisher_director.active:
+				_finisher_director.advance(delta * CELEBRATION_PLAYBACK_SCALE)
+			_maybe_reveal_celebration_result()
+		return
 	if is_instance_valid(_finisher_director) and _finisher_director.active:
 		if not paused:
-			var sequence_delta := delta * 0.55 if match_state == MatchState.Value.RESULT and _finisher_director.is_celebrating() else delta
-			_finisher_director.advance(sequence_delta)
+			_finisher_director.advance(delta)
 		return
 	if is_instance_valid(_fight_camera) and not paused:
 		camera_shake = maxf(0.0, camera_shake - delta * 1.8)
@@ -414,6 +418,34 @@ func _on_finisher_final_hit(who: int) -> void:
 	else:
 		player_rounds += 1
 	_update_scores()
+
+
+func _on_celebration_started(_id: String) -> void:
+	match_state = MatchState.Value.CELEBRATION
+	_celebration_clear_elapsed = 0.0
+	_celebration_result_marked = false
+	_celebration_won = is_instance_valid(_finisher_director._attacker) and _finisher_director._attacker.who == 0
+	round_ready = false
+	if is_instance_valid(hud_root):
+		hud_root.visible = false
+	if is_instance_valid(result_root):
+		result_root.visible = false
+	if is_instance_valid(result_winner_art):
+		result_winner_art.visible = false
+
+
+func _on_celebration_result_ready(winner: int) -> void:
+	_celebration_won = winner == 0
+	_celebration_result_marked = true
+	_maybe_reveal_celebration_result()
+
+
+func _maybe_reveal_celebration_result() -> void:
+	if match_state != MatchState.Value.CELEBRATION or not _celebration_result_marked:
+		return
+	if _celebration_clear_elapsed + 0.0001 < CELEBRATION_CLEAR_SECONDS:
+		return
+	_show_result(_celebration_won)
 
 
 func _on_finisher_cancelled(_reason: String) -> void:
@@ -1563,16 +1595,19 @@ func _show_result(won: bool) -> void:
 
 
 func _show_result_with_celebration(won: bool) -> void:
-	_show_result(won)
 	var winner: GameFighter = player if won else enemy
 	var loser: GameFighter = enemy if won else player
 	if not is_instance_valid(winner) or not is_instance_valid(loser) or _finisher_catalog == null:
+		_show_result(won)
 		return
 	var definition: Dictionary = _finisher_catalog.definition_for(winner.character_id)
 	var celebration_id := str(definition.get("celebration_id", ""))
-	if _finisher_director.begin_celebration(winner, loser, celebration_id):
-		result_winner_art.visible = false
-		match_state = MatchState.Value.RESULT
+	_celebration_won = won
+	result_root.visible = false
+	result_winner_art.visible = false
+	hud_root.visible = false
+	if not _finisher_director.begin_celebration(winner, loser, celebration_id):
+		_show_result(won)
 
 
 func _continue_from_result() -> void:

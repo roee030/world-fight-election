@@ -6,6 +6,7 @@ const Rules = preload("res://scripts/finishers/finisher_rules.gd")
 const MatchState = preload("res://scripts/finishers/match_state.gd")
 const IDS = preload("res://scripts/character_debug.gd").FIGHTERS
 const STEP := 1.0 / 60.0
+const CELEBRATION_PLAYBACK_SCALE := 0.40
 var catalog := Catalog.new()
 var director := Director.new()
 var attacker: GameFighter
@@ -245,7 +246,7 @@ func _physics_process(_delta: float) -> void:
 func _process(delta: float) -> void:
 	if not visible: return
 	if not paused and director.active:
-		var playback_delta := delta * speed * (0.55 if celebration_preview else 1.0)
+		var playback_delta := delta * speed * (CELEBRATION_PLAYBACK_SCALE if celebration_preview else 1.0)
 		director.advance(playback_delta); elapsed += playback_delta
 	elif live_mode and is_instance_valid(attacker) and is_instance_valid(defender):
 		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if defender.health <= 15.0 and attacker.meter >= 100.0 else "LIVE COMBAT"]

@@ -53,6 +53,9 @@ func _run() -> void:
 	preview.director.cancel()
 	assert(preview.preview_celebration("bennet"), "winner celebration preview did not launch")
 	assert(preview.director.active and preview.status.text.contains("CELEBRATION"))
+	preview._process(1.0)
+	assert(is_equal_approx(preview.director.timeline.elapsed(), 0.4), "Fight Lab celebration preview must use the match's readable 40% speed")
+	preview.director.cancel()
 	# Exercise the real director with a minimal authored test catalog; production
 	# entries remain subject to the implemented guard above.
 	var definition: Dictionary = preview.catalog.definition_for("bennet")

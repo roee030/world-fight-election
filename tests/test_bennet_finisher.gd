@@ -47,7 +47,7 @@ func _run() -> void:
 	main._process(0.7)
 	assert(counts.celebration == 1 and not main.result_root.visible)
 	assert(main.player.position.y == 0 and main.enemy.position.y == 0)
-	main._process(2)
+	main._process(5)
 	assert(counts.result == 1 and main.result_root.visible)
 	assert(not director.active and director.temporary_actor_count() == 0)
 	assert(not main.player.cinematic_locked and not main.enemy.cinematic_locked)
