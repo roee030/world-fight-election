@@ -800,14 +800,154 @@
     "avigdor": {
       "fighter_id": "avigdor",
       "finisher_id": "oil_barrel_48",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
+      "duration": 3.5,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.3,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/avigdor/atlas/oil-barrel-kit.png",
+          "region": [
+            0,
+            0,
+            760,
+            724
+          ],
+          "figure_height_px": 553,
+          "foot_baseline": 688
+        },
+        {
+          "at": 0.5,
+          "type": "spawn_prop",
+          "id": "oil_barrel",
+          "asset": "res://assets/finishers/avigdor/atlas/oil-barrel-kit.png",
+          "region": [
+            760,
+            0,
+            425,
+            724
+          ],
+          "pixel_scale": 0.0026,
+          "anchor": "attacker",
+          "position": [
+            0.65,
+            0.45,
+            0.2
+          ]
+        },
+        {
+          "at": 0.6,
+          "type": "move_actor",
+          "id": "oil_barrel",
+          "anchor": "attacker",
+          "position": [
+            1.0,
+            0.5,
+            0.2
+          ],
+          "duration": 0.3
+        },
+        {
+          "at": 0.65,
+          "type": "caption",
+          "text": "48:00",
+          "clock_from": 2880,
+          "clock_to": 0,
+          "duration": 1.5,
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.95,
+          "type": "camera_preset",
+          "preset": "projectile_track"
+        },
+        {
+          "at": 1.0,
+          "type": "launch_prop",
+          "id": "oil_barrel",
+          "target": "defender",
+          "duration": 1.15
+        },
+        {
+          "at": 1.0,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/throw.wav"
+        },
+        {
+          "at": 2.15,
+          "type": "hit",
+          "id": "oil_barrel_48_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.15,
+          "type": "cleanup"
+        },
+        {
+          "at": 2.15,
+          "type": "spawn_prop",
+          "id": "oil_blast",
+          "asset": "res://assets/finishers/avigdor/atlas/oil-barrel-kit.png",
+          "region": [
+            1185,
+            0,
+            620,
+            724
+          ],
+          "pixel_scale": 0.003,
+          "anchor": "defender",
+          "position": [
+            0,
+            1.05,
+            0.3
+          ]
+        },
+        {
+          "at": 2.15,
+          "type": "screen_flash"
+        },
+        {
+          "at": 2.15,
+          "type": "camera_impact",
+          "strength": 0.25
+        },
+        {
+          "at": 2.15,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 2.15,
+          "type": "caption",
+          "text": "00:00",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.7,
+          "type": "cleanup"
+        },
+        {
+          "at": 3.0,
+          "type": "celebration_start"
+        }
+      ],
       "celebration_id": "oil_barrel_48_victory"
     },
     "mansour_abbas": {
@@ -1171,10 +1311,47 @@
     },
     "oil_barrel_48_victory": {
       "celebration_id": "oil_barrel_48_victory",
-      "implemented": false,
+      "implemented": true,
       "duration": 2.0,
       "camera_preset": "victory_low",
-      "events": []
+      "events": [
+        {
+          "at": 0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/avigdor/atlas/oil-barrel-kit.png",
+          "region": [
+            1805,
+            0,
+            367,
+            724
+          ],
+          "figure_height_px": 649,
+          "foot_baseline": 705
+        },
+        {
+          "at": 0,
+          "type": "camera_preset",
+          "preset": "victory_low"
+        },
+        {
+          "at": 0.05,
+          "type": "caption",
+          "text": "48:00",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.05,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 1.8,
+          "type": "result_marker"
+        }
+      ]
     },
     "coalition_cashstorm_victory": {
       "celebration_id": "coalition_cashstorm_victory",

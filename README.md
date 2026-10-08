@@ -107,7 +107,7 @@ Regression coverage checks roster completeness, random opponent selection, sprit
 - Results and pause screens preserve the arena behind cinematic overlays.
 - Per-stage visual alignment keeps feet on the visible floor.
 
-The shared finisher and celebration system is implemented: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter artwork is being delivered one fighter at a time; the authoritative checklist is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
+The shared finisher and celebration system is implemented: eligible MAX/Special holds trigger authored hit timelines, pause freezes the cinematic, and Fighter Lab previews hit, miss and celebration sequences. Fighter Lab shows all 13 fighters at once with a dedicated `FINISH` button for each, plus hit/miss, pause, frame-step, mobile-density and reduced-motion controls. Fighter artwork is being delivered one fighter at a time; the authoritative checklist is [`docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`](docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md).
 
 ## Asset and repository policy
 

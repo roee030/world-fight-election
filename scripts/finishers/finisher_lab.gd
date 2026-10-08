@@ -15,6 +15,7 @@ var camera := Camera3D.new()
 var attacker_selector: OptionButton
 var defender_selector: OptionButton
 var scenario_selector: OptionButton
+var roster_finish_buttons: Dictionary = {}
 var status: Label
 var event_label: Label
 var scrub: HSlider
@@ -60,13 +61,23 @@ func _build_ui() -> void:
 	_button(row, "PLAY / PAUSE", func(): set_paused(not paused))
 	_button(row, "STEP 1/60", step_frame)
 	_button(row, "SPRITE LAB", close)
-	var settings := HBoxContainer.new(); panel.add_child(settings)
+	var settings := HBoxContainer.new(); settings.name = "Settings"; panel.add_child(settings)
 	for value in [0.25, 0.5, 1.0]: _button(settings, "%s×" % value, func(v = value): set_speed(v))
 	_check(settings, "Mobile density", false, set_mobile)
 	_check(settings, "Reduced motion", false, set_reduced_motion)
-	_check(panel, "SafeFrame", true, func(value): safe_frame = value; overlay.queue_redraw())
-	_check(panel, "Bounds", true, func(value): bounds = value; overlay.queue_redraw())
+	_check(settings, "SafeFrame", true, func(value): safe_frame = value; overlay.queue_redraw())
+	_check(settings, "Bounds", true, func(value): bounds = value; overlay.queue_redraw())
 	var legend := Label.new(); legend.text = "Cyan: collision   Green: hurt proxy   Yellow: guard proxy   Orange: reach guide   Mint: world floor"; legend.add_theme_font_size_override("font_size", 14); panel.add_child(legend)
+	var roster := GridContainer.new(); roster.name = "FighterFinishGrid"; roster.columns = 7; roster.position = Vector2(24, 176); roster.size = Vector2(1232, 82); layer.add_child(roster)
+	for fighter_id in IDS:
+		var finish := Button.new()
+		finish.name = "Finish_" + fighter_id
+		finish.text = "%s  FINISH" % _short_name(fighter_id)
+		finish.custom_minimum_size = Vector2(168, 36)
+		finish.tooltip_text = "Preview %s Finish Attack and celebration" % fighter_id
+		finish.pressed.connect(func(id = fighter_id): preview(id, "hit"))
+		roster.add_child(finish)
+		roster_finish_buttons[fighter_id] = finish
 	status = Label.new(); status.position = Vector2(24, 580); status.size = Vector2(1232, 44); layer.add_child(status)
 	event_label = Label.new(); event_label.position = Vector2(24, 630); layer.add_child(event_label)
 	scrub = HSlider.new(); scrub.position = Vector2(24, 670); scrub.size = Vector2(1232, 28); scrub.step = STEP; layer.add_child(scrub)
@@ -80,6 +91,13 @@ func _selector(row: Node, label: String, values: Array) -> OptionButton:
 	for value in values: button.add_item(value)
 	row.add_child(button)
 	return button
+
+func _short_name(fighter_id: String) -> String:
+	return {
+		"yair_golan": "Y. GOLAN", "yair_lapid": "Y. LAPID", "aryeh_deri": "DERI",
+		"mansour_abbas": "M. ABBAS", "benny_gantz": "GANTZ", "itamar_ben_gvir": "BEN GVIR",
+		"bezalel_smotrich": "SMOTRICH", "gadi_eisenkot": "EISENKOT", "joint_list": "JOINT"
+	}.get(fighter_id, fighter_id.to_upper())
 
 func _button(row: Node, text: String, callback: Callable) -> void:
 	var button := Button.new(); button.text = text; button.pressed.connect(callback); row.add_child(button)

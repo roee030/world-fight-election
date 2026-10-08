@@ -414,7 +414,7 @@ Update this section in the same commit that completes each item.
 - [x] Bibi — `family_business`: two Sarah sonic staggers, Yair final assist and family throne celebration; both-side desktop/phone review completed.
 - [x] Yair Lapid — `prime_time_rush`: five crosses, final uppercut, combo count, short impact cues and gloves-up celebration; both-side desktop/phone review completed.
 - [x] Benny Gantz — `independence_flag`: full flag strike, tall body and planted-flag salute; both-side desktop/phone review completed.
-- [ ] Avigdor Lieberman — `oil_barrel_48`
+- [x] Avigdor Lieberman — `oil_barrel_48`: mirrored oil-barrel flight, accelerated 48:00 countdown, zero-time blast and fixed 48:00 victory clock; both-side desktop/phone review completed.
 - [ ] Mansour Abbas — `coalition_cashstorm`
 - [ ] Gadi Eisenkot — `bazooka_command`
 - [ ] Yair Golan — `m16_burst`
@@ -445,6 +445,9 @@ Update this section in the same commit that completes each item.
 | 2026-10-07 | Lapid delivered in `1ce769a` | Reviewed rapid impacts and corrected pose scale before push | Gantz `independence_flag` |
 | 2026-10-07 | Task 11 Gantz independence flag | 29/29 Godot and 10/10 Python; one KO, windup pause, height 1.96, grounding, miss/cleanup; eight desktop/phone strike/salute captures inspected on both sides | Push delivery and record hash; Lieberman oil barrel next |
 | 2026-10-07 | Gantz delivered in `3a524af` | Complete flag, feet and mobile safe frame reviewed before push | Lieberman `oil_barrel_48` |
+| 2026-10-08 | Task 12 Lieberman oil barrel plus complete Fight Lab roster | 30/30 Godot and 10/10 Python; clock/pause/miss/one KO, both directions, six reviewed flight/blast/victory captures; 13 visible FINISH buttons inspected at 1280×720 | Push delivery and record hash; Mansour cash storm next |
+
+Fight Lab ruling: all 13 fighters remain visible in a compact two-row roster. Every `FINISH` button routes through the production catalog and director; an unfinished fighter reports `PLANNED` until its validated assets and timeline are delivered. This avoids a parallel preview implementation.
 
 Lapid scale ruling: head-to-foot body height excludes raised gloves (uppercut 600 px, victory 606 px). All glove pixels remain visible in the atlas. Brief blue impact cues are reused from the existing pixel effect for the five crosses; final uppercut uses its camera impact and caption without a lingering floating effect. Celebration flashes are suppressed in reduced motion.
 

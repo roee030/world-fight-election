@@ -24,6 +24,10 @@ func _run() -> void:
 	assert(not preview.director.active and preview.status.text.contains("PLANNED"))
 	assert(preview.attacker_selector.item_count == 13 and preview.defender_selector.item_count == 13)
 	assert(preview.scenario_selector.item_count == 4)
+	assert(preview.roster_finish_buttons.size() == 13, "Fight Lab needs one Finish Attack button per fighter")
+	for fighter_id in preview.IDS:
+		assert(preview.roster_finish_buttons.has(fighter_id))
+		assert(preview.roster_finish_buttons[fighter_id].text.contains("FINISH"))
 	for speed in [0.25, 0.5, 1.0]:
 		lab.set_finisher_speed(speed)
 		assert(preview.speed == speed)
@@ -35,7 +39,7 @@ func _run() -> void:
 	preview.set_mobile(true)
 	preview.set_reduced_motion(true)
 	assert(preview.director.effect_density == "mobile" and preview.director.reduced_motion)
-	assert(preview.has_node("LabUI/Controls/SafeFrame") and preview.has_node("LabUI/Controls/Bounds"))
+	assert(preview.has_node("LabUI/Controls/Settings/SafeFrame") and preview.has_node("LabUI/Controls/Settings/Bounds"))
 	assert(preview.event_label.text.contains("EVENT"))
 	# Exercise the real director with a minimal authored test catalog; production
 	# entries remain subject to the implemented guard above.
