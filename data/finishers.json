@@ -2262,15 +2262,105 @@
     "trump": {
       "fighter_id": "trump",
       "finisher_id": "b2_flyover",
-      "implemented": false,
+      "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
       "hold_seconds": 0.55,
       "activation_range": 1.75,
-      "duration": 3.2,
-      "camera_preset": "close_side",
-      "events": [],
-      "celebration_id": "b2_flyover_victory"
+      "duration": 4.5,
+      "camera_preset": "overhead_pass",
+      "celebration_id": "b2_flyover_victory",
+      "events": [
+        {
+          "at": 0.0,
+          "type": "portrait_lightbox"
+        },
+        {
+          "at": 0.35,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/trump/poses/point-up.png",
+          "figure_height_px": 1257,
+          "foot_baseline": 1472
+        },
+        {
+          "at": 0.55,
+          "type": "camera_preset",
+          "preset": "overhead_pass"
+        },
+        {
+          "at": 0.65,
+          "type": "spawn_actor",
+          "id": "b2_attack_pass",
+          "asset": "res://assets/finishers/trump/props/b2-overhead.png",
+          "pixel_scale": 0.00072,
+          "anchor": "attacker",
+          "position": [
+            -2.7,
+            2.15,
+            -1.25
+          ]
+        },
+        {
+          "at": 0.7,
+          "type": "move_actor",
+          "id": "b2_attack_pass",
+          "anchor": "defender",
+          "position": [
+            2.7,
+            2.15,
+            -1.25
+          ],
+          "duration": 1.55
+        },
+        {
+          "at": 1.65,
+          "type": "caption",
+          "text": "TARGET LOCKED",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 2.5,
+          "type": "spawn_prop",
+          "id": "b2_blast",
+          "asset": "res://assets/finishers/trump/effects/blast.png",
+          "pixel_scale": 0.00135,
+          "anchor": "defender",
+          "position": [
+            0.0,
+            0.75,
+            0.3
+          ]
+        },
+        {
+          "at": 2.5,
+          "type": "hit",
+          "id": "b2_flyover_final",
+          "damage": 999,
+          "final": true,
+          "reaction": "finish_fall"
+        },
+        {
+          "at": 2.5,
+          "type": "camera_impact",
+          "strength": 0.26
+        },
+        {
+          "at": 2.5,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/impact.wav"
+        },
+        {
+          "at": 3.15,
+          "type": "cleanup"
+        },
+        {
+          "at": 3.55,
+          "type": "celebration_start"
+        }
+      ]
     }
   },
   "celebrations": {
@@ -3038,11 +3128,68 @@
       ]
     },
     "b2_flyover_victory": {
+      "fighter_id": "trump",
       "celebration_id": "b2_flyover_victory",
-      "implemented": false,
-      "duration": 2.0,
-      "camera_preset": "victory_low",
-      "events": []
+      "implemented": true,
+      "duration": 2.4,
+      "camera_preset": "wide_stage",
+      "events": [
+        {
+          "at": 0.0,
+          "type": "fighter_clip",
+          "asset": "res://assets/finishers/trump/celebration/victory-dance.png",
+          "figure_height_px": 1201,
+          "foot_baseline": 1381
+        },
+        {
+          "at": 0.0,
+          "type": "camera_preset",
+          "preset": "wide_stage"
+        },
+        {
+          "at": 0.05,
+          "type": "spawn_actor",
+          "id": "b2_victory_pass",
+          "asset": "res://assets/finishers/trump/props/b2-overhead.png",
+          "pixel_scale": 0.00038,
+          "anchor": "attacker",
+          "position": [
+            -2.9,
+            2.65,
+            -1.6
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "move_actor",
+          "id": "b2_victory_pass",
+          "anchor": "attacker",
+          "position": [
+            2.9,
+            2.65,
+            -1.6
+          ],
+          "duration": 1.8
+        },
+        {
+          "at": 0.1,
+          "type": "caption",
+          "text": "VICTORY FLYOVER",
+          "ui_position": [
+            390,
+            135
+          ]
+        },
+        {
+          "at": 0.1,
+          "type": "sound",
+          "asset": "res://assets/finishers/shared/audio/success.wav"
+        },
+        {
+          "at": 2.3,
+          "type": "result_marker"
+        }
+      ]
     }
   }
 }

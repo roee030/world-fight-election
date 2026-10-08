@@ -422,7 +422,7 @@ Update this section in the same commit that completes each item.
 - [x] Bezalel Smotrich — `cattle_charge`: two rear cattle, one central final bull, grounded dust and tinted settled-herd silhouettes; desktop/phone review completed.
 - [x] Aryeh Deri — `campaign_entourage`: two campaign-operative staggers, one final sign pass and a quiet grounded prayer; desktop/phone review completed.
 - [x] Joint List — `two_headed_chaos_squad`: fictional masked comic squad, two staggers, one final blast and a two-headed knafeh celebration; desktop/phone review completed.
-- [ ] Donald Trump — `b2_flyover`
+- [x] Donald Trump — `b2_flyover`: visible overhead B-2 pass, one non-graphic final blast and a distant victory flyover; desktop/phone review completed.
 
 ## Definition of complete
 
@@ -461,6 +461,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Smotrich delivered in `7c6291d` | Automated and visual evidence recorded before push | Joint List `two_headed_chaos_squad` and Trump `b2_flyover` |
 | 2026-10-08 | Task 19 Joint List chaos squad | 37/37 Godot and 10/10 Python; two stagger crossings, one final non-graphic comic blast, cleanup before celebration and Fight Lab route; desktop/phone/right-side finale plus two-headed knafeh tableau inspected | Push delivery and record hash; Trump last |
 | 2026-10-08 | Joint List delivered in `ea4102a` | Automated and visual evidence recorded before push | Trump `b2_flyover`, then final roster audit |
+| 2026-10-08 | Task 20 Trump B-2 flyover | 38/38 Godot and 10/10 Python; one final blast, B-2 in finisher and celebration, cleanup and Fight Lab route; desktop/phone/right-side captures inspected and attack aircraft moved below the HUD safe area | Push delivery and record hash; complete-roster audit and Pages verification |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 

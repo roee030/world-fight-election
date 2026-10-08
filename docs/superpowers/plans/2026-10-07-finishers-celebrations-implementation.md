@@ -598,8 +598,8 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 **Interfaces:** Produces `trump/b2_flyover`; proves overhead-pass camera, background aircraft and reduced mobile effects.
 
-- [ ] Follow the template; assert target convergence, one non-graphic final blast, aircraft exit cleanup and distant celebration flyover.
-- [ ] Verify the plane remains recognizable at landscape-phone size.
+- [x] Follow the template; assert target lock, one non-graphic final blast, aircraft exit cleanup and distant celebration flyover.
+- [x] Verify the plane remains recognizable at landscape-phone size and below the HUD safe area.
 - [ ] Commit and push `Add Trump B2 flyover finisher`; then record and push its hash.
 
 ---
