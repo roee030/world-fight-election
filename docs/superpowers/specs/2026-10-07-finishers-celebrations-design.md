@@ -452,6 +452,7 @@ Update this section in the same commit that completes each item.
 | 2026-10-08 | Task 14 Eisenkot bazooka | 32/32 Godot and 10/10 Python; single final hit, mobile actor limit, result/cleanup; rocket, blast and salute captures inspected | Push delivery and record hash; Yair Golan M16 next |
 | 2026-10-08 | Eisenkot delivered in `2a4f501` | Automated and visual evidence recorded before push | Yair Golan `m16_burst` |
 | 2026-10-08 | Task 15 Yair Golan M16 burst | 33/33 Godot and 10/10 Python; two staggers, one final burst, right-side sign orientation and result/cleanup; desktop/phone attack and celebration captures inspected | Push delivery and record hash; Ben-Gvir crocodiles next |
+| 2026-10-08 | Yair Golan delivered in `b7a4009` | Automated, right-side text-orientation and visual evidence recorded before push | Ben-Gvir `crocodile_release` |
 
 Mansour art uses a strict transparent 2×2 atlas: throw pose, single bundle, bill storm and counting pose. Mobile density remains below the shared 12-actor ceiling; the bill storm is one lightweight visual actor per wave rather than individual nodes for every note.
 

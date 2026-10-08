@@ -517,7 +517,7 @@ Tasks 8–20 repeat this exact gate. Asset generation begins only after the fail
 
 - [x] Follow the template; assert two stagger bursts, one final burst, non-graphic effects, weapon-lowered celebration start and crowd depth behind Golan.
 - [x] Verify readable democracy signs without covering the winner or result overlay; Hebrew sign art remains unmirrored on either side.
-- [ ] Commit and push `Add Yair Golan M16 finisher`; then record and push its hash.
+- [x] Commit and push `Add Yair Golan M16 finisher` (`b7a4009`); then record and push its hash.
 
 ---
 
