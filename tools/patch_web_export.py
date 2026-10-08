@@ -92,11 +92,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     window.layoutWorldFightViewport();
   };
   document.addEventListener('DOMContentLoaded', () => {
-    const startup=document.createElement('div'); startup.id='world-fight-startup';
-    startup.innerHTML='<div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div>';
-    const rotate=document.createElement('div'); rotate.id='worldFightRotateGate';
-    rotate.innerHTML='<div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span></div>';
-    document.body.append(startup,rotate);
+    const startup=document.getElementById('world-fight-startup');
     startup.querySelectorAll('button').forEach((button)=>button.addEventListener('click',()=>{
       if (state.pending) return; state.pending=button.dataset.action; window.worldFightPendingAction=state.pending; button.setAttribute('aria-busy','true');
       if (typeof window.worldFightMenuAction==='function') window.worldFightMenuAction(state.pending);
@@ -108,6 +104,8 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 })();
 </script>
 """
+
+STARTUP_MARKUP = """<div id="world-fight-startup"><div class="wf-actions"><button data-action="quick">START FIGHT</button><button data-action="campaign">CAMPAIGN</button><button data-action="lab">FIGHTER LAB</button><div class="wf-loading">LOADING GAME…</div></div></div><div id="worldFightRotateGate"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span></div></div>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests. */
 self.addEventListener('install', () => self.skipWaiting());
@@ -128,6 +126,8 @@ def patch(path: Path) -> None:
         html = html.replace("</head>", CACHE_RETIREMENT + "</head>", 1)
     if "world-fight-responsive-script" not in html:
         html = html.replace("</head>", RESPONSIVE_SHELL + "</head>", 1)
+    if 'id="world-fight-startup"' not in html:
+        html = html.replace("<body>", "<body>" + STARTUP_MARKUP, 1)
     path.write_text(html, encoding="utf-8")
     path.with_name("index.service.worker.js").write_text(RETIRE_WORKER, encoding="utf-8")
 

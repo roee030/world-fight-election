@@ -32,11 +32,11 @@ const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
 const TOUCH_CONTROL_LAYOUT := [
-	{"action": "special", "title": "MAX", "pos": Vector2(945, 420), "size": Vector2(96, 96), "color": "#b56b27", "shape": "diamond"},
-	{"action": "heavy", "title": "CROSS", "pos": Vector2(1128, 420), "size": Vector2(96, 96), "color": "#b53f57", "shape": "diamond"},
-	{"action": "light", "title": "JAB", "pos": Vector2(1015, 520), "size": Vector2(92, 92), "color": "#239f9b", "shape": "diamond"},
-	{"action": "jump", "title": "SP", "pos": Vector2(1148, 520), "size": Vector2(90, 90), "color": "#80671d", "shape": "round"},
-	{"action": "block", "title": "GUARD", "pos": Vector2(1058, 612), "size": Vector2(142, 88), "color": "#3e5968", "shape": "diamond"}
+	{"action": "special", "title": "MAX", "pos": Vector2(945, 400), "size": Vector2(100, 100), "color": "#b56b27", "shape": "diamond"},
+	{"action": "heavy", "title": "CROSS", "pos": Vector2(1128, 400), "size": Vector2(100, 100), "color": "#b53f57", "shape": "diamond"},
+	{"action": "light", "title": "JAB", "pos": Vector2(1015, 500), "size": Vector2(100, 100), "color": "#239f9b", "shape": "diamond"},
+	{"action": "jump", "title": "SP", "pos": Vector2(1138, 500), "size": Vector2(100, 100), "color": "#80671d", "shape": "round"},
+	{"action": "block", "title": "GUARD", "pos": Vector2(1035, 600), "size": Vector2(150, 100), "color": "#3e5968", "shape": "diamond"}
 ]
 
 var player: GameFighter
@@ -83,6 +83,7 @@ var result_winner_art: TextureRect
 var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
 var combo_label_time := 0.0
+var special_feedback_time := 0.0
 var fight_live := false
 var paused := false
 var selecting := "bennet"
@@ -199,6 +200,10 @@ func _process(delta: float) -> void:
 		combo_label_time -= delta
 		if combo_label_time <= 0.0 and is_instance_valid(combo_label):
 			combo_label.visible = false
+	if special_feedback_time > 0.0 and not paused:
+		special_feedback_time -= delta
+		if special_feedback_time <= 0.0 and is_instance_valid(message_label):
+			message_label.visible = false
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -256,7 +261,7 @@ func _physics_process(_delta: float) -> void:
 	if special and player.meter >= 55.0:
 		message_label.text = "MAX SPECIAL!"
 		message_label.visible = true
-		combo_label_time = maxf(combo_label_time, 0.55)
+		special_feedback_time = 1.25
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		if _finisher_director.active:
@@ -324,6 +329,7 @@ func _show_special_feedback(text: String) -> void:
 		return
 	message_label.text = text
 	message_label.visible = true
+	special_feedback_time = 1.25
 
 
 func _install_web_menu_bridge() -> void:

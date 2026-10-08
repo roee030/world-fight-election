@@ -30,10 +30,10 @@ func _run() -> void:
 	assert(main.buttons.block.text == "GUARD")
 	for action in main.buttons:
 		var target: Button = main.buttons[action]
-		assert(target.size.x >= 88.0 and target.size.y >= 88.0, "%s touch target is too small" % action)
+		assert(target.size.x >= 100.0 and target.size.y >= 100.0, "%s touch target is too small for 44 CSS pixels at 568x320" % action)
 	for action in main.buttons:
 		var touch_button: Button = main.buttons[action]
-		assert(touch_button.position.x >= 64.0 and touch_button.position.y >= 420.0, "%s is outside the phone safe frame" % action)
+		assert(touch_button.position.x >= 64.0 and touch_button.position.y >= 400.0, "%s is outside the phone safe frame" % action)
 		assert(touch_button.position.x + touch_button.size.x <= 1240.0, "%s is clipped on Chrome's right edge" % action)
 		assert(touch_button.position.y + touch_button.size.y <= 700.0, "%s is clipped below Chrome's visual viewport" % action)
 	var actions: Array = main.buttons.keys()
@@ -67,6 +67,8 @@ func _run() -> void:
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("button_up")
 	assert(main.message_label.visible and main.message_label.text.contains("55%"), "unavailable MAX press has no useful energy feedback")
+	main._process(1.3)
+	assert(not main.message_label.visible, "MAX feedback must expire instead of obscuring combat")
 	main.paused = true
 	main.player.meter = 100.0
 	main.buttons.special.emit_signal("button_down")

@@ -25,7 +25,7 @@ class WebCachePolicyTests(unittest.TestCase):
         with TemporaryDirectory() as folder:
             root = Path(folder)
             html = root / "index.html"
-            html.write_text("<html><head></head><body></body></html>", encoding="utf-8")
+            html.write_text('<html><head></head><body><script src="index.js"></script></body></html>', encoding="utf-8")
             patch(html)
             worker = (root / "index.service.worker.js").read_text(encoding="utf-8")
             patched_html = html.read_text(encoding="utf-8")
@@ -42,6 +42,11 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("world-fight-startup", patched_html)
             self.assertIn("START FIGHT", patched_html)
             self.assertIn("worldFightMenuAction", patched_html)
+            self.assertLess(
+                patched_html.index('<div id="world-fight-startup">'),
+                patched_html.index('<script src="index.js">'),
+                "startup actions must parse before the blocking engine loader",
+            )
             patch(html)
             patched_twice = html.read_text(encoding="utf-8")
             self.assertEqual(patched_twice.count('id="world-fight-responsive-script"'), 1)
