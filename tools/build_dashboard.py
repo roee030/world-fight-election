@@ -47,7 +47,7 @@ def token() -> str:
     return value
 
 
-def api(path: str, params: dict | None = None) -> dict:
+def api(path: str, params: dict | None = None, empty_on_404: bool = False) -> dict:
     url = f"https://{site_code()}.goatcounter.com/api/v0/{path}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
@@ -58,6 +58,9 @@ def api(path: str, params: dict | None = None) -> dict:
                 time.sleep(0.3)  # the API allows about 4 requests per second
                 return json.load(response)
         except urllib.error.HTTPError as error:
+            if error.code == 404 and empty_on_404:
+                print(f"note: {path} returned 404 (no rows)", flush=True)
+                return {}  # GoatCounter answers "not found" when a page or list has no rows
             if error.code == 429 and attempt < 3:
                 time.sleep(2 * (attempt + 1))
                 continue
@@ -76,7 +79,7 @@ def fetch(days: int) -> dict:
         params = {**window, "limit": 100, "group": "day"}
         if seen:
             params["exclude_paths"] = ",".join(str(i) for i in seen)
-        page = api("stats/hits", params)
+        page = api("stats/hits", params, empty_on_404=True)
         hits = page.get("hits", [])
         for hit in hits:
             path = str(hit["path"]).lstrip("/")
@@ -85,11 +88,11 @@ def fetch(days: int) -> dict:
             if path.startswith("session/start/"):
                 for day in hit.get("stats") or []:
                     daily[day["day"]] = daily.get(day["day"], 0) + int(day.get("daily", 0))
-        if not hits or not page.get("more"):
+        if not hits or not page.get("more") or len(hits) < 100:
             break
     extra = {}
     for key in ("systems", "browsers", "locations", "sizes"):
-        extra[key] = api(f"stats/{key}", {**window, "limit": 10}).get("stats", [])
+        extra[key] = api(f"stats/{key}", {**window, "limit": 10}, empty_on_404=True).get("stats", [])
     return {"counts": counts, "daily": sorted(daily.items()), **extra,
             "range": f"{start:%d.%m.%Y} – {end:%d.%m.%Y} ({days} ימים)"}
 
