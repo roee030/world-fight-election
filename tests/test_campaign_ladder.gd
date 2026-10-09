@@ -24,12 +24,22 @@ func _run() -> void:
 		if player_id != "bibi":
 			assert(not player_id in ladder, "player fights themselves in the %s ladder" % player_id)
 	assert(main.campaign_level_for(0, 12) == 1 and main.campaign_level_for(11, 12) == 4, "difficulty must ramp from 1 to 4")
+	# Campaign selection chooses only the player. The random-rival reveal belongs
+	# exclusively to Quick Fight because the campaign ladder owns opponent order.
+	main._open_select("campaign")
+	assert(not (main.select_root.find_child("RivalSelection", true, false) as CanvasItem).visible, "campaign fighter select must hide the random rival choice")
+	main._open_select("quick")
+	assert((main.select_root.find_child("RivalSelection", true, false) as CanvasItem).visible, "Quick Fight must keep the random rival choice")
 	# Flow: start -> progress screen -> fight -> win advances -> loss retries.
 	main.selecting = "bennet"
 	main.pending_mode = "campaign"
 	main._start_campaign()
 	assert(main.campaign_root.visible, "campaign must open on the progress ladder")
 	assert(main.campaign_root.find_child("CampaignLadder", true, false).get_child_count() == main.campaign_ladder.size())
+	var opening_tiles: Array[Node] = main.campaign_root.find_child("CampaignLadder", true, false).get_children()
+	assert((opening_tiles[0].find_child("State", true, false) as Label).text == "1", "current rival must be revealed")
+	assert((opening_tiles[1].find_child("State", true, false) as Label).text == "?", "future rivals must remain hidden")
+	assert((opening_tiles[1].find_child("Face", true, false) as TextureRect).texture == null, "future rival portrait must remain hidden")
 	main._start_campaign_fight()
 	await process_frame
 	assert(main.fight_live and main.enemy.character_id == main.campaign_ladder[0], "first campaign fight uses ladder[0]")

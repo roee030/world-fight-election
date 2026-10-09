@@ -10,6 +10,7 @@ extends RefCounted
 ## weighted random choice shaped by those observations, the health lead and the
 ## difficulty level, so it adapts without becoming a fixed, readable pattern.
 ## Reactions (guard, whiff punish) wait for a level-based reaction time.
+## Levels run from 0 (EASY in data/difficulty.json) to 4 (the boss).
 
 const ATTACKS := ["light", "heavy", "kick", "special"]
 const INTENTS := ["space", "pressure", "bait", "defend"]
@@ -49,7 +50,7 @@ var _requested_at_hits := -1
 
 
 func _init(cpu_level: int = 1) -> void:
-	level = clampi(cpu_level, 1, 4)
+	level = clampi(cpu_level, 0, 4)
 	for from in ATTACKS + [""]:
 		transitions[from] = {}
 		for to in ATTACKS: transitions[from][to] = 0.5
@@ -223,7 +224,7 @@ func decide(cpu, rival, delta: float) -> Dictionary:
 
 func breaker_rate() -> float:
 	# Chance per second of breaking a player combo (level 1 rarely, boss often).
-	return [0.35, 0.9, 1.6, 2.4][clampi(level, 1, 4) - 1]
+	return [0.15, 0.35, 0.9, 1.6, 2.4][clampi(level, 0, 4)]
 
 
 func _plan_combo(cpu) -> void:

@@ -193,11 +193,18 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     // iPhone Safari cannot enter element fullscreen, so the TAP TO FIGHT gate
     // never appears there. In landscape, explain the Home Screen web app (the
     // only way to hide Safari's bars) once per tab; one tap always plays on.
-    const needsIosInstall = state.ready && !state.iosInstallDismissed && !portrait && iosBrowser && (forceIosInstallHint || (isTouchPhone() && !fullscreenSupported()));
+    const needsIosInstall = state.ready && (state.iosInstallRequested || !state.iosInstallDismissed) && !portrait && iosBrowser && (forceIosInstallHint || (isTouchPhone() && !fullscreenSupported()));
     document.documentElement.classList.toggle('wf-needs-ios-install', needsIosInstall);
     const needsFullscreen = state.ready && !state.fullscreenRefused && !portrait && isTouchPhone() && fullscreenSupported() && !isFullscreen();
     document.documentElement.classList.toggle('wf-needs-fullscreen', needsFullscreen);
     renderDiagnostics();
+  };
+  // The in-game FULL button: on iPhone Safari (no Fullscreen API) it reopens the Home Screen guide.
+  window.worldFightShowIosInstall = () => {
+    if (!(isAppleMobile() && !isStandalone() && !fullscreenSupported())) return false;
+    state.iosInstallRequested = true;
+    window.layoutWorldFightViewport();
+    return true;
   };
   window.requestWorldFightFullscreen = () => {
     const root = document.documentElement;
@@ -278,6 +285,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
       event.preventDefault();
       event.stopPropagation();
       state.iosInstallDismissed = true;
+      state.iosInstallRequested = false;
       try { sessionStorage.setItem('wf-ios-install-dismissed', '1'); } catch (error) {}
       window.worldFightTrack?.('ios_install_skipped', { path: 'ios/install-skipped' });
       window.layoutWorldFightViewport();
@@ -370,6 +378,12 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
   };
   accept.addEventListener('click', enter);
   accept.addEventListener('pointerup', enter);
+  // Settings > LEGAL > SHOW FULL DISCLAIMER reopens the notice for reading.
+  window.worldFightShowDisclaimer = () => {
+    check.checked = false;
+    accept.disabled = true;
+    document.documentElement.classList.add('wf-legal-open');
+  };
 })();</script>"""
 
 ANALYTICS_SCRIPT = """<script id="world-fight-analytics">

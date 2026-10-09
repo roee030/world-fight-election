@@ -153,6 +153,12 @@ var settings_root: Control
 var _settings_origin: StringName = &"menu"
 var _settings_dragging := {}
 const SETTINGS_ROWS := [["master", "MASTER"], ["music", "MUSIC"], ["sfx", "EFFECTS"], ["voice", "ANNOUNCER"]]
+const SETTINGS_TABS := [["game", "GAME"], ["audio", "AUDIO"], ["legal", "LEGAL"]]
+const DIFFICULTY_DATA_PATH := "res://data/difficulty.json"
+var difficulty_settings_path := "user://game_settings.cfg"
+var difficulty_id := ""
+var _difficulty_data := {}
+var _settings_tab := "game"
 const LOW_HEALTH_MUSIC_RATIO := 0.25
 const HIT_CUES := {"light": &"jab_hit", "heavy": &"cross_hit", "kick": &"kick_hit", "special": &"special"}
 var _special_ready_cued := false
@@ -231,6 +237,7 @@ func _ready() -> void:
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_finisher_director.sequence_finished.connect(_on_finisher_sequence_finished)
 	_create_audio()
+	load_difficulty()
 	_build_ui()
 	get_viewport().size_changed.connect(_fit_stage_backdrop.bind(null))
 	get_viewport().size_changed.connect(_apply_arena_edge)
@@ -447,30 +454,56 @@ func site_config() -> Dictionary:
 
 
 func _build_creator_card(parent: Control) -> void:
-	# "Created by" card with the creator's photo; opens the LinkedIn profile.
+	# "Created by" feature card: a gold-framed plate with a CREATED BY ribbon,
+	# a large haloed photo, the creator's name and a LinkedIn call-to-action.
+	# The halo pulses and the card lifts on hover so it reads as clickable.
 	var url := str(site_config().get("linkedin_url", ""))
 	var card := Button.new()
 	card.name = "CreatorCard"
-	card.position = Vector2(58, 456)
-	card.size = Vector2(330, 74)
+	card.position = Vector2(58, 444)
+	card.size = Vector2(372, 132)
+	card.pivot_offset = card.size * 0.5
 	card.focus_mode = Control.FOCUS_NONE
+	card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	card.visible = not url.is_empty()
+	card.tooltip_text = "Open the creator's LinkedIn profile"
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.02, 0.06, 0.09, 0.72) if state != "hover" else Color(0.05, 0.14, 0.18, 0.86)
-		style.border_color = Color(ACCENT_GOLD, 0.65)
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(4)
+		style.bg_color = Color(0.03, 0.05, 0.08, 0.90) if state != "hover" else Color(0.07, 0.10, 0.14, 0.95)
+		style.border_color = ACCENT_GOLD if state != "hover" else Color("#ffe39a")
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(10)
+		style.shadow_color = Color(ACCENT_GOLD, 0.28 if state != "hover" else 0.5)
+		style.shadow_size = 12
 		card.add_theme_stylebox_override(state, style)
 	parent.add_child(card)
 	card.pressed.connect(_open_creator_profile)
+	card.mouse_entered.connect(func() -> void: create_tween().tween_property(card, "scale", Vector2(1.03, 1.03), 0.12))
+	card.mouse_exited.connect(func() -> void: create_tween().tween_property(card, "scale", Vector2.ONE, 0.12))
+	# Pulsing gold halo behind the photo.
+	var halo := Panel.new()
+	halo.name = "CreatorHalo"
+	halo.position = Vector2(12, 20)
+	halo.size = Vector2(100, 100)
+	halo.pivot_offset = halo.size * 0.5
+	var halo_style := StyleBoxFlat.new()
+	halo_style.bg_color = Color(ACCENT_GOLD, 0.0)
+	halo_style.border_color = ACCENT_GOLD
+	halo_style.set_border_width_all(3)
+	halo_style.set_corner_radius_all(50)
+	halo_style.shadow_color = Color(ACCENT_GOLD, 0.55)
+	halo_style.shadow_size = 10
+	halo.add_theme_stylebox_override("panel", halo_style)
+	card.add_child(halo)
+	var pulse := halo.create_tween().set_loops()
+	pulse.tween_property(halo, "modulate:a", 0.35, 0.9).set_trans(Tween.TRANS_SINE)
+	pulse.tween_property(halo, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
 	var ring := Panel.new()
-	ring.position = Vector2(9, 7)
-	ring.size = Vector2(60, 60)
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.position = Vector2(17, 25)
+	ring.size = Vector2(90, 90)
 	var ring_style := StyleBoxFlat.new()
 	ring_style.bg_color = ACCENT_GOLD
-	ring_style.set_corner_radius_all(30)
+	ring_style.set_corner_radius_all(45)
 	ring.add_theme_stylebox_override("panel", ring_style)
 	card.add_child(ring)
 	var photo := TextureRect.new()
@@ -478,20 +511,56 @@ func _build_creator_card(parent: Control) -> void:
 	photo.texture = load(CREATOR_PHOTO_PATH) if ResourceLoader.exists(CREATOR_PHOTO_PATH) else null
 	photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	photo.position = Vector2(12, 10)
-	photo.size = Vector2(54, 54)
-	photo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	photo.position = Vector2(21, 29)
+	photo.size = Vector2(82, 82)
 	var mask := ShaderMaterial.new()
 	mask.shader = CIRCLE_MASK_SHADER
 	photo.material = mask
 	card.add_child(photo)
-	var by := _label(card, "CREATED BY", Rect2(82, 8, 240, 18), 11, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
-	by.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var creator := _label(card, str(site_config().get("creator_name", "THE CREATOR")), Rect2(82, 24, 240, 28), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
-	creator.add_theme_font_override("font", _bold_font())
-	creator.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var link := _label(card, "CONNECT ON LINKEDIN  >", Rect2(82, 50, 240, 18), 11, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
-	link.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# CREATED BY ribbon straddling the top edge.
+	var ribbon := Panel.new()
+	ribbon.name = "CreatedByRibbon"
+	ribbon.position = Vector2(126, -13)
+	ribbon.size = Vector2(132, 26)
+	var ribbon_style := StyleBoxFlat.new()
+	ribbon_style.bg_color = ACCENT_GOLD
+	ribbon_style.set_corner_radius_all(13)
+	ribbon.add_theme_stylebox_override("panel", ribbon_style)
+	card.add_child(ribbon)
+	var by := _label(ribbon, "CREATED BY", Rect2(0, 0, 132, 26), 13, Color("#2a1a06"), HORIZONTAL_ALIGNMENT_CENTER)
+	by.add_theme_font_override("font", _bold_font())
+	by.add_theme_constant_override("shadow_offset_y", 0)
+	by.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+	var creator := _label(card, str(site_config().get("creator_name", "THE CREATOR")), Rect2(126, 22, 236, 40), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	creator.name = "CreatorName"
+	_strong_text(creator)
+	var role := _label(card, "GAME DESIGN & DEVELOPMENT", Rect2(126, 58, 236, 20), 11, Color("#c6d3d6"), HORIZONTAL_ALIGNMENT_LEFT)
+	role.add_theme_font_override("font", _bold_font())
+	# LinkedIn call-to-action pill.
+	var cta := Panel.new()
+	cta.name = "LinkedInCta"
+	cta.position = Vector2(126, 86)
+	cta.size = Vector2(228, 32)
+	var cta_style := StyleBoxFlat.new()
+	cta_style.bg_color = Color("#0a66c2")
+	cta_style.set_corner_radius_all(16)
+	cta.add_theme_stylebox_override("panel", cta_style)
+	card.add_child(cta)
+	var badge := Panel.new()
+	badge.position = Vector2(6, 5)
+	badge.size = Vector2(22, 22)
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color.WHITE
+	badge_style.set_corner_radius_all(4)
+	badge.add_theme_stylebox_override("panel", badge_style)
+	cta.add_child(badge)
+	var mark := _label(badge, "in", Rect2(0, -1, 22, 22), 14, Color("#0a66c2"), HORIZONTAL_ALIGNMENT_CENTER)
+	mark.add_theme_font_override("font", _bold_font())
+	mark.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+	var link := _label(cta, "CONNECT ON LINKEDIN  >", Rect2(34, 0, 190, 32), 12, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	link.add_theme_font_override("font", _bold_font())
+	for node in card.find_children("*", "Control", true, false):
+		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _open_creator_profile() -> void:
@@ -520,6 +589,8 @@ func analytics_path(event_name: String, props: Dictionary = {}) -> String:
 		"rematch": return "menu/rematch"
 		"new_opponent": return "menu/new-opponent"
 		"round_end": return "round/%s" % props.get("reason", "unknown")
+		"difficulty": return "settings/difficulty/%s" % props.get("level", "unknown")
+		"disclaimer_open": return "settings/disclaimer"
 		"sound_toggle": return "sound/%s" % ("muted" if bool(props.get("muted", false)) else "on")
 		"combo": return "combo/%s" % str(props.get("name", "unknown")).to_lower().replace(" ", "-")
 		"combo_hits": return "combo/hits-%d" % int(props.get("hits", 0))
@@ -1409,7 +1480,11 @@ func _build_select() -> void:
 	var player_label := _label(design, "PLAYER 1 SELECTION", Rect2(440, 62, 400, 22), 15, Color("#dff3f3"), HORIZONTAL_ALIGNMENT_CENTER)
 	player_label.add_theme_font_override("font", _bold_font())
 	_diamond(design, Vector2(640, 92), 5.0, ACCENT_CYAN)
-	_label(design, "CPU RIVAL IS RANDOM", Rect2(440, 100, 400, 22), 14, Color("#dfe7ea"), HORIZONTAL_ALIGNMENT_CENTER)
+	var rival_selection := Control.new()
+	rival_selection.name = "RivalSelection"
+	rival_selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	design.add_child(rival_selection)
+	_label(rival_selection, "CPU RIVAL IS RANDOM", Rect2(440, 100, 400, 22), 14, Color("#dfe7ea"), HORIZONTAL_ALIGNMENT_CENTER)
 	select_stats_label = _label(design, "", Rect2(300, 122, 680, 22), 12, Color("#c6d1d2"), HORIZONTAL_ALIGNMENT_CENTER)
 	select_stats_label.name = "SelectStats"
 	_ornament(design, "hex", Rect2(450, 150, 380, 240), ACCENT_CYAN)
@@ -1443,7 +1518,7 @@ func _build_select() -> void:
 	select_style_label.add_theme_constant_override("outline_size", 4)
 	_diamond(design, Vector2(40, 400), 5.0, ACCENT_CYAN)
 	# CPU half: ornate gold frame, framed question mark and the hidden rival.
-	_ornament(design, "gold_frame", Rect2(830, 78, 436, 546), ACCENT_GOLD)
+	_ornament(rival_selection, "gold_frame", Rect2(830, 78, 436, 546), ACCENT_GOLD)
 	select_rival_portrait = TextureRect.new()
 	select_rival_portrait.name = "RivalPortrait"
 	select_rival_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1453,16 +1528,16 @@ func _build_select() -> void:
 	select_rival_portrait.position = Vector2(840, 88)
 	select_rival_portrait.size = Vector2(416, 526)
 	select_rival_portrait.modulate = Color(0.22, 0.25, 0.30, 1)
-	design.add_child(select_rival_portrait)
-	var mystery_frame = _ornament(design, "gold_frame", Rect2(990, 168, 96, 132), ACCENT_GOLD)
+	rival_selection.add_child(select_rival_portrait)
+	var mystery_frame = _ornament(rival_selection, "gold_frame", Rect2(990, 168, 96, 132), ACCENT_GOLD)
 	mystery_frame.name = "MysteryCpuFrame"
-	var mystery_mark := _label(design, "?", Rect2(960, 150, 156, 170), 128, Color("#f2c35a"), HORIZONTAL_ALIGNMENT_CENTER)
+	var mystery_mark := _label(rival_selection, "?", Rect2(960, 150, 156, 170), 128, Color("#f2c35a"), HORIZONTAL_ALIGNMENT_CENTER)
 	mystery_mark.name = "MysteryCpuMark"
 	_strong_text(mystery_mark)
-	select_rival_name = _label(design, "RANDOM OPPONENT", Rect2(800, 300, 440, 60), 34, ACCENT_GOLD.lightened(0.1), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_name = _label(rival_selection, "RANDOM OPPONENT", Rect2(800, 300, 440, 60), 34, ACCENT_GOLD.lightened(0.1), HORIZONTAL_ALIGNMENT_RIGHT)
 	select_rival_name.name = "RivalName"
 	_strong_text(select_rival_name)
-	select_rival_style = _label(design, "REVEALED IN THE ARENA", Rect2(800, 354, 440, 24), 13, Color("#f19aa0"), HORIZONTAL_ALIGNMENT_RIGHT)
+	select_rival_style = _label(rival_selection, "REVEALED IN THE ARENA", Rect2(800, 354, 440, 24), 13, Color("#f19aa0"), HORIZONTAL_ALIGNMENT_RIGHT)
 	select_rival_style.add_theme_font_override("font", _bold_font())
 	# Roster dock.
 	var roster_back := _panel(design, Rect2(284, 398, 712, 214), Color(0.012, 0.024, 0.038, 0.95))
@@ -1569,6 +1644,7 @@ func _open_select(mode: String) -> void:
 	if is_instance_valid(menu_hero_video): menu_hero_video.stop()
 	map_select_root.visible = false
 	select_root.visible = true
+	(select_root.find_child("RivalSelection", true, false) as CanvasItem).visible = mode != "campaign"
 	_refresh_roster()
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.worldFightSetMenuVisible?.(false)")
@@ -1855,7 +1931,8 @@ func _build_pause() -> void:
 
 
 func _build_settings() -> void:
-	# One shared audio screen for the main menu and the pause menu.
+	# One shared settings screen for the main menu and the pause menu, split
+	# into GAME (difficulty), AUDIO (volumes) and LEGAL (disclaimer) tabs.
 	settings_root = Control.new()
 	settings_root.name = "SettingsScreen"
 	settings_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1863,21 +1940,93 @@ func _build_settings() -> void:
 	ui.add_child(settings_root)
 	_split_background(settings_root)
 	var design := _design_frame(settings_root, "SettingsDesign")
-	_screen_title(design, "AUDIO ", "SETTINGS", 40)
+	_screen_title(design, "GAME ", "SETTINGS", 26)
+	for i in SETTINGS_TABS.size():
+		var tab_id: String = SETTINGS_TABS[i][0]
+		var tab := Button.new()
+		tab.name = "Tab_" + tab_id
+		tab.text = SETTINGS_TABS[i][1]
+		_place_button(design, tab, Rect2(328 + i * 212, 92, 200, 48))
+		tab.pressed.connect(_show_settings_tab.bind(tab_id))
+		var page := Control.new()
+		page.name = "SettingsPage_" + tab_id
+		page.position = Vector2.ZERO
+		page.size = DESIGN_SIZE
+		page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		design.add_child(page)
+	_build_settings_game(design.get_node("SettingsPage_game"))
+	_build_settings_audio(design.get_node("SettingsPage_audio"))
+	_build_settings_legal(design.get_node("SettingsPage_legal"))
+	var bar := _bottom_bar(settings_root)
+	var back := _primary_button(bar, "BACK", Rect2(-244, 14, 220, 52))
+	back.name = "BackButton"
+	back.pressed.connect(_close_settings)
+	_label(bar, "ESC  /  BACK", Rect2(24, 28, 300, 24), 11, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
+	settings_root.visible = false
+	_show_settings_tab("game")
+
+
+func _build_settings_game(page: Control) -> void:
+	var heading := _label(page, "CPU DIFFICULTY", Rect2(153, 160, 600, 30), 18, Color("#edf2f1"), HORIZONTAL_ALIGNMENT_LEFT)
+	heading.add_theme_font_override("font", _bold_font())
+	_panel(page, Rect2(153, 192, 64, 3), ACCENT_GOLD)
+	var levels := difficulty_levels()
+	for i in levels.size():
+		var entry: Dictionary = levels[i]
+		var card := Button.new()
+		card.name = "Difficulty_" + str(entry.id)
+		card.position = Vector2(153 + i * 248, 210)
+		card.size = Vector2(230, 226)
+		card.pressed.connect(_play_sfx.bind(&"ui_press"))
+		card.pressed.connect(set_difficulty.bind(str(entry.id)))
+		page.add_child(card)
+		var label := _label(card, str(entry.label), Rect2(18, 18, 194, 36), 26, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+		label.add_theme_font_override("font", _bold_font())
+		var tagline := _label(card, str(entry.get("tagline", "")), Rect2(18, 56, 194, 20), 12, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+		tagline.add_theme_font_override("font", _bold_font())
+		# Intensity pips: one more lit per step up the ladder.
+		for pip in levels.size():
+			_panel(card, Rect2(18 + pip * 30, 88, 24, 8), ACCENT_GOLD if pip <= i else Color("#263943"))
+		var description := _label(card, str(entry.get("description", "")), Rect2(18, 108, 194, 76), 14, Color("#b9c8cc"), HORIZONTAL_ALIGNMENT_LEFT)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		description.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		# A label that already grew never shrinks: pin the wrap width, then re-fit.
+		description.custom_minimum_size = Vector2(194, 76)
+		description.size = Vector2.ZERO
+		var badge := _label(card, "SELECTED", Rect2(18, 190, 194, 22), 12, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
+		badge.name = "Selected"
+		badge.add_theme_font_override("font", _bold_font())
+		for child in card.get_children():
+			if child is Control: (child as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_label(page, "APPLIES FROM THE NEXT FIGHT  -  QUICK FIGHT AND EVERY CAMPAIGN RIVAL", Rect2(153, 456, 974, 24), 12, Color("#8fa3aa"), HORIZONTAL_ALIGNMENT_LEFT)
+
+
+func _style_difficulty_card(card: Button, selected: bool) -> void:
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.16, 0.12, 0.04, 0.92) if selected else Color(0.02, 0.06, 0.09, 0.80)
+		if state == "hover": style.bg_color = style.bg_color.lightened(0.08)
+		style.border_color = ACCENT_GOLD if selected else Color(ACCENT_CYAN, 0.6 if state in ["hover", "focus"] else 0.25)
+		style.set_border_width_all(3 if selected else 1)
+		style.set_corner_radius_all(6)
+		card.add_theme_stylebox_override(state, style)
+
+
+func _build_settings_audio(page: Control) -> void:
 	var grabber := _settings_grabber_texture()
 	for i in SETTINGS_ROWS.size():
 		var category: String = SETTINGS_ROWS[i][0]
-		var top := 150.0 + i * 78.0
-		_panel(design, Rect2(290, top, 700, 62), Color(0.02, 0.06, 0.09, 0.72))
-		_panel(design, Rect2(290, top, 4, 62), Color(ACCENT_CYAN, 0.75))
-		var title := _label(design, SETTINGS_ROWS[i][1], Rect2(318, top + 16, 190, 30), 18, Color("#edf2f1"), HORIZONTAL_ALIGNMENT_LEFT)
+		var top := 172.0 + i * 72.0
+		_panel(page, Rect2(290, top, 700, 60), Color(0.02, 0.06, 0.09, 0.72))
+		_panel(page, Rect2(290, top, 4, 60), Color(ACCENT_CYAN, 0.75))
+		var title := _label(page, SETTINGS_ROWS[i][1], Rect2(318, top + 15, 190, 30), 18, Color("#edf2f1"), HORIZONTAL_ALIGNMENT_LEFT)
 		title.add_theme_font_override("font", _bold_font())
 		var slider := HSlider.new()
 		slider.name = "Slider_" + category
 		slider.min_value = 0
 		slider.max_value = 100
 		slider.step = 1
-		slider.position = Vector2(510, top + 9)
+		slider.position = Vector2(510, top + 8)
 		slider.size = Vector2(360, 44)
 		slider.add_theme_icon_override("grabber", grabber)
 		slider.add_theme_icon_override("grabber_highlight", grabber)
@@ -1892,29 +2041,74 @@ func _build_settings() -> void:
 		slider.add_theme_stylebox_override("slider", track)
 		slider.add_theme_stylebox_override("grabber_area", fill)
 		slider.add_theme_stylebox_override("grabber_area_highlight", fill)
-		design.add_child(slider)
-		var percent := _label(design, "", Rect2(890, top + 14, 80, 32), 18, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+		page.add_child(slider)
+		var percent := _label(page, "", Rect2(890, top + 14, 80, 32), 18, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
 		percent.name = "Percent_" + category
 		percent.add_theme_font_override("font", _bold_font())
 		slider.value_changed.connect(_on_settings_slider_changed.bind(category))
 		slider.drag_started.connect(func() -> void: _settings_dragging[category] = true)
 		slider.drag_ended.connect(_on_settings_slider_committed.bind(category))
-	var mute := _secondary_button(design, "MUTE ALL", Rect2(380, 476, 240, 54))
+	var mute := _secondary_button(page, "MUTE ALL", Rect2(380, 476, 240, 54))
 	mute.name = "MuteButton"
 	mute.pressed.connect(func() -> void:
 		if audio_manager: audio_manager.set_muted(not audio_manager.is_muted())
 		_sync_settings_controls())
-	var reset := _secondary_button(design, "RESET TO DEFAULTS", Rect2(660, 476, 260, 54))
+	var reset := _secondary_button(page, "RESET TO DEFAULTS", Rect2(660, 476, 260, 54))
 	reset.name = "ResetButton"
 	reset.pressed.connect(func() -> void:
 		if audio_manager: audio_manager.reset_defaults()
 		_sync_settings_controls())
-	var bar := _bottom_bar(settings_root)
-	var back := _primary_button(bar, "BACK", Rect2(-244, 14, 220, 52))
-	back.name = "BackButton"
-	back.pressed.connect(_close_settings)
-	_label(bar, "ESC  /  BACK", Rect2(24, 28, 300, 24), 11, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
-	settings_root.visible = false
+
+
+func _build_settings_legal(page: Control) -> void:
+	# English copy: the bundled font has no Hebrew glyphs. On the Web, SHOW
+	# FULL DISCLAIMER reopens the shell's Hebrew notice.
+	_panel(page, Rect2(230, 160, 820, 380), Color(0.02, 0.06, 0.09, 0.80))
+	_panel(page, Rect2(230, 160, 4, 380), Color(ACCENT_GOLD, 0.85))
+	var heading := _label(page, "SATIRE & PARODY ONLY", Rect2(262, 176, 760, 34), 24, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	heading.name = "LegalHeading"
+	heading.add_theme_font_override("font", _bold_font())
+	var lead := _label(page, "This game is satire only. Any resemblance between the characters and reality is purely coincidental, and it contains no call for or encouragement of violence in the real world.", Rect2(262, 218, 760, 80), 17, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	lead.name = "LegalLead"
+	lead.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lead.add_theme_font_override("font", _bold_font())
+	lead.custom_minimum_size = Vector2(760, 80)
+	lead.size = Vector2.ZERO
+	var points := [
+		"Characters are exaggerated parody caricatures of public figures.",
+		"Not affiliated with, sponsored or endorsed by any person, party or organisation shown.",
+		"Completely free and non-commercial: no ads, no purchases.",
+		"Anonymous, cookie-free usage statistics help improve the game.",
+	]
+	for i in points.size():
+		var top := 314.0 + i * 36.0
+		_diamond(page, Vector2(270, top + 14), 5.0, ACCENT_CYAN)
+		_label(page, points[i], Rect2(288, top, 734, 28), 15, Color("#c9d6d9"), HORIZONTAL_ALIGNMENT_LEFT)
+	var full := _secondary_button(page, "SHOW FULL DISCLAIMER", Rect2(262, 470, 300, 50))
+	full.name = "ShowDisclaimerButton"
+	full.visible = OS.has_feature("web")
+	full.pressed.connect(_show_web_disclaimer)
+
+
+func _show_web_disclaimer() -> void:
+	_track("disclaimer_open")
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.worldFightShowDisclaimer?.()")
+
+
+func _show_settings_tab(tab_id: String) -> void:
+	_settings_tab = tab_id
+	var design := settings_root.get_node("SettingsDesign")
+	for tab in SETTINGS_TABS:
+		var selected: bool = tab[0] == tab_id
+		design.get_node("SettingsPage_" + tab[0]).visible = selected
+		var button := design.get_node("Tab_" + tab[0]) as Button
+		if selected: _style_primary(button)
+		else:
+			_style_secondary(button)
+			# Drop the gold tab's dark text so a focused inactive tab stays readable.
+			for key in ["font_hover_color", "font_pressed_color", "font_focus_color"]:
+				button.add_theme_color_override(key, Color("#e8eef0"))
 	_sync_settings_controls()
 
 
@@ -1936,7 +2130,9 @@ func _show_settings(origin: StringName) -> void:
 	menu_root.visible = false
 	pause_root.visible = false
 	settings_root.visible = true
-	var first := settings_root.find_child("Slider_master", true, false) as Control
+	# The pause menu opens on AUDIO (mid-fight volume tweaks); the main menu on GAME.
+	_show_settings_tab("audio" if origin == &"pause" else "game")
+	var first := settings_root.find_child("Tab_" + _settings_tab, true, false) as Control
 	if first: first.grab_focus()
 
 
@@ -1950,7 +2146,14 @@ func _close_settings() -> void:
 
 
 func _sync_settings_controls() -> void:
-	if not is_instance_valid(settings_root) or audio_manager == null: return
+	if not is_instance_valid(settings_root): return
+	var chosen := str(difficulty().id)
+	for entry in difficulty_levels():
+		var card := settings_root.find_child("Difficulty_" + str(entry.id), true, false) as Button
+		if card == null: continue
+		_style_difficulty_card(card, entry.id == chosen)
+		card.get_node("Selected").visible = entry.id == chosen
+	if audio_manager == null: return
 	for row in SETTINGS_ROWS:
 		var category: String = row[0]
 		var value := audio_manager.get_volume(StringName(category))
@@ -2058,7 +2261,9 @@ func _show_campaign_progress() -> void:
 		tile.add_theme_stylebox_override("panel", style)
 		ladder.add_child(tile)
 		var face := TextureRect.new()
-		face.texture = load(_fighter_thumbnail_path(campaign_ladder[i]))
+		face.name = "Face"
+		var future := i > next_index
+		face.texture = null if future else load(_fighter_thumbnail_path(campaign_ladder[i]))
 		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		face.position = Vector2(3, 3)
@@ -2066,7 +2271,9 @@ func _show_campaign_progress() -> void:
 		face.modulate = Color(0.45, 0.5, 0.5) if beaten else Color.WHITE
 		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(face)
-		var state := _label(tile, "WON" if beaten else ("BOSS" if i == total - 1 else str(i + 1)), Rect2(0, 76, tile_width, 22), 12, Color("#5ef0a0") if beaten else (ACCENT_GOLD if i == total - 1 else Color("#c9d6da")), HORIZONTAL_ALIGNMENT_CENTER)
+		var state_text := "WON" if beaten else ("?" if future else ("BOSS" if i == total - 1 else str(i + 1)))
+		var state := _label(tile, state_text, Rect2(0, 76, tile_width, 22), 12, Color("#5ef0a0") if beaten else (ACCENT_GOLD if i == total - 1 else Color("#c9d6da")), HORIZONTAL_ALIGNMENT_CENTER)
+		state.name = "State"
 		state.add_theme_font_override("font", _bold_font())
 
 
@@ -2533,7 +2740,7 @@ func _start_quick_fight() -> void:
 	if rival_id.is_empty() or rival_id == selecting:
 		rival_id = _opponent_selector.pick_opponent(PLAYABLE_IDS, selecting)
 	if rival_id.is_empty(): return
-	_setup_bout(selecting, rival_id, 1, "SINGLE FIGHT")
+	_setup_bout(selecting, rival_id, quick_fight_level(), "SINGLE FIGHT")
 
 
 func _start_campaign() -> void:
@@ -2571,6 +2778,59 @@ func campaign_level_for(index: int, total: int) -> int:
 	return clampi(1 + int(floor(3.0 * float(index) / float(total - 1))), 1, 4)
 
 
+func difficulty_levels() -> Array:
+	# Difficulty presets (EASY..EXPERT) live in data/difficulty.json.
+	if _difficulty_data.is_empty():
+		var file := FileAccess.open(DIFFICULTY_DATA_PATH, FileAccess.READ)
+		var parsed = JSON.parse_string(file.get_as_text()) if file != null else null
+		_difficulty_data = parsed if parsed is Dictionary else {"default": "normal", "levels": [{"id": "normal", "label": "NORMAL", "tagline": "", "description": "", "quick_level": 1, "campaign_offset": 0}]}
+	return _difficulty_data.levels
+
+
+func difficulty() -> Dictionary:
+	var wanted := difficulty_id if not difficulty_id.is_empty() else str(_difficulty_data.get("default", "normal"))
+	var levels := difficulty_levels()
+	for entry in levels:
+		if entry.id == wanted: return entry
+	for entry in levels:
+		if entry.id == str(_difficulty_data.get("default", "normal")): return entry
+	return levels[0]
+
+
+func set_difficulty(id: String, persist := true) -> void:
+	for entry in difficulty_levels():
+		if entry.id == id:
+			difficulty_id = id
+			if persist:
+				var config := ConfigFile.new()
+				config.load(difficulty_settings_path)
+				config.set_value("game", "difficulty", id)
+				config.save(difficulty_settings_path)
+				_track("difficulty", {"level": id})
+			_sync_settings_controls()
+			return
+
+
+func load_difficulty(path := "") -> void:
+	# Headless test runs ignore the developer's saved choice unless a test
+	# points at its own file.
+	if not path.is_empty(): difficulty_settings_path = path
+	elif DisplayServer.get_name() == "headless": return
+	var config := ConfigFile.new()
+	difficulty_id = ""
+	if config.load(difficulty_settings_path) == OK:
+		set_difficulty(str(config.get_value("game", "difficulty", "")), false)
+
+
+func quick_fight_level() -> int:
+	return clampi(int(difficulty().quick_level), 0, 4)
+
+
+func campaign_cpu_level(index: int, total: int) -> int:
+	# The campaign ramp (1..4) shifted by the chosen difficulty.
+	return clampi(campaign_level_for(index, total) + int(difficulty().campaign_offset), 0, 4)
+
+
 func _campaign_stage_for(index: int) -> String:
 	if index == campaign_ladder.size() - 1:
 		return "knesset_chamber"
@@ -2584,7 +2844,7 @@ func _start_campaign_fight() -> void:
 	selected_stage_id = _campaign_stage_for(campaign_index)
 	var rival: String = campaign_ladder[campaign_index]
 	var title := "FINAL BOSS" if campaign_index == campaign_ladder.size() - 1 else "FIGHT %d / %d" % [campaign_index + 1, campaign_ladder.size()]
-	_setup_bout(selecting, rival, campaign_level_for(campaign_index, campaign_ladder.size()), title)
+	_setup_bout(selecting, rival, campaign_cpu_level(campaign_index, campaign_ladder.size()), title)
 func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: String) -> void:
 	menu_root.visible = false
 	select_root.visible = false
@@ -3015,6 +3275,8 @@ func _toggle_pause() -> void:
 
 
 func _toggle_fullscreen() -> void:
+	if OS.has_feature("web") and bool(JavaScriptBridge.eval("window.worldFightShowIosInstall ? window.worldFightShowIosInstall() : false")):
+		return  # iPhone Safari cannot go fullscreen; the page shows the Home Screen guide.
 	var mode := DisplayServer.window_get_mode()
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if mode == DisplayServer.WINDOW_MODE_FULLSCREEN else DisplayServer.WINDOW_MODE_FULLSCREEN)
 

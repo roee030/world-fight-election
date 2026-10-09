@@ -35,6 +35,11 @@ class LegalGateTests(unittest.TestCase):
         self.assertIn("not affiliated", page)
         self.assertIn("purely coincidental", page)
         self.assertIn(".wf-legal-open #worldFightFullscreenGate{display:none!important}", page)
+        # Settings > LEGAL reopens the notice with the box unticked again.
+        self.assertIn("window.worldFightShowDisclaimer = () => {", page)
+        self.assertIn("check.checked = false;", page)
+        # The in-game FULL button reopens the iPhone Home Screen guide.
+        self.assertIn("window.worldFightShowIosInstall = () => {", page)
         # The gate is parsed before the engine loader starts.
         self.assertLess(page.index('id="worldFightDisclaimer"'), page.index('<script src="index.js">'))
 
