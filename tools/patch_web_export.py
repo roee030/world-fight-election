@@ -20,6 +20,28 @@ ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-dev
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
 DISCLAIMER_VERSION = "wf-disclaimer-v2"
 
+WEB_APP_MANIFEST = {
+    "id": "./",
+    "name": "World Fight: Election Edition",
+    "short_name": "World Fight",
+    "start_url": "./",
+    "scope": "./",
+    "display": "fullscreen",
+    "display_override": ["fullscreen", "standalone"],
+    "orientation": "landscape",
+    "background_color": "#050810",
+    "theme_color": "#050810",
+    "icons": [
+        {"src": "index.apple-touch-icon.png", "sizes": "180x180", "type": "image/png"},
+        {"src": "index.icon.png", "sizes": "any", "type": "image/png"},
+    ],
+}
+
+WEB_APP_LINKS = """<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png">
+<meta name="theme-color" content="#050810">
+"""
+
 
 def load_site_config(path: Path = SITE_CONFIG) -> dict:
     """Owner settings: analytics code and LinkedIn URL (empty = disabled)."""
@@ -78,6 +100,9 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 #worldFightRotateGate .wf-rotate-card{width:min(390px,calc(100vw - 40px));max-height:60dvh;overflow:auto;border:1px solid rgba(92,218,215,.65);padding:18px 20px;background:rgba(5,14,24,.92);box-shadow:0 12px 36px rgba(0,0,0,.72)}
 #worldFightRotateGate strong{display:block;font-size:25px;margin-bottom:10px;color:#66d9d4}
 #worldFightRotateGate span{display:block;line-height:1.55}
+#worldFightIosInstallHint{display:none;margin-top:12px;padding:10px 12px;border:1px solid rgba(232,185,79,.65);background:rgba(232,185,79,.08);color:#fff3c4;font-size:13px;line-height:1.45}
+.wf-ios-browser #worldFightIosInstallHint{display:block}
+.wf-ios-browser #worldFightFullscreenButton{display:none}
 #worldFightFullscreenGate{display:none;z-index:9999;background:rgba(3,7,13,.86);cursor:pointer}
 .wf-needs-fullscreen #worldFightFullscreenGate{display:flex}
 #worldFightFullscreenGate strong{font-size:clamp(30px,8vmin,60px);font-weight:900;letter-spacing:.08em;color:#fff3c4;text-shadow:0 0 24px rgba(255,200,80,.55)}
@@ -93,9 +118,12 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
   const state = { ready: false, fullscreenSeen: false, stage: 'download', errors: [], lastBeat: 0 };
   const params = new URLSearchParams(location.search);
   const diagnostics = params.has('diag');
+  const forceIosInstallHint = params.get('qa') === 'ios-install';
   const fullscreenSupported = () => Boolean(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
   const isFullscreen = () => Boolean(document.fullscreenElement || document.webkitFullscreenElement);
   const isTouchPhone = () => (navigator.maxTouchPoints || 0) > 0 && Math.min(screen.width, screen.height) <= 900;
+  const isAppleMobile = () => /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+  const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches;
   window.worldFightPendingAction = '';
   window.worldFightFitViewport = (width, height, insets = {}) => {
     const safe = { left: Math.max(0, Number(insets.left)||0), right: Math.max(0, Number(insets.right)||0), top: Math.max(0, Number(insets.top)||0), bottom: Math.max(0, Number(insets.bottom)||0) };
@@ -151,6 +179,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
   window.layoutWorldFightViewport = () => {
     const portrait = innerHeight > innerWidth;
     if (document.body) window.worldFightSafeArea = Object.assign(readSafeInsets(), { height: innerHeight });
+    document.documentElement.classList.toggle('wf-ios-browser', forceIosInstallHint || (isAppleMobile() && !isStandalone()));
     document.documentElement.classList.toggle('wf-portrait', portrait);
     const needsFullscreen = state.ready && !state.fullscreenRefused && !portrait && isTouchPhone() && fullscreenSupported() && !isFullscreen();
     document.documentElement.classList.toggle('wf-needs-fullscreen', needsFullscreen);
@@ -252,7 +281,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 </script>
 """
 
-BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><button id="worldFightFullscreenButton" type="button">⛶ FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
+BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><div id="worldFightIosInstallHint" dir="rtl">למסך מלא בלי הטאבים של Safari: לחצו על שיתוף, בחרו Add to Home Screen ופתחו את המשחק מהאייקון. אם המסך לא מסתובב, בטלו נעילת סיבוב במרכז הבקרה.</div><button id="worldFightFullscreenButton" type="button">FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests.
    It never navigates open pages: a forced reload would download the game twice. */
@@ -398,11 +427,15 @@ def _strip(html: str) -> str:
 def patch(path: Path, config: dict | None = None) -> None:
     config = load_site_config() if config is None else config
     html = _strip(path.read_text(encoding="utf-8"))
-    head = "<!--wf:head-->" + CACHE_RETIREMENT + analytics_script(config.get("goatcounter_code", "")) + HEAD_SHELL + LEGAL_STYLE + "<!--/wf:head-->"
+    head = "<!--wf:head-->" + WEB_APP_LINKS + CACHE_RETIREMENT + analytics_script(config.get("goatcounter_code", "")) + HEAD_SHELL + LEGAL_STYLE + "<!--/wf:head-->"
     body = "<!--wf:body-->" + legal_markup() + BODY_SHELL + "<!--/wf:body-->"
     html = html.replace("</head>", head + "</head>", 1)
     html = re.sub(r"<body([^>]*)>", lambda match: "<body" + match.group(1) + ">" + body, html, count=1)
     path.write_text(html, encoding="utf-8")
+    path.with_name("manifest.webmanifest").write_text(
+        json.dumps(WEB_APP_MANIFEST, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     if ROTATE_ART.is_file():
         copyfile(ROTATE_ART, path.with_name("rotate-device-ensemble.webp"))
     path.with_name("index.service.worker.js").write_text(RETIRE_WORKER, encoding="utf-8")

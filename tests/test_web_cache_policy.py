@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import json
 import unittest
 
 from tools.patch_web_export import patch
@@ -101,6 +102,42 @@ class WebCachePolicyTests(unittest.TestCase):
                 patched.index("window.initializeWorldFightShell()</script>"),
                 patched.index('<script src="index.js">'),
             )
+
+    def test_ios_home_screen_web_app_metadata_is_emitted(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            html = root / "index.html"
+            html.write_text(GODOT_SHELL, encoding="utf-8")
+            patch(html)
+
+            patched = html.read_text(encoding="utf-8")
+            manifest_path = root / "manifest.webmanifest"
+            self.assertIn('<link rel="manifest" href="manifest.webmanifest">', patched)
+            self.assertIn('<link rel="apple-touch-icon" href="index.apple-touch-icon.png">', patched)
+            self.assertTrue(manifest_path.is_file())
+
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(manifest["display"], "fullscreen")
+            self.assertEqual(manifest["display_override"], ["fullscreen", "standalone"])
+            self.assertEqual(manifest["orientation"], "landscape")
+            self.assertEqual(manifest["start_url"], "./")
+            self.assertEqual(manifest["scope"], "./")
+
+    def test_ios_safari_gets_home_screen_guidance_without_changing_android_flow(self):
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            html = root / "index.html"
+            html.write_text(GODOT_SHELL, encoding="utf-8")
+            patch(html)
+
+            patched = html.read_text(encoding="utf-8")
+            self.assertIn("worldFightIosInstallHint", patched)
+            self.assertIn("navigator.standalone", patched)
+            self.assertIn("params.get('qa') === 'ios-install'", patched)
+            self.assertIn("Add to Home Screen", patched)
+            self.assertIn("נעילת סיבוב", patched)
+            self.assertIn("fullscreenSupported()", patched)
+            self.assertIn("screen.orientation?.lock?.('landscape')", patched)
 
     def test_patching_replaces_old_and_repeated_shells(self):
         with TemporaryDirectory() as folder:
