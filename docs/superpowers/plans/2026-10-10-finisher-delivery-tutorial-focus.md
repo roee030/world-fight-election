@@ -95,7 +95,7 @@ Run: `res://tests/test_combat_feedback.gd`, `res://tests/test_combo_strings.gd`,
 
 Expected: all pass and the combo engine remains the sole combo tracker.
 
-- [ ] **Step 5: Inspect fight presentation and commit/push Task 2**
+- [x] **Step 5: Inspect fight presentation and commit/push Task 2**
 
 Capture 1280×720 and 780×360 fight/combo views; confirm the lone lane sits above fighters without colliding with HUD. Commit message: `feat: focus combat feedback on combos and damage`.
 
@@ -129,7 +129,7 @@ Run: `res://tests/test_tutorial.gd`, `res://tests/test_tutorial_exit.gd`, and `r
 
 Expected: all pass; miss retry, skip, replay, pause, and fresh CPU handoff remain safe.
 
-- [ ] **Step 5: Inspect tutorial at desktop and phone sizes, update docs, commit/push Task 3**
+- [x] **Step 5: Inspect tutorial at desktop and phone sizes, update docs, commit/push Task 3**
 
 Capture the intro, one highlighted action, and completion gate at 1280×720 and 780×360. Confirm no overlay crops or blocks controls. Commit message: `feat: clarify first-fight tutorial with spotlight gates`.
 
@@ -143,22 +143,22 @@ Capture the intro, one highlighted action, and completion gate at 1280×720 and 
 - Consumes: completed Tasks 1–3.
 - Produces: a documented, verified release record.
 
-- [ ] **Step 1: Run the full Godot suite with a writable isolated `APPDATA` directory**
+- [x] **Step 1: Run the full Godot suite with a writable isolated `APPDATA` directory**
 
 Run every `tests/test_*.gd` with the portable Godot console binary and `APPDATA` directed to `tmp/godot-test-data`.
 
 Expected: all tests pass.
 
-- [ ] **Step 2: Run the full Python suite**
+- [x] **Step 2: Run the full Python suite**
 
 Run: `python -m unittest discover -s tests -p 'test_*.py'`
 
 Expected: all tests pass.
 
-- [ ] **Step 3: Perform Web smoke verification**
+- [x] **Step 3: Perform Web smoke verification**
 
 Export/serve the Web build, inspect that no `finishers.pck` request occurs, and use `?qa=finisher` plus the tutorial route at desktop and phone dimensions.
 
-- [ ] **Step 4: Record evidence and commit/push Task 4**
+- [x] **Step 4: Record evidence and commit/push Task 4**
 
 Update the current handoff delivery record with test totals, captures, and package behavior. Commit message: `docs: verify finisher and tutorial focus release`.

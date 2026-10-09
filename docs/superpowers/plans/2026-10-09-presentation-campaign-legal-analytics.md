@@ -126,3 +126,19 @@
 - A Hebrew-capable font, to localise the in-game UI.
 - Per-campaign-stage intro cards and a champion celebration screen with confetti.
 - Persist campaign progress across sessions (`user://campaign.json`).
+
+### Follow-up (2026-10-10): Finisher delivery and tutorial focus
+
+- **One Web game package:** finishers now ship in `index.pck`; the deferred
+  `finishers.pck` download and SP loading gate were removed. A live Pages
+  smoke test confirmed no `finishers.pck` network request.
+- **Quiet combat feedback:** the raised centre lane now shows only
+  `HITS · DMG`; quality labels, named-combo copy, breaker copy, and normal
+  live-combat SP coaching no longer cover the fighters.
+- **Tutorial clarity:** the first fight opens with `LEARN THE BASICS`, uses a
+  dimmed Highlight Overlay around the active control, and ends at an explicit
+  `TRAINING COMPLETE` / `START FIGHT` gate before CPU handoff. Pages captures
+  were reviewed at desktop and 780×360 landscape-phone sizes.
+- **Verification:** 33/33 Python tests passed; all 57 Godot test scripts
+  passed under isolated `APPDATA` (the engine still emits its known Windows
+  certificate/teardown warnings).
