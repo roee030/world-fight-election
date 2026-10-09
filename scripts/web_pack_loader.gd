@@ -40,6 +40,7 @@ func _start_download() -> void:
 	if is_instance_valid(_request):
 		_request.queue_free()
 	_request = HTTPRequest.new()
+	_request.accept_gzip = false
 	_request.request_completed.connect(_on_request_completed)
 	add_child(_request)
 	var url := str(JavaScriptBridge.eval("new URL('%s', location.href).href" % PACK_URL))
