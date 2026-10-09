@@ -36,6 +36,7 @@ func _run() -> void:
 	main._setup_bout("bennet", "avigdor", 1, "FINISHER QA")
 	main.enemy.is_cpu = false
 	for frame in range(95): await physics_frame
+	while not main.round_ready: await physics_frame  # the announcer sets the intro length
 	main.player.position.x = -3.0
 	main.enemy.position.x = 3.0
 	main.player.meter = 100.0
@@ -105,6 +106,7 @@ func _run() -> void:
 
 	# 3. A lethal finisher at match point wins the match and celebrates.
 	for frame in range(95): await physics_frame
+	while not main.round_ready: await physics_frame  # the announcer sets the intro length
 	_arm(main, 10.0)
 	main.player_rounds = 1
 	var fight_camera: Camera3D = main._fight_camera

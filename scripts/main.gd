@@ -2652,8 +2652,11 @@ func _start_round() -> void:
 	message_label.text = "ROUND %d" % round_num
 	message_label.visible = true
 	_set_music(&"fight")
-	_play_voice(round_voice_cue(round_num))
-	await get_tree().create_timer(0.72, false).timeout
+	var round_cue := round_voice_cue(round_num)
+	_play_voice(round_cue)
+	# FIGHT! shares the announcer voice, so it waits for the full round call.
+	var round_call := audio_manager.voice_length(round_cue) + 0.08 if audio_manager else 0.0
+	await get_tree().create_timer(maxf(0.72, round_call), false).timeout
 	if fight_live and not paused:
 		message_label.text = "FIGHT!"
 		_play_voice(&"fight")

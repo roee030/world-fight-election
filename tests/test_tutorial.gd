@@ -39,6 +39,7 @@ func _run() -> void:
 	main._tutorial_pending = true
 	assert(not main.tutorial.active, "tutorial must not open before the first fight intro finishes")
 	for i in range(100): await physics_frame
+	while not main.round_ready: await physics_frame  # the announcer sets the intro length
 	assert(main.tutorial.active, "tutorial must open when the player's first fight becomes active")
 	main.set_physics_process(false)
 	main.player.set_physics_process(false)

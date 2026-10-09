@@ -11,6 +11,7 @@ func _run() -> void:
 	main._setup_bout("bennet", "avigdor", 1, "BENNET DELIVERY QA")
 	main.enemy.is_cpu = false
 	for frame in range(95): await physics_frame
+	while not main.round_ready: await physics_frame  # the announcer sets the intro length
 	main.set_process(false)
 	main.set_physics_process(false)
 	main.player.set_physics_process(false)

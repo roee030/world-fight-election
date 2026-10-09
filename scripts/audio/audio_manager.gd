@@ -118,6 +118,10 @@ func play_voice(cue: StringName) -> AudioStreamPlayer:
 	_log_cue("voice", cue)
 	return _voice_player
 
+func voice_length(cue: StringName) -> float:
+	var stream := _load_cue("voice", cue)
+	return stream.get_length() if stream else 0.0
+
 func set_music_state(state: StringName) -> void:
 	if state == _music_state:
 		return

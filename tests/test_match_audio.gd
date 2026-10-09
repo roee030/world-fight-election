@@ -25,6 +25,14 @@ func _run() -> void:
 	assert(main.audio_manager.get_music_state() == &"fight", "a bout must switch to fight music")
 	assert(_logged(main, "voice:round_one"), "round one announcer missing")
 	assert(not _logged(main, "voice:fight"), "FIGHT announced before control release")
+	var round_call: float = main.audio_manager.voice_length(&"round_one")
+	assert(round_call > 1.0, "round one announcer clip not measured")
+	# Game time, like the announcer timer, rather than wall-clock time.
+	var gap: float = main.get_process_delta_time()  # the frame that started the call
+	while not _logged(main, "voice:fight"):
+		await process_frame
+		gap += main.get_process_delta_time()
+	assert(gap >= round_call, "FIGHT cut off the round call after %.2fs of %.2fs" % [gap, round_call])
 	while not main.round_ready:
 		await process_frame
 	assert(_logged(main, "voice:fight"), "FIGHT announcer must play at control release")
