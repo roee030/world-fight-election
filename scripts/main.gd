@@ -1385,6 +1385,8 @@ func _build_select() -> void:
 	select_rival_portrait.name = "RivalPortrait"
 	select_rival_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	select_rival_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	# Card art faces right; mirror it on the GPU so the rival faces the player.
+	select_rival_portrait.flip_h = true
 	select_rival_portrait.position = Vector2(840, 88)
 	select_rival_portrait.size = Vector2(416, 526)
 	select_rival_portrait.modulate = Color(0.22, 0.25, 0.30, 1)
@@ -1573,11 +1575,13 @@ func _start_rival_reveal() -> void:
 		return
 	rival_reveal_active = true
 	var sequence := rival_reveal_sequence(pending_rival_id, selecting, 22)
+	# First face now, so the frame never shows an empty slot.
+	_show_rival_reveal_face(sequence[0])
 	_rival_reveal_tween = create_tween()
 	for i in range(sequence.size() - 1):
 		# Fast flicks that slow down towards the reveal.
 		var t := float(i) / float(sequence.size() - 1)
-		_rival_reveal_tween.tween_callback(_show_rival_reveal_face.bind(sequence[i]))
+		if i > 0: _rival_reveal_tween.tween_callback(_show_rival_reveal_face.bind(sequence[i]))
 		_rival_reveal_tween.tween_interval(lerpf(0.05, 0.24, t * t))
 	_rival_reveal_tween.tween_callback(_finish_rival_reveal)
 	_rival_reveal_tween.tween_interval(0.9)
@@ -1585,7 +1589,8 @@ func _start_rival_reveal() -> void:
 
 
 func _show_rival_reveal_face(id: String) -> void:
-	select_rival_portrait.texture = load(_fighter_thumbnail_path(id))
+	# Same card art as the final reveal, so the landing never swaps image style.
+	select_rival_portrait.texture = _fighter_art(id)
 	select_rival_name.text = _fighter_name(id).to_upper()
 	_rival_reveal_highlight = id
 	_refresh_roster()
@@ -1594,7 +1599,7 @@ func _show_rival_reveal_face(id: String) -> void:
 
 func _finish_rival_reveal() -> void:
 	var data: Dictionary = FIGHTER_DATA.get(pending_rival_id, FIGHTER_DATA.bennet)
-	select_rival_portrait.texture = _fighter_art(pending_rival_id, true)
+	select_rival_portrait.texture = _fighter_art(pending_rival_id)
 	select_rival_name.text = str(data.name).to_upper()
 	select_rival_style.text = "YOUR OPPONENT  •  " + str(data.style).to_upper()
 	_rival_reveal_highlight = pending_rival_id

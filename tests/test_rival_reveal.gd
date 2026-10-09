@@ -36,6 +36,10 @@ func _run() -> void:
 		return _fail("reveal picked no valid rival")
 	if (main.select_root.find_child("MysteryCpuMark", true, false) as CanvasItem).visible:
 		return _fail("the mystery mark must hide while faces shuffle")
+	# Shuffled faces use the same card art as the final reveal.
+	var shuffle_art := main.select_rival_portrait.texture as Texture2D
+	if shuffle_art == null or not shuffle_art.resource_path.ends_with("-card.png"):
+		return _fail("shuffle must flick through the fighter card art, not the face thumbnails")
 	main._select_fighter("trump")
 	main._confirm_selection()
 	if main.selecting != "bibi" or main.pending_rival_id != rival:
@@ -49,6 +53,8 @@ func _run() -> void:
 		return _fail("shuffle did not finish into the arena select")
 	if main.select_rival_name.text != main._fighter_name(rival).to_upper():
 		return _fail("revealed name does not match the chosen rival")
+	if main.select_rival_portrait.texture != main._fighter_art(rival):
+		return _fail("revealed art does not match the chosen rival's card")
 
 	main._start_selected_mode()
 	if main.current_rival_id != rival:
