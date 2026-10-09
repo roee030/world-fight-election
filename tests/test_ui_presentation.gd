@@ -39,14 +39,18 @@ func _run() -> void:
 	var action_panel: Node = main.menu_root.get_node_or_null("MenuActionPanel")
 	if action_panel == null:
 		return _fail("main menu action panel is missing")
-	if action_panel.find_children("*", "Button", true, false).size() != 3:
-		return _fail("main menu must expose exactly three actions")
+	if action_panel.find_children("*", "Button", true, false).size() != 2:
+		return _fail("main menu must expose exactly START FIGHT and CAMPAIGN")
 	for button in action_panel.find_children("*", "Button", true, false):
 		if (button as Button).text == "FIGHTER LAB":
 			return _fail("Fighter Lab must not be a player-facing menu action")
-	var contact := action_panel.find_child("ContactCreatorButton", true, false) as Button
-	if contact == null or contact.visible != not str(main.site_config().get("linkedin_url", "")).is_empty():
-		return _fail("CONTACT THE CREATOR must exist and only show when a LinkedIn URL is configured")
+	var creator := main.menu_root.find_child("CreatorCard", true, false) as Button
+	if creator == null or creator.visible != not str(main.site_config().get("linkedin_url", "")).is_empty():
+		return _fail("creator card must exist and only show when a LinkedIn URL is configured")
+	if (creator.find_child("CreatorPhoto", true, false) as TextureRect).texture == null:
+		return _fail("creator card has no photo")
+	if main.menu_root.find_child("SatireNotice", true, false) == null:
+		return _fail("main menu must keep the persistent satire notice")
 	if main.menu_root.get_node_or_null("FullscreenButton") == null:
 		return _fail("main menu has no fullscreen control for phone browsers")
 	if not main.menu_root.find_children("*", "ScrollContainer", true, false).is_empty():

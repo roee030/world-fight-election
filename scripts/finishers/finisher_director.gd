@@ -353,7 +353,8 @@ func _super_card() -> CanvasLayer:
 	# (frame 5 of the 12-frame contract). The roster cards have an opaque
 	# background and looked like a pasted box on the effects.
 	var art_path := "res://assets/finishers/%s/super-card.png" % id
-	if not ResourceLoader.exists(art_path):
+	var illustrated := ResourceLoader.exists(art_path)
+	if not illustrated:
 		art_path = "res://assets/characters/sprites/%s-5.png" % id
 	var art = ResourceLoader.load(art_path) if ResourceLoader.exists(art_path) else null
 	var font := FontVariation.new()
@@ -364,7 +365,7 @@ func _super_card() -> CanvasLayer:
 	card.reduced_motion = reduced_motion
 	card.dense_effects = effect_density != "mobile"
 	var fighter_name := str(_host.call("_fighter_name", id)) if _host != null and _host.has_method("_fighter_name") else id.replace("_", " ")
-	card.setup(fighter_name, SuperMoveCardScript.display_name_for(_definition), art as Texture2D, font)
+	card.setup(fighter_name, SuperMoveCardScript.display_name_for(_definition), art as Texture2D, font, not illustrated)
 	add_child(card)
 	_presentation.append(card)
 	_lifetimes[card] = SuperMoveCardScript.DURATION

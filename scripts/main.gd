@@ -26,6 +26,7 @@ const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
+const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
 const HUD_PANEL_SIZE := Vector2(540, 124)
 const HUD_HP_BAR_X := 126.0
 const HUD_HP_BAR_WIDTH := 390.0
@@ -396,6 +397,54 @@ func site_config() -> Dictionary:
 		var parsed = JSON.parse_string(file.get_as_text()) if file != null else null
 		_site_config = parsed if parsed is Dictionary else {"linkedin_url": "", "goatcounter_code": ""}
 	return _site_config
+
+
+func _build_creator_card(parent: Control) -> void:
+	# "Created by" card with the creator's photo; opens the LinkedIn profile.
+	var url := str(site_config().get("linkedin_url", ""))
+	var card := Button.new()
+	card.name = "CreatorCard"
+	card.position = Vector2(58, 456)
+	card.size = Vector2(330, 74)
+	card.focus_mode = Control.FOCUS_NONE
+	card.visible = not url.is_empty()
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.02, 0.06, 0.09, 0.72) if state != "hover" else Color(0.05, 0.14, 0.18, 0.86)
+		style.border_color = Color(ACCENT_GOLD, 0.65)
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(4)
+		card.add_theme_stylebox_override(state, style)
+	parent.add_child(card)
+	card.pressed.connect(_open_creator_profile)
+	var ring := Panel.new()
+	ring.position = Vector2(9, 7)
+	ring.size = Vector2(60, 60)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring_style := StyleBoxFlat.new()
+	ring_style.bg_color = ACCENT_GOLD
+	ring_style.set_corner_radius_all(30)
+	ring.add_theme_stylebox_override("panel", ring_style)
+	card.add_child(ring)
+	var photo := TextureRect.new()
+	photo.name = "CreatorPhoto"
+	photo.texture = load(CREATOR_PHOTO_PATH) if ResourceLoader.exists(CREATOR_PHOTO_PATH) else null
+	photo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	photo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	photo.position = Vector2(12, 10)
+	photo.size = Vector2(54, 54)
+	photo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mask := ShaderMaterial.new()
+	mask.shader = CIRCLE_MASK_SHADER
+	photo.material = mask
+	card.add_child(photo)
+	var by := _label(card, "CREATED BY", Rect2(82, 8, 240, 18), 11, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_LEFT)
+	by.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var creator := _label(card, str(site_config().get("creator_name", "THE CREATOR")), Rect2(82, 24, 240, 28), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	creator.add_theme_font_override("font", _bold_font())
+	creator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var link := _label(card, "CONNECT ON LINKEDIN  >", Rect2(82, 50, 240, 18), 11, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
+	link.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _open_creator_profile() -> void:
@@ -1135,13 +1184,12 @@ func _build_menu() -> void:
 	campaign.name = "CampaignButton"
 	campaign.pressed.connect(func(): _track("menu_campaign"); _open_select("campaign"))
 	# Fighter Lab stays available to developers (scenes/character_debug.tscn)
-	# but is not a player-facing menu action.
-	var contact := _menu_text_button(action_panel, "CONTACT THE CREATOR", Rect2(0, 276, 330, 52), 16)
-	contact.name = "ContactCreatorButton"
-	contact.visible = not str(site_config().get("linkedin_url", "")).is_empty()
-	contact.pressed.connect(_open_creator_profile)
-	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
-	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
+	# but is not a player-facing menu action. The creator card below the menu
+	# links to the creator's LinkedIn profile.
+	_build_creator_card(menu_root)
+	# Persistent legal reminder (the full disclaimer is shown by the Web shell).
+	var notice := _label(menu_root, "SATIRE & PARODY ONLY  ·  ANY RESEMBLANCE IS COINCIDENTAL  ·  NO CALL FOR REAL-WORLD VIOLENCE  ·  FREE & NON-COMMERCIAL", Rect2(58, 676, 900, 20), 10, Color("#9fb0b6"), HORIZONTAL_ALIGNMENT_LEFT)
+	notice.name = "SatireNotice"
 	var fullscreen_btn := _button(menu_root, "FULL SCREEN", Rect2(1132, 24, 124, 40), "#233440", 12)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.tooltip_text = "FULL SCREEN"

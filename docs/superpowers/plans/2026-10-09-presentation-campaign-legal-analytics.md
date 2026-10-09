@@ -103,11 +103,19 @@
 | T8 Disclaimer | Done | Shell modal, checkbox-gated button, versioned `localStorage` and a compact layout under 440 px height; `tests/test_web_legal_analytics.py`; Playwright verified that the button is disabled until checked and that acceptance is stored. |
 | T9 Analytics | Done (needs owner's GoatCounter code) | Shell `worldFightTrack` + optional GoatCounter; Godot `_track()` events; Python tests for sanitising and opt-in. |
 
+### Follow-up (2026-10-09, owner input)
+
+| Item | Status | Notes |
+|---|---|---|
+| Analytics live | Done | `goatcounter_code = "roeeangel"`. The dashboard is at https://roeeangel.goatcounter.com. Events appear as `event-<name>` paths. GoatCounter ignores localhost, so only the live site counts. |
+| LinkedIn + creator photo | Done | `linkedin_url` set. A `CreatorCard` in the main menu shows `assets/ui/creator.png` (circular), `CREATED BY ROEE ANGEL`, and opens the profile. The separate CONTACT action was removed; the menu actions are START FIGHT and CAMPAIGN. |
+| Legal wording | Done | Disclaimer v2 opens with the owner's exact sentence: "המשחק הוא סאטירה בלבד, כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי". Then: parody caricatures, no affiliation, free/non-commercial, anonymous statistics. The version bump re-shows it to everyone. A persistent satire line sits in the main menu. Not adopted: parody name changes (that changes the game's identity; owner decision). |
+| Finisher names | Done | `display_name` set for all 13 finishers in `data/finishers.json`. |
+| Illustrated finisher art | Brief ready | `docs/finisher-art-brief.md`: specs, shared and negative prompts, a prompt line per fighter, background removal and an integration checklist. The code already prefers `assets/finishers/<id>/super-card.png` (shown unmirrored). |
+
 ### Remaining owner actions
-1. Put the LinkedIn URL in `data/site_config.json` → `linkedin_url`.
-2. Create a free GoatCounter site and put its code in `goatcounter_code`.
-3. Optional: finisher display names (`display_name`) and illustrated `super-card.png` art per fighter.
-4. Legal review of the disclaimer wording.
+1. Generate the 13 `super-card.png` images using `docs/finisher-art-brief.md`.
+2. Legal review of the disclaimer wording, and a decision about parody names.
 
 ### Next ideas for a future agent
 - A Hebrew-capable font, to localise the in-game UI.

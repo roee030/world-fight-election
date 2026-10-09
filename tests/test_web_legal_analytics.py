@@ -28,9 +28,12 @@ class LegalGateTests(unittest.TestCase):
         self.assertIn("accept.disabled = !check.checked", page)
         self.assertIn(DISCLAIMER_VERSION, page)
         # Hebrew first, with the key protections spelled out.
-        for phrase in ("סאטירי", "אינו קשור", "אינו מעודד", "לאלימות", "בחינם", "אנונימיים"):
+        # The owner's exact lead sentence, then the supporting points.
+        self.assertIn("המשחק הוא סאטירה בלבד, כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.", page)
+        for phrase in ("קריקטורות פרודיות", "אינו קשור", "בחינם לחלוטין", "ללא מטרת רווח", "אנונימיים"):
             self.assertIn(phrase, page)
         self.assertIn("not affiliated", page)
+        self.assertIn("purely coincidental", page)
         self.assertIn(".wf-legal-open #worldFightFullscreenGate{display:none!important}", page)
         # The gate is parsed before the engine loader starts.
         self.assertLess(page.index('id="worldFightDisclaimer"'), page.index('<script src="index.js">'))
@@ -50,9 +53,11 @@ class AnalyticsTests(unittest.TestCase):
         self.assertIn("https://gc.zgo.at/count.js", page)
         self.assertIn("'event-' + entry.name", page)
 
-    def test_site_config_is_present_and_empty_by_default(self):
+    def test_site_config_enables_owner_analytics_and_profile(self):
         config = load_site_config()
         self.assertEqual(set(config), {"goatcounter_code", "linkedin_url"})
+        self.assertEqual(config["goatcounter_code"], "roeeangel")
+        self.assertTrue(config["linkedin_url"].startswith("https://www.linkedin.com/in/"))
 
 
 if __name__ == "__main__":

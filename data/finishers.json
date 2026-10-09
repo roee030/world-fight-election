@@ -3,6 +3,7 @@
     "bennet": {
       "fighter_id": "bennet",
       "finisher_id": "startup_exit",
+      "display_name": "STARTUP EXIT",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -147,6 +148,7 @@
     "bibi": {
       "fighter_id": "bibi",
       "finisher_id": "family_business",
+      "display_name": "FAMILY BUSINESS",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -346,6 +348,7 @@
     "yair_lapid": {
       "fighter_id": "yair_lapid",
       "finisher_id": "prime_time_rush",
+      "display_name": "PRIME TIME RUSH",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -703,6 +706,7 @@
     "benny_gantz": {
       "fighter_id": "benny_gantz",
       "finisher_id": "independence_flag",
+      "display_name": "INDEPENDENCE FLAG",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -800,6 +804,7 @@
     "avigdor": {
       "fighter_id": "avigdor",
       "finisher_id": "oil_barrel_48",
+      "display_name": "48-HOUR COUNTDOWN",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -953,6 +958,7 @@
     "mansour_abbas": {
       "fighter_id": "mansour_abbas",
       "finisher_id": "coalition_cashstorm",
+      "display_name": "COALITION CASHSTORM",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -1154,6 +1160,7 @@
     "gadi_eisenkot": {
       "fighter_id": "gadi_eisenkot",
       "finisher_id": "bazooka_command",
+      "display_name": "BAZOOKA COMMAND",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -1275,6 +1282,7 @@
     "yair_golan": {
       "fighter_id": "yair_golan",
       "finisher_id": "m16_burst",
+      "display_name": "FIELD COMMAND",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -1473,6 +1481,7 @@
     "itamar_ben_gvir": {
       "fighter_id": "itamar_ben_gvir",
       "finisher_id": "crocodile_release",
+      "display_name": "CROCODILE RELEASE",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -1685,6 +1694,7 @@
     "bezalel_smotrich": {
       "fighter_id": "bezalel_smotrich",
       "finisher_id": "cattle_charge",
+      "display_name": "CATTLE CHARGE",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -1870,6 +1880,7 @@
     "aryeh_deri": {
       "fighter_id": "aryeh_deri",
       "finisher_id": "campaign_entourage",
+      "display_name": "CAMPAIGN ENTOURAGE",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -2104,6 +2115,7 @@
     "joint_list": {
       "fighter_id": "joint_list",
       "finisher_id": "two_headed_chaos_squad",
+      "display_name": "TWO-HEADED CHAOS",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,
@@ -2262,6 +2274,7 @@
     "trump": {
       "fighter_id": "trump",
       "finisher_id": "b2_flyover",
+      "display_name": "B-2 FLYOVER",
       "implemented": true,
       "meter_cost": 100,
       "trigger_health_ratio": 0.15,

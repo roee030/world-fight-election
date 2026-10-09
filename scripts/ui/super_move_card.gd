@@ -29,7 +29,7 @@ var _bolt_timer := 0.0
 var _rng := RandomNumberGenerator.new()
 
 
-func setup(fighter_name: String, move_name: String, art: Texture2D, title_font: Font) -> void:
+func setup(fighter_name: String, move_name: String, art: Texture2D, title_font: Font, mirror_art: bool = true) -> void:
 	layer = 16
 	name = "SuperMoveCard"
 	_rng.seed = hash(fighter_name + move_name)
@@ -56,8 +56,9 @@ func setup(fighter_name: String, move_name: String, art: Texture2D, title_font: 
 		rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		# Face the title on the left.
-		rect.flip_h = true
+		# Face the title on the left (sprites face right; illustrated art is
+		# already drawn facing left).
+		rect.flip_h = mirror_art
 		rect.anchor_left = 0.5
 		rect.anchor_right = 0.5
 		rect.anchor_top = 0.5

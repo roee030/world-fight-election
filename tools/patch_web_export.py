@@ -18,7 +18,7 @@ from typing import Mapping
 
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
-DISCLAIMER_VERSION = "wf-disclaimer-v1"
+DISCLAIMER_VERSION = "wf-disclaimer-v2"
 
 
 def load_site_config(path: Path = SITE_CONFIG) -> dict:
@@ -272,6 +272,7 @@ LEGAL_STYLE = """<style id="world-fight-legal-style">
 #worldFightDisclaimer .wf-legal-card{width:min(640px,100%);max-height:calc(100dvh - 24px);overflow:auto;border:1px solid rgba(232,185,79,.75);background:linear-gradient(180deg,#0b1620,#070d14);box-shadow:0 0 40px rgba(70,220,216,.18);padding:18px 20px;box-sizing:border-box}
 #worldFightDisclaimer h2{margin:0 0 4px;font-size:clamp(18px,4vmin,24px);color:#f2c35a;letter-spacing:.04em}
 #worldFightDisclaimer .wf-legal-sub{margin:0 0 10px;color:#7fe3df;font-size:12px;letter-spacing:.2em}
+#worldFightDisclaimer .wf-legal-lead{margin:0 0 8px;padding:8px 10px;border-inline-start:4px solid #e8b94f;background:rgba(232,185,79,.08);font-weight:800;font-size:clamp(13px,2.9vmin,16px);line-height:1.45;color:#fff4d6}
 #worldFightDisclaimer ul{margin:0 0 10px;padding-inline-start:18px;line-height:1.5;font-size:clamp(12px,2.6vmin,15px)}
 #worldFightDisclaimer li{margin-bottom:4px}
 #worldFightDisclaimer .wf-legal-en{direction:ltr;text-align:left;color:#9fb2b8;font-size:11px;line-height:1.45;margin:8px 0 10px}
@@ -284,17 +285,17 @@ LEGAL_STYLE = """<style id="world-fight-legal-style">
 """
 
 LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true" aria-labelledby="wfLegalTitle"><div class="wf-legal-card" dir="rtl" lang="he">
-<h2 id="wfLegalTitle">לפני שמתחילים – הבהרה חשובה</h2>
+<h2 id="wfLegalTitle">לפני שמתחילים – הבהרה</h2>
 <p class="wf-legal-sub">SATIRE · PARODY · FREE</p>
+<p class="wf-legal-lead">המשחק הוא סאטירה בלבד, כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.</p>
 <ul>
-<li>World Fight הוא משחק סאטירי והומוריסטי בלבד. הדמויות הן קריקטורות פרודיות של אישי ציבור, ואין לראות במשחק תיאור של המציאות או של עמדות, מעשים או אמירות של מישהו.</li>
-<li>המשחק אינו קשור, ממומן או מאושר על ידי אף אדם, מפלגה או גוף המופיעים בו. כל דמיון למציאות הוא פרודי ומקרי.</li>
-<li>המשחק אינו מעודד, תומך או קורא לאלימות מכל סוג כלפי אדם כלשהו בעולם האמיתי. הקרבות הם אנימציה מצוירת ומוגזמת בלבד.</li>
-<li>המשחק מופץ בחינם, ללא פרסומות, ללא רכישות וללא מטרת רווח.</li>
-<li>נאספים נתוני שימוש אנונימיים בלבד (ללא עוגיות וללא פרטים מזהים) לצורך שיפור המשחק.</li>
+<li>הדמויות הן קריקטורות פרודיות ומוגזמות של אישי ציבור. אין במשחק תיאור של אירועים, עמדות, אמירות או מעשים אמיתיים של איש.</li>
+<li>המשחק אינו קשור, ממומן או מאושר על ידי אף אדם, מפלגה או גוף המופיעים בו.</li>
+<li>המשחק מופץ בחינם לחלוטין – ללא פרסומות, ללא רכישות וללא מטרת רווח.</li>
+<li>נאספים נתוני שימוש אנונימיים בלבד (ללא עוגיות וללא פרטים מזהים) לשיפור המשחק.</li>
 </ul>
-<p class="wf-legal-en">World Fight is satire and parody only. Characters are caricatures of public figures; nothing depicts real events, views or conduct. It is not affiliated with, sponsored or endorsed by any person, party or organisation shown. It does not encourage or call for violence of any kind against anyone in the real world. It is free and non-commercial. Anonymous, cookie-free usage statistics are collected to improve the game.</p>
-<label><input id="worldFightDisclaimerCheck" type="checkbox"><span>קראתי והבנתי: זהו משחק סאטירי בלבד, ואני מסכים/ה לתנאים. · I have read and agree.</span></label>
+<p class="wf-legal-en">This game is satire only. Any resemblance between the characters and reality is purely coincidental, and it contains no call for or encouragement of violence in the real world. Characters are exaggerated parody caricatures of public figures; the game is not affiliated with, sponsored or endorsed by any person, party or organisation shown. It is completely free and non-commercial (no ads, no purchases). Anonymous, cookie-free usage statistics are collected to improve the game.</p>
+<label><input id="worldFightDisclaimerCheck" type="checkbox"><span>קראתי והבנתי שהמשחק הוא סאטירה בלבד, ואני מסכים/ה לתנאים. · I understand this is satire and agree.</span></label>
 <button id="worldFightDisclaimerAccept" type="button" disabled>כניסה למשחק · ENTER</button>
 </div></div>
 <script>(() => {
