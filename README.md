@@ -77,7 +77,8 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `assets/characters/portraits/` | Face-focused selection and HUD portraits |
 | `assets/characters/sprites/` | Normalized transparent combat frames |
 | `assets/stages/` | Full-frame stage backplates |
-| `assets/ui/main-hero-*.png` | Two title-art candidates |
+| `assets/ui/main-hero-video.ogv` | Looping, silent main-menu hero video (Godot-ready Theora) |
+| `assets/ui/main-hero-*.png` | Title-art candidates; `main-hero-b.png` is the video fallback |
 | `tools/slice_sprite_sheets.py` | Sprite extraction and normalization |
 | `tools/build_portraits.py` | Rebuilds face-focused roster portraits |
 | `tests/` | Headless Godot and Python regression tests |

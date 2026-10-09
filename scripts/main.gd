@@ -52,6 +52,7 @@ const ARENA_BODY_HALF_WIDTH := 0.6
 const ARENA_SCREEN_MARGIN_PX := 12.0
 const ARENA_FIGHTER_TOP_M := 2.2
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
+const MAIN_HERO_VIDEO_PATH := "res://assets/ui/main-hero-video.ogv"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
 # A finisher is a heavy blow, not an automatic win: it deals this share of the
@@ -76,6 +77,7 @@ var enemy: GameFighter
 var ui: CanvasLayer
 var hud_root: Control
 var menu_root: Control
+var menu_hero_video: VideoStreamPlayer
 var select_root: Control
 var map_select_root: Control
 var pending_mode := "quick"
@@ -1338,6 +1340,15 @@ func _build_menu() -> void:
 	hero.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	menu_root.add_child(hero)
+	menu_hero_video = VideoStreamPlayer.new()
+	menu_hero_video.name = "MainHeroVideo"
+	menu_hero_video.stream = load(MAIN_HERO_VIDEO_PATH)
+	menu_hero_video.autoplay = true
+	menu_hero_video.loop = true
+	menu_hero_video.expand = true
+	menu_hero_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_hero_video.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu_root.add_child(menu_hero_video)
 	_wash(menu_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.010, 0.020, 0.18))
 	_wash(menu_root, Rect2(0, 0, 470, 720), Color(0.005, 0.012, 0.024, 0.48))
 	var action_panel := Control.new()
@@ -1555,6 +1566,7 @@ func _build_map_select() -> void:
 func _open_select(mode: String) -> void:
 	pending_mode = mode
 	menu_root.visible = false
+	if is_instance_valid(menu_hero_video): menu_hero_video.stop()
 	map_select_root.visible = false
 	select_root.visible = true
 	_refresh_roster()
@@ -2491,6 +2503,7 @@ func _show_menu() -> void:
 	paused = false
 	hud_root.visible = false
 	menu_root.visible = true
+	if is_instance_valid(menu_hero_video) and not menu_hero_video.is_playing(): menu_hero_video.play()
 	_set_music(&"menu")
 	if is_instance_valid(campaign_root): campaign_root.visible = false
 	if is_instance_valid(tutorial): tutorial.abort()

@@ -33,9 +33,22 @@ func _run() -> void:
 	if main.get_viewport().disable_3d:
 		return _fail("a fight must render the 3D arena")
 	main._show_menu()
-	var hero: TextureRect = main.menu_root.get_node_or_null("MainHeroBackground") as TextureRect
-	if hero == null or hero.texture == null:
-		return _fail("main menu has no full-screen hero artwork")
+	var hero_video := main.menu_root.get_node_or_null("MainHeroVideo") as VideoStreamPlayer
+	if hero_video == null or hero_video.stream == null:
+		return _fail("main menu has no full-screen hero video")
+	if not hero_video.autoplay or not hero_video.loop or not hero_video.expand:
+		return _fail("main menu hero video must autoplay, loop and fill its control")
+	if not hero_video.is_playing():
+		return _fail("main menu hero video did not start playing")
+	main._open_select("quick")
+	if hero_video.is_playing():
+		return _fail("hidden main menu hero video still consumes playback resources")
+	main._show_menu()
+	if not hero_video.is_playing():
+		return _fail("main menu hero video did not resume when returning to the menu")
+	var hero_fallback := main.menu_root.get_node_or_null("MainHeroBackground") as TextureRect
+	if hero_fallback == null or hero_fallback.texture == null:
+		return _fail("main menu has no fallback hero artwork")
 	var action_panel: Node = main.menu_root.get_node_or_null("MenuActionPanel")
 	if action_panel == null:
 		return _fail("main menu action panel is missing")
