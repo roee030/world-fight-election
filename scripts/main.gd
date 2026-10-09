@@ -423,6 +423,11 @@ func _submit_touch_special() -> void:
 func _show_special_feedback(text: String) -> void:
 	if not is_instance_valid(message_label):
 		return
+	# During a live match the illuminated SP control is the only readiness hint.
+	# Keep the central fight space for combo/damage feedback; the tutorial owns
+	# its own guidance panel and will replace that panel with a spotlight gate.
+	if fight_live and round_ready and (not is_instance_valid(tutorial) or not tutorial.active):
+		return
 	message_label.text = text
 	message_label.visible = true
 	special_feedback_time = 1.25
@@ -1175,7 +1180,7 @@ func _build_hud() -> void:
 	message_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 3)
-	combo_label = _label(hud_root, "", Rect2(460, 232, 360, 48), 25, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
+	combo_label = _label(hud_root, "", Rect2(430, 180, 420, 48), 25, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
 	combo_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	combo_label.add_theme_constant_override("shadow_offset_x", 2)
 	combo_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -3004,15 +3009,15 @@ func _on_combo_changed(who: int, hits: int) -> void:
 		return
 	_player_combo_peak = maxi(_player_combo_peak, hits)
 	if hits >= 2:
-		combo_label.text = "%d HITS%s" % [hits, "  ·  GREAT!" if hits >= 4 else ("  ·  GOOD!" if hits == 3 else "")]
+		combo_label.text = "%d HITS  ·  %d DMG" % [hits, roundi(player.combo_damage)]
 		combo_label.visible = true
 		combo_label_time = 1.1
 
 
 func _on_combo_string(who: int, combo_name: String, damage: float) -> void:
-	# A named combo landed: show its name and total damage, reward with sound.
+	# A named combo uses the same compact lane as every other string.
 	if who != 0 or not is_instance_valid(combo_label): return
-	combo_label.text = "%s  ·  %d DMG" % [combo_name, roundi(damage)]
+	combo_label.text = "%d HITS  ·  %d DMG" % [player.combo_count, roundi(damage)]
 	combo_label.visible = true
 	combo_label_time = 1.6
 	_play_sfx(&"special")
@@ -3020,7 +3025,6 @@ func _on_combo_string(who: int, combo_name: String, damage: float) -> void:
 
 
 func _on_combo_broken(who: int) -> void:
-	_show_special_feedback("COMBO BREAK!" if who == 0 else "CPU BREAKS FREE!")
 	_play_sfx(&"guard_hit")
 	camera_shake = 0.2
 	_track("combo_break", {"by": "player" if who == 0 else "cpu"})

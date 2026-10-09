@@ -75,21 +75,21 @@ Update README/AGENTS from two-pack language to one complete game package. Commit
 - Consumes: fighter `combo_changed`, `combo_string`, and `combo_broken` signals.
 - Produces: one `combo_label` whose public text is `<HITS> HITS · <DAMAGE> DMG` and whose design-frame Y position is above the former 232 px origin.
 
-- [ ] **Step 1: Add failing Godot feedback-contract tests**
+- [x] **Step 1: Add failing Godot feedback-contract tests**
 
 Assert that a two-hit player combo shows hits and damage without `GOOD`/`GREAT`, a named combo retains only its damage line, breaker/special-feedback paths do not reveal a centre combat callout, and `combo_label.position.y < 232`.
 
-- [ ] **Step 2: Run the feedback test to verify it fails**
+- [x] **Step 2: Run the feedback test to verify it fails**
 
 Run: `Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tests/test_combat_feedback.gd`
 
 Expected: FAIL because current messages include quality, name/breaker, and special instructional strings and the label is at Y 232.
 
-- [ ] **Step 3: Implement the one-lane feedback policy**
+- [x] **Step 3: Implement the one-lane feedback policy**
 
 Raise the combo lane into the HUD-safe upper fight area; make combo signal handlers set hits/damage only; silence centre-playfield special and breaker feedback while retaining round-state callouts. Update `CalloutScript.style_for()` only for the retained combo format.
 
-- [ ] **Step 4: Run focused combo and UI tests**
+- [x] **Step 4: Run focused combo and UI tests**
 
 Run: `res://tests/test_combat_feedback.gd`, `res://tests/test_combo_strings.gd`, `res://tests/test_ui_presentation.gd`, and `res://tests/test_mobile_control_contract.gd`.
 

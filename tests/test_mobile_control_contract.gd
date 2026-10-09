@@ -125,9 +125,9 @@ func _run() -> void:
 	main.player.meter = 0.0
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("button_up")
-	assert(main.message_label.visible and main.message_label.text.contains("100%"), "unavailable SP press has no useful energy feedback")
+	assert(not main.message_label.visible, "unavailable SP press must not add coaching text over the fight")
 	main._process(1.3)
-	assert(not main.message_label.visible, "SP feedback must expire instead of obscuring combat")
+	assert(not main.message_label.visible, "quiet unavailable SP presses must leave the fight unobscured")
 	main.paused = true
 	main.player.meter = 100.0
 	main.buttons.special.emit_signal("button_down")
