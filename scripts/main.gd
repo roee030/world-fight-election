@@ -24,6 +24,7 @@ const HUD_FRAME_HEIGHT := 132.0
 const OrnamentScript = preload("res://scripts/ui/ornament.gd")
 const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
+const TutorialScript = preload("res://scripts/ui/tutorial.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
@@ -150,6 +151,9 @@ var _celebration_won := false
 var _touch_special_consumed := false
 var current_rival_id := ""
 var _last_campaign_result_lost := false
+var tutorial: Control
+var _tutorial_pending := false
+var _tutorial_restart_pending := false
 var current_level := 1
 
 const CAMPAIGN_BOSS := "bibi"
@@ -227,7 +231,16 @@ func _process(delta: float) -> void:
 		var t := float(Time.get_ticks_msec())
 		var kick := camera_shake
 		_fight_camera.position = camera_home + Vector3(sin(t * 0.079) * kick, sin(t * 0.113) * kick * 0.55, 0)
-	if fight_live and not paused and match_state in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT]:
+	if is_instance_valid(tutorial) and tutorial.active and not paused:
+		tutorial.advance(delta)
+		if is_instance_valid(enemy) and enemy.health < enemy.max_health() * 0.5:
+			# The target dummy never gets knocked out during the tutorial.
+			enemy.health = enemy.max_health() * 0.5
+			enemy.health_changed.emit(enemy.who, enemy.health)
+	if _tutorial_restart_pending and not paused and not (is_instance_valid(_finisher_director) and _finisher_director.active) and match_state == MatchState.Value.FIGHTING:
+		_tutorial_restart_pending = false
+		_restart_after_tutorial()
+	if fight_live and not paused and match_state in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT] and not (is_instance_valid(tutorial) and tutorial.active):
 		round_clock = maxf(0.0, round_clock - delta)
 		timer_label.text = "%02d" % ceili(round_clock)
 		_update_recoverable_health(delta)
@@ -474,6 +487,10 @@ func analytics_path(event_name: String, props: Dictionary = {}) -> String:
 		"rematch": return "menu/rematch"
 		"new_opponent": return "menu/new-opponent"
 		"round_end": return "round/%s" % props.get("reason", "unknown")
+		"tutorial_start": return "tutorial/start"
+		"tutorial_step": return "tutorial/step-%s" % props.get("step", "unknown")
+		"tutorial_complete": return "tutorial/complete"
+		"tutorial_skip": return "tutorial/skip-at-%s" % props.get("step", "unknown")
 	return "event/" + event_name
 
 
@@ -532,6 +549,9 @@ func _run_web_qa_scenario() -> void:
 	match query:
 		"campaign":
 			_start_campaign()
+		"tutorial":
+			TutorialScript.mark_completed(false)
+			_setup_bout(selecting, "benny_gantz", 1, "QA")
 		"finisher", "win", "loss":
 			_setup_bout(selecting, "benny_gantz", 1, "QA")
 			await get_tree().create_timer(1.6).timeout
@@ -547,6 +567,51 @@ func _run_web_qa_scenario() -> void:
 				enemy_rounds = 0 if query == "win" else 2
 				(enemy if query == "win" else player).receive_hit(999.0, 1.0, "heavy")
 				_show_result_with_celebration(query == "win")
+
+
+func tutorial_auto_enabled() -> bool:
+	# One-time tutorial on the first fight. Headless test runs never auto-start
+	# it (tests drive it explicitly).
+	return DisplayServer.get_name() != "headless" and not TutorialScript.is_completed()
+
+
+func begin_tutorial() -> void:
+	if not fight_live or not is_instance_valid(player) or not is_instance_valid(enemy):
+		return
+	# The rival becomes a passive target until the tutorial ends.
+	enemy.is_cpu = false
+	enemy.set_controls(0.0, false, false, false, "")
+	tutorial.begin()
+
+
+func _announce_tutorial(text: String) -> void:
+	_show_special_feedback(text)
+
+
+func _on_tutorial_finished(_skipped: bool) -> void:
+	# Wait for a running tutorial finisher to finish, then start the real round.
+	_tutorial_restart_pending = true
+
+
+func _restart_after_tutorial() -> void:
+	if not fight_live or not is_instance_valid(enemy):
+		return
+	enemy.is_cpu = true
+	for fighter in [player, enemy]:
+		fighter.meter = 0.0
+		fighter.meter_changed.emit(fighter.who, 0.0)
+	player_rounds = 0
+	enemy_rounds = 0
+	_show_special_feedback("YOU'RE READY!")
+	_start_round()
+
+
+func _replay_tutorial() -> void:
+	TutorialScript.mark_completed(false)
+	if paused:
+		_toggle_pause()
+	if fight_live and match_state == MatchState.Value.FIGHTING and not tutorial.active:
+		begin_tutorial()
 
 
 func _on_web_pause_request(_arguments: Array) -> void:
@@ -978,6 +1043,10 @@ func _build_hud() -> void:
 	callout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hud_root.move_child(callout, message_label.get_index())
 	_build_touch_controls()
+	tutorial = TutorialScript.new()
+	tutorial.setup(self, _bold_font())
+	hud_root.add_child(tutorial)
+	tutorial.finished.connect(_on_tutorial_finished)
 	hud_root.visible = false
 
 
@@ -1551,6 +1620,9 @@ func _build_pause() -> void:
 	resume.pressed.connect(_toggle_pause)
 	var menu := _menu_text_button(box, "RETURN TO MENU", Rect2(0, 222, 300, 54), 17)
 	menu.pressed.connect(_return_to_menu)
+	var how_to := _menu_text_button(box, "HOW TO PLAY", Rect2(0, 286, 300, 54), 17)
+	how_to.name = "HowToPlayButton"
+	how_to.pressed.connect(_replay_tutorial)
 	_label(box, "ESC  /  RESUME", Rect2(0, 342, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
 	pause_root.visible = false
 
@@ -2080,6 +2152,9 @@ func _show_menu() -> void:
 	hud_root.visible = false
 	menu_root.visible = true
 	if is_instance_valid(campaign_root): campaign_root.visible = false
+	if is_instance_valid(tutorial): tutorial.abort()
+	_tutorial_pending = false
+	_tutorial_restart_pending = false
 	select_root.visible = false
 	map_select_root.visible = false
 	pause_root.visible = false
@@ -2163,6 +2238,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	current_level = level
 	_track("fight_start", {"player": player_id, "rival": rival_id, "stage": selected_stage_id, "mode": "campaign" if campaign_mode else "quick", "level": level})
 	_set_3d_visible(true)
+	_tutorial_pending = tutorial_auto_enabled()
 	_build_stage(selected_stage_id)
 	(_hud_node("PlayerName") as Label).text = _fighter_name(player_id)
 	(_hud_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and campaign_index == campaign_ladder.size() - 1 else "")
@@ -2251,6 +2327,9 @@ func _start_round() -> void:
 	match_state = MatchState.Value.FIGHTING
 	if is_instance_valid(player): player.round_over = false
 	if is_instance_valid(enemy): enemy.round_over = false
+	if _tutorial_pending and fight_live:
+		_tutorial_pending = false
+		begin_tutorial()
 
 
 func _on_health_changed(who: int, value: float) -> void:

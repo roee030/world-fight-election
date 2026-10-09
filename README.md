@@ -145,7 +145,8 @@ The game is playable and under active visual and combat polish. The current prio
 - **Menu:** START FIGHT, CAMPAIGN and CONTACT THE CREATOR. The contact button appears once `linkedin_url` is set in `data/site_config.json`. Fighter Lab is developer-only (`scenes/character_debug.tscn`).
 - **Disclaimer:** the Web shell shows a Hebrew/English satire disclaimer. Play starts only after the checkbox is ticked; acceptance is stored per device (`wf-disclaimer-v1`). This text is not legal advice; have a lawyer review it.
 - **Analytics:** anonymous, cookie-free GoatCounter (`goatcounter_code` in `data/site_config.json`); dashboard https://roeeangel.goatcounter.com. See "Analytics guide" below.
-- **QA URLs:** `?qa=finisher`, `?qa=win`, `?qa=loss`, `?qa=campaign` jump straight to those screens for screenshots.
+- **First-fight tutorial:** the first fight on a device opens a one-time, seven-step guide: move, JAB, CROSS, KICK, jump, GUARD, then Special Energy fills to 100% and the glowing SP button launches a first finisher. Each step waits for the real action, a gold ring points at the control, the CPU stands still and the clock is frozen. SKIP is always available. When it finishes, the real round starts fresh. Completion is stored in `user://tutorial.cfg`; *HOW TO PLAY* in the pause menu replays it. Analytics: `tutorial/start`, `tutorial/step-<id>`, `tutorial/complete`, `tutorial/skip-at-<id>` (shows where players drop out).
+- **QA URLs:** `?qa=tutorial`, `?qa=finisher`, `?qa=win`, `?qa=loss`, `?qa=campaign` jump straight to those screens for screenshots.
 
 ## Analytics guide
 
@@ -163,5 +164,6 @@ GoatCounter is anonymous by design: it counts visits and events, with country, d
 | `linkedin/click` | Clicks on the creator card |
 | `menu/` | Start Fight / Campaign / Rematch / New Opponent |
 | `disclaimer/accepted` | Players who accepted the disclaimer |
+| `tutorial/` | Tutorial funnel: `start`, `step-<id>` per completed step, `complete`, `skip-at-<id>` |
 
 **Moving to a custom domain:** the dashboard is tied to the site code (`roeeangel`), not to the domain, so all history stays and new data keeps arriving in the same dashboard. In GitHub go to *Settings → Pages → Custom domain*, add the domain, and point a DNS `CNAME` record to `roee030.github.io` (or `A` records for an apex domain). The only visible change: the page-view row switches from `/world-fight-election` to `/`; all event rows are unchanged. If GoatCounter's *Settings → Sites/allowed domains* is ever restricted, add the new domain there.

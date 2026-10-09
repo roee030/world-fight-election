@@ -1,0 +1,99 @@
+extends SceneTree
+
+## One-time first-fight tutorial: every step waits for the real action, the
+## clock is frozen and the CPU is a passive target, SP is introduced at 100%,
+## completion is saved, and the real round starts afterwards.
+
+const TutorialScript = preload("res://scripts/ui/tutorial.gd")
+const DT := 1.0 / 60.0
+
+
+func _init() -> void:
+	call_deferred("_run")
+
+
+func _step(main, frames: int = 1) -> void:
+	for i in range(frames):
+		main._physics_process(DT)
+		main.player._physics_process(DT)
+		main._process(DT)
+
+
+func _ready_player(main) -> void:
+	main.player._finish_attack()
+	main.player.busy = 0.0
+	main.player.stun = 0.0
+	main.player.hit_stop = 0.0
+
+
+func _run() -> void:
+	var main = (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	root.add_child(main)
+	await process_frame
+	assert(not main.tutorial_auto_enabled(), "headless runs must not auto-start the tutorial")
+	TutorialScript.mark_completed(false)
+	main._setup_bout("bennet", "avigdor", 1, "TUTORIAL QA")
+	for i in range(100): await physics_frame
+	main.set_physics_process(false)
+	main.player.set_physics_process(false)
+	main.enemy.set_physics_process(false)
+	main._set_touch_controls_visible(true)
+	main.begin_tutorial()
+	var tutorial = main.tutorial
+	assert(tutorial.active and tutorial.visible and not main.enemy.is_cpu, "tutorial must start with a passive target")
+	var clock: float = main.round_clock
+	# 1. Move.
+	assert(tutorial.current_id() == "move")
+	assert(tutorial.target_rect().size != Vector2.ZERO, "tutorial must point at the joystick")
+	main.player.velocity.x = 2.0
+	tutorial.advance(0.4)
+	assert(tutorial.current_id() == "jab", "moving did not complete the MOVE step")
+	# 2-4. JAB, CROSS, KICK through the real touch buttons.
+	for pair in [["light", "cross"], ["heavy", "kick"], ["kick", "jump"]]:
+		_ready_player(main)
+		main.buttons[pair[0]].emit_signal("button_down")
+		main.buttons[pair[0]].emit_signal("button_up")
+		_step(main, 2)
+		assert(tutorial.current_id() == pair[1], "%s did not advance to %s (at %s)" % [pair[0], pair[1], tutorial.current_id()])
+	# 5. Jump.
+	_ready_player(main)
+	for i in range(30): await physics_frame
+	main.player.set_controls(0.0, true, false, false, "")
+	main.player._physics_process(DT)
+	tutorial.advance(DT)
+	assert(tutorial.current_id() == "guard", "jumping did not complete the JUMP step")
+	for i in range(60):
+		main.player.set_controls(0.0, false, false, false, "")
+		main.player._physics_process(DT)
+	# 6. Guard (hold).
+	_ready_player(main)
+	main.player.input_block = true
+	tutorial.advance(0.4)
+	assert(tutorial.current_id() == "special", "holding GUARD did not complete the GUARD step")
+	main.player.input_block = false
+	# 7. Special Energy at 100% and SP.
+	assert(main.player.meter == 100.0 and main.buttons.special.charged, "the SP step must show a full, charged SP")
+	assert(main.round_clock == clock, "the round clock must stay frozen during the tutorial")
+	main.player.position.x = -0.6
+	main.enemy.position.x = 0.6
+	_ready_player(main)
+	main.buttons.special.emit_signal("button_down")
+	main.buttons.special.emit_signal("button_up")
+	assert(main._finisher_director.active, "SP did not launch the tutorial finisher")
+	# No manual advance: the real host skips tutorial updates during a finisher.
+	assert(not tutorial.active and TutorialScript.is_completed(), "tutorial must finish and be remembered")
+	for i in range(400):
+		main._process(DT)
+		if main.match_state == main.MatchState.Value.ROUND_INTRO: break
+	assert(main.enemy.is_cpu, "the CPU must fight again after the tutorial")
+	assert(main.enemy.health == main.enemy.max_health() and main.player.meter == 0.0 and main.enemy.meter == 0.0, "the real round must start fresh")
+	assert(main.tracked_events.has("tutorial/complete"), "tutorial completion was not tracked")
+	# Skip path and pause replay.
+	TutorialScript.mark_completed(false)
+	main.tutorial.begin()
+	main.tutorial.skip_tutorial()
+	assert(TutorialScript.is_completed() and main.tracked_events.has("tutorial/skip-at-move"))
+	assert(main.pause_root.find_child("HowToPlayButton", true, false) != null, "pause menu must offer HOW TO PLAY")
+	main.free()
+	print("PASS: one-time tutorial steps, frozen clock, SP finisher, saved completion, skip and replay")
+	quit(0)
