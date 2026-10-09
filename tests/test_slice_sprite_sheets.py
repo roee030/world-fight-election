@@ -15,6 +15,25 @@ def make_cell(size: tuple[int, int], figure_box: tuple[int, int, int, int]) -> I
 
 
 class SpriteSheetGeometryTests(unittest.TestCase):
+    def test_jab_and_cross_have_materially_different_silhouettes(self) -> None:
+        """A second punch must read as a new pose, not a near-duplicate jab."""
+        root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
+        fighter_ids = (
+            "bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid",
+            "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich",
+            "gadi_eisenkot", "trump", "joint_list",
+        )
+        for fighter_id in fighter_ids:
+            jab = np.asarray(Image.open(root / f"{fighter_id}-4.png").getchannel("A")) > 12
+            cross = np.asarray(Image.open(root / f"{fighter_id}-5.png").getchannel("A")) > 12
+            union = np.logical_or(jab, cross).sum()
+            overlap = np.logical_and(jab, cross).sum() / union
+            self.assertLessEqual(
+                overlap,
+                0.80,
+                f"{fighter_id} cross is still visually indistinguishable from the jab (IoU={overlap:.3f})",
+            )
+
     def test_repaired_bibi_and_mansour_frames_have_no_remote_pose_fragments(self) -> None:
         root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
         for fighter_id in ("bibi", "mansour_abbas"):
