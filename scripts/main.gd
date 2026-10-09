@@ -14,6 +14,7 @@ var _special_was_held := false
 var _special_release_pending := false
 var _special_cancel_after_pause := false
 var _finisher_catalog: RefCounted
+var _pack_loader: Node
 const FinisherDirectorScript = preload("res://scripts/finishers/finisher_director.gd")
 var _finisher_director: Node
 const VirtualStickScript = preload("res://scripts/virtual_stick.gd")
@@ -23,6 +24,7 @@ const CIRCLE_MASK_SHADER = preload("res://scripts/hud/circle_mask.gdshader")
 const DESIGN_SIZE := Vector2(1280, 720)
 const HUD_FRAME_HEIGHT := 132.0
 const OrnamentScript = preload("res://scripts/ui/ornament.gd")
+const WebPackLoaderScript = preload("res://scripts/web_pack_loader.gd")
 const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const TutorialScript = preload("res://scripts/ui/tutorial.gd")
@@ -243,6 +245,9 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_apply_arena_edge)
 	_show_menu()
 	_install_web_menu_bridge()
+	# Start the deferred finisher download right away; the player is still in menus.
+	_pack_loader = WebPackLoaderScript.new()
+	add_child(_pack_loader)
 
 
 func _process(delta: float) -> void:
@@ -416,6 +421,9 @@ func _submit_touch_special() -> void:
 		return
 	if player.meter < float(_current_finisher_definition().get("meter_cost", 100.0)):
 		_show_special_feedback("SP NEEDS 100% SPECIAL ENERGY")
+		return
+	if is_instance_valid(_pack_loader) and not _pack_loader.is_loaded():
+		_show_special_feedback("FINISHER STILL LOADING")
 		return
 	_show_special_feedback(_current_finisher_hint())
 
@@ -776,6 +784,8 @@ func _finisher_eligible() -> bool:
 
 func _current_finisher_context() -> Dictionary:
 	if not fight_live or not round_ready or not is_instance_valid(player) or not is_instance_valid(enemy):
+		return {}
+	if is_instance_valid(_pack_loader) and not _pack_loader.is_loaded():
 		return {}
 	var dx := enemy.position.x - player.position.x
 	return {
