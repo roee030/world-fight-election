@@ -51,15 +51,11 @@ jobs:
           mkdir -p export/web
           /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 \
             --headless --path . --export-release Web export/web/index.html
-          # Finisher art ships separately; the game downloads it in the background.
-          /tmp/godot/Godot_v4.7.2-stable_linux.x86_64 \
-            --headless --path . --export-pack "Web Finishers Pack" export/web/finishers.pck
           python tools/patch_web_export.py
           touch export/web/.nojekyll
           test -s export/web/index.html
           test -s export/web/index.wasm
           test -s export/web/index.pck
-          test -s export/web/finishers.pck
 
       - name: Build analytics dashboard
         # Needs the repository secret GOATCOUNTER_TOKEN (read-only API token).

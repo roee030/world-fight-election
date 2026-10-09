@@ -24,7 +24,7 @@ Build a polished satirical 2.5D fighting game in Godot 4. The quality target is 
 - Punch clips (`jab`, `cross`, `hook`) must never contain the kick frame (frame 6 of the 12-frame contract).
 - Menus share the console style helpers in `main.gd` (`_screen_title`, `_split_background`, `_bottom_bar`, `_primary_button`, `_secondary_button`) and `scripts/ui/ornament.gd`. The bundled font lacks symbols such as ← ✓ ⛶; use plain text.
 - Player selection chooses only the player fighter. Quick Fight chooses a different CPU rival randomly. Campaign: every other fighter, Bibi always last (`campaign_ladder_for`).
-- The Web shell shows the legal disclaimer (`wf-disclaimer-v1`) before play; owner settings (LinkedIn URL, GoatCounter code) live in `data/site_config.json`. Developer QA URLs: `?qa=finisher|win|loss|campaign`, `?diag=1`.
+- The Web shell shows the legal disclaimer (`wf-disclaimer-v1`) before play; all finisher assets ship in the main Web package, so SP never waits for a second download. Owner settings (LinkedIn URL, GoatCounter code) live in `data/site_config.json`. Developer QA URLs: `?qa=finisher|win|loss|campaign`, `?diag=1`.
 - Pause freezes combat, timers, AI, animations and round transitions.
 - Do not commit `.godot`, exports, browser traces, temporary renders, portable tools or the raw `Universal Base Characters[Standard]` folder.
 

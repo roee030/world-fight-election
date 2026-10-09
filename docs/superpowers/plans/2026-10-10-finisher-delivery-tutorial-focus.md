@@ -40,27 +40,27 @@
 - Consumes: `FinisherRules.is_eligible(context, definition)` and `_current_finisher_context()`.
 - Produces: SP eligibility independent of a `WebPackLoader`; Web export emits only `index.pck`.
 
-- [ ] **Step 1: Add failing single-package assertions to `tests/test_web_cache_policy.py`**
+- [x] **Step 1: Add failing single-package assertions to `tests/test_web_cache_policy.py`**
 
 Assert that preset 0 does not exclude `assets/finishers/*`, there is no `Web Finishers Pack` preset or workflow `--export-pack`, and `scripts/web_pack_loader.gd` is absent.
 
-- [ ] **Step 2: Run the Python test to verify it fails**
+- [x] **Step 2: Run the Python test to verify it fails**
 
 Run: `python -m unittest tests.test_web_cache_policy.WebCachePolicyTests.test_finisher_art_ships_with_main_package`
 
 Expected: FAIL because the deferred pack configuration still exists.
 
-- [ ] **Step 3: Remove the deferred pack path and SP readiness gate**
+- [x] **Step 3: Remove the deferred pack path and SP readiness gate**
 
 Put finisher assets in preset 0, remove preset 1 and its workflow export, delete `WebPackLoaderScript`/`_pack_loader`, and remove only pack-readiness branches from `_current_finisher_context()` and `_submit_touch_special()`. Keep all ordinary combat eligibility checks unchanged.
 
-- [ ] **Step 4: Run focused Web and finisher tests**
+- [x] **Step 4: Run focused Web and finisher tests**
 
 Run: `python -m unittest tests.test_web_cache_policy` and `Godot_v4.7.2-stable_win64_console.exe --headless --path . --script res://tests/test_mobile_control_contract.gd`, then `res://tests/test_finisher_match_integration.gd`.
 
 Expected: all pass; full-meter SP starts without a pack loader.
 
-- [ ] **Step 5: Update packaging documentation and commit/push Task 1**
+- [x] **Step 5: Update packaging documentation and commit/push Task 1**
 
 Update README/AGENTS from two-pack language to one complete game package. Commit message: `fix: ship finishers with the web game package`.
 

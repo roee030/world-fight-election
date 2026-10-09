@@ -33,15 +33,14 @@ class WebCachePolicyTests(unittest.TestCase):
         self.assertIn("[importer_defaults]", project)
         self.assertIn('"compress/mode": 1', project)
 
-    def test_finisher_art_ships_as_a_background_pack(self):
+    def test_finisher_art_ships_with_main_package(self):
         preset = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")
         workflow = (ROOT / ".github" / "workflows" / "deploy-pages.yml").read_text(encoding="utf-8")
         core = preset.split("[preset.1]")[0]
-        self.assertIn("assets/finishers/*", core)
-        self.assertIn('name="Web Finishers Pack"', preset)
-        self.assertIn('--export-pack "Web Finishers Pack" export/web/finishers.pck', workflow)
-        loader = (ROOT / "scripts" / "web_pack_loader.gd").read_text(encoding="utf-8")
-        self.assertIn('PACK_URL := "finishers.pck"', loader)
+        self.assertNotIn("assets/finishers/*", core)
+        self.assertNotIn('name="Web Finishers Pack"', preset)
+        self.assertNotIn("finishers.pck", workflow)
+        self.assertFalse((ROOT / "scripts" / "web_pack_loader.gd").exists())
 
     def test_web_export_omits_editor_only_source_assets(self):
         preset = (ROOT / "export_presets.cfg").read_text(encoding="utf-8")

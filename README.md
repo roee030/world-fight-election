@@ -181,4 +181,4 @@ GoatCounter is anonymous by design: it counts visits and events, with country, d
 
 ## Web loading
 
-The Web build ships two packs. `index.pck` holds the menu, fighters, stages and audio (~52 MB); finisher art lives in `finishers.pck` (~32 MB, preset "Web Finishers Pack"). `scripts/web_pack_loader.gd` downloads it in the background as soon as the engine runs, which includes the rotate-phone and disclaimer screens. Until it is mounted, the finisher stays unavailable ("FINISHER STILL LOADING"). Native runs and tests already contain every asset.
+The Web build ships one complete `index.pck`: menu, fighters, stages, audio and every finisher. SP is ready as soon as its normal combat rules are met; it never waits for a second art download. Native and Web builds therefore use the same finisher resources.
