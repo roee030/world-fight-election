@@ -4,6 +4,7 @@ signal finisher_requested(attacker: GameFighter, defender: GameFighter, definiti
 
 const GameFighterScript = preload("res://scripts/fighter.gd")
 const MatchState = preload("res://scripts/finishers/match_state.gd")
+const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
 var match_state: int = MatchState.Value.ROUND_INTRO
 const FinisherRules = preload("res://scripts/finishers/finisher_rules.gd")
 const SpecialHold = preload("res://scripts/finishers/special_hold.gd")
@@ -142,8 +143,11 @@ var _arena: Node3D
 var _fight_camera: Camera3D
 var camera_shake := 0.0
 var camera_home := Vector3(0, 3.6, 9.7)
-var _audio_player: AudioStreamPlayer
-var _sounds := {}
+var audio_manager: AudioManagerScript
+const LOW_HEALTH_MUSIC_RATIO := 0.25
+const HIT_CUES := {"light": &"jab_hit", "heavy": &"cross_hit", "kick": &"kick_hit", "special": &"special"}
+var _special_ready_cued := false
+var _fighters_grounded := [true, true]
 var _art_cache := {}
 var _last_second := -1
 var round_ready := false
@@ -214,10 +218,10 @@ func _ready() -> void:
 	_finisher_director.result_ready.connect(_on_celebration_result_ready)
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_finisher_director.sequence_finished.connect(_on_finisher_sequence_finished)
+	_create_audio()
 	_build_ui()
 	get_viewport().size_changed.connect(_fit_stage_backdrop.bind(null))
 	get_viewport().size_changed.connect(_apply_arena_edge)
-	_create_audio()
 	_show_menu()
 	_install_web_menu_bridge()
 
@@ -253,6 +257,8 @@ func _process(delta: float) -> void:
 	if _tutorial_restart_pending and not paused and not (is_instance_valid(_finisher_director) and _finisher_director.active) and match_state == MatchState.Value.FIGHTING:
 		_tutorial_restart_pending = false
 		_restart_after_tutorial()
+	if fight_live and not paused:
+		_update_movement_audio()
 	if fight_live and not paused and match_state in [MatchState.Value.FIGHTING, MatchState.Value.FINISHER_PROMPT] and not (is_instance_valid(tutorial) and tutorial.active):
 		round_clock = maxf(0.0, round_clock - delta)
 		timer_label.text = "%02d" % ceili(round_clock)
@@ -736,6 +742,7 @@ func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definitio
 	if not _finisher_director.begin(attacker, defender, match_definition, opening_in_range):
 		return false
 	match_state = MatchState.Value.FINISHER_CINEMATIC
+	_play_sfx(&"finisher")
 	_track("finisher", {"fighter": attacker.character_id, "in_range": opening_in_range})
 	round_ready = false
 	message_label.visible = false
@@ -1521,7 +1528,7 @@ func _select_fighter(id: String) -> void:
 	_select_fighter_text(id)
 	_reset_rival_slot()
 	_refresh_roster()
-	_play_sound("menu")
+	_play_sfx(&"ui_focus")
 
 
 func _reset_rival_slot() -> void:
@@ -1597,7 +1604,7 @@ func _show_rival_reveal_face(id: String) -> void:
 	select_rival_name.text = _fighter_name(id).to_upper()
 	_rival_reveal_highlight = id
 	_refresh_roster()
-	_play_sound("menu")
+	_play_sfx(&"ui_focus")
 
 
 func _finish_rival_reveal() -> void:
@@ -1607,7 +1614,7 @@ func _finish_rival_reveal() -> void:
 	select_rival_style.text = "YOUR OPPONENT  •  " + str(data.style).to_upper()
 	_rival_reveal_highlight = pending_rival_id
 	_refresh_roster()
-	_play_sound("special")
+	_play_sfx(&"ui_press")
 	if not rival_reveal_animated:
 		_open_map_select()
 
@@ -1818,6 +1825,7 @@ func _show_campaign_progress() -> void:
 	fight_live = false
 	_set_3d_visible(false)
 	campaign_root.visible = true
+	_set_music(&"menu")
 	var total := campaign_ladder.size()
 	var next_index := mini(campaign_index, total - 1)
 	var rival: String = campaign_ladder[next_index]
@@ -2170,6 +2178,8 @@ func _style_secondary(button: Button) -> void:
 
 func _place_button(parent: Control, button: Button, rect: Rect2) -> void:
 	parent.add_child(button)
+	var back := button.text.contains("BACK") or button.text.contains("MENU")
+	button.pressed.connect(_play_sfx.bind(&"ui_back" if back else &"ui_press"))
 	if rect.position.x < 0.0:
 		button.anchor_left = 1.0
 		button.anchor_right = 1.0
@@ -2291,6 +2301,7 @@ func _show_menu() -> void:
 	paused = false
 	hud_root.visible = false
 	menu_root.visible = true
+	_set_music(&"menu")
 	if is_instance_valid(campaign_root): campaign_root.visible = false
 	if is_instance_valid(tutorial): tutorial.abort()
 	_tutorial_pending = false
@@ -2428,6 +2439,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	round_ready = false
 	paused = false
 	intermission = 0
+	_special_ready_cued = false
 	_start_round()
 
 
@@ -2463,8 +2475,12 @@ func _start_round() -> void:
 	_update_scores()
 	message_label.text = "ROUND %d" % round_num
 	message_label.visible = true
+	_set_music(&"fight")
+	_play_voice(round_voice_cue(round_num))
 	await get_tree().create_timer(0.72, false).timeout
-	if fight_live and not paused: message_label.text = "FIGHT!"
+	if fight_live and not paused:
+		message_label.text = "FIGHT!"
+		_play_voice(&"fight")
 	await get_tree().create_timer(0.65, false).timeout
 	if fight_live: message_label.visible = false
 	round_ready = true
@@ -2488,6 +2504,9 @@ func _on_health_changed(who: int, value: float) -> void:
 	bar.set_fill_color(healthy if ratio > 0.55 else (Color("#e9bf55") if ratio > 0.25 else Color("#ff3b47")))
 	if round_ready:
 		_spawn_hit_flash(who)
+	# One guarded switch per round: recovering above the threshold keeps the tension loop.
+	if fight_live and value > 0.0 and ratio <= LOW_HEALTH_MUSIC_RATIO and audio_manager and audio_manager.get_music_state() == &"fight":
+		_set_music(&"fight_low_health")
 
 
 func _update_recoverable_health(delta: float) -> void:
@@ -2516,19 +2535,19 @@ func _on_combo_changed(who: int, hits: int) -> void:
 
 
 func _on_attack_started(attacker: int, move: String) -> void:
+	if round_ready:
+		_play_sfx(&"whiff", attacker)
 	if attacker == 0 and move == "special":
 		_show_special_feedback("SPECIAL ATTACK!")
 
 
 func _on_strike_landed(attacker: int, defender: int, move: String, blocked: bool, combo: int) -> void:
 	if not round_ready: return
-	_play_sound("hit")
+	_play_sfx(&"guard_hit" if blocked else HIT_CUES.get(move, &"jab_hit"), combo)
 	if blocked:
 		camera_shake = 0.11
 	else:
 		camera_shake = 0.15 if move == "light" else (0.28 if move == "heavy" else 0.34)
-	if move == "special" or (combo >= 3 and attacker == 0):
-		_play_sound("special")
 
 
 func _spawn_hit_flash(victim_index: int) -> void:
@@ -2571,6 +2590,9 @@ func _on_meter_changed(who: int, value: float) -> void:
 	(bar as SlantBarScript).set_fill_color(Color("#ffe066") if value >= 100.0 else (Color("#f2a53a") if value >= GameFighterScript.SPECIAL_COST else Color("#f2c94c")))
 	if who == 0:
 		_refresh_touch_energy_state()
+		if value >= 100.0 and not _special_ready_cued and fight_live:
+			_play_sfx(&"special_ready")
+		_special_ready_cued = value >= 100.0
 
 
 func _on_defeated(who: int) -> void:
@@ -2673,7 +2695,9 @@ func _show_result(won: bool) -> void:
 	if not won:
 		detail.text = "You lost %d–%d. Change your rhythm and take the arena back." % [player_rounds, enemy_rounds]
 		button.text = "TRY AGAIN" if not campaign_mode else "RETRY"
-	_play_sound("victory" if won else "hit")
+	_set_music(&"result")
+	_play_sfx(&"victory" if won else &"loss")
+	_play_voice(&"you_win" if won else &"you_lose")
 func _show_result_with_celebration(won: bool) -> void:
 	var winner: GameFighter = player if won else enemy
 	var loser: GameFighter = enemy if won else player
@@ -2729,31 +2753,33 @@ func _return_to_menu() -> void:
 
 
 func _create_audio() -> void:
-	_audio_player = AudioStreamPlayer.new()
-	_audio_player.bus = "Master"
-	add_child(_audio_player)
-	for sound_name in ["hit", "special", "victory", "menu"]:
-		var samples := 4800 if sound_name == "hit" else 8400
-		var data := PackedByteArray()
-		data.resize(samples * 2)
-		for i in range(samples):
-			var t := float(i) / 48000.0
-			var env := exp(-t * (18.0 if sound_name == "hit" else 10.0))
-			var hz := 155.0 if sound_name == "hit" else (95.0 if sound_name == "special" else (520.0 if sound_name == "victory" else 340.0))
-			var wave := sin(TAU * hz * t) * env * 0.18
-			if sound_name == "special": wave += sin(TAU * 340.0 * t) * env * 0.10
-			if sound_name == "victory": wave *= 1.0 + 0.3 * sin(TAU * 7.0 * t)
-			var sample := int(clampf(wave, -1.0, 1.0) * 32767.0)
-			data[i * 2] = sample & 0xff
-			data[i * 2 + 1] = (sample >> 8) & 0xff
-		var stream := AudioStreamWAV.new()
-		stream.format = AudioStreamWAV.FORMAT_16_BITS
-		stream.mix_rate = 48000
-		stream.data = data
-		_sounds[sound_name] = stream
+	audio_manager = AudioManagerScript.new()
+	audio_manager.name = "AudioManager"
+	add_child(audio_manager)
+	audio_manager.load_settings()
 
 
-func _play_sound(sound_name: String) -> void:
-	if _sounds.has(sound_name):
-		_audio_player.stream = _sounds[sound_name]
-		_audio_player.play()
+func round_voice_cue(round_number: int) -> StringName:
+	return &"round_one" if round_number <= 1 else (&"round_two" if round_number == 2 else &"final_round")
+
+
+func _set_music(state: StringName) -> void:
+	if audio_manager: audio_manager.set_music_state(state)
+
+
+func _play_sfx(cue: StringName, variant := -1) -> void:
+	if audio_manager: audio_manager.play_sfx(cue, variant)
+
+
+func _play_voice(cue: StringName) -> void:
+	if audio_manager: audio_manager.play_voice(cue)
+
+
+func _update_movement_audio() -> void:
+	# Jump and landing cues come from floor contact, so combat code stays untouched.
+	for fighter in [player, enemy]:
+		if not is_instance_valid(fighter): continue
+		var grounded: bool = fighter.is_on_floor()
+		if grounded != _fighters_grounded[fighter.who]:
+			_fighters_grounded[fighter.who] = grounded
+			if round_ready: _play_sfx(&"land" if grounded else &"jump", fighter.who)

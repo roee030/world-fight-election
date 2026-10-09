@@ -18,10 +18,27 @@ const BUS_NAMES := {
 var settings_path := "user://audio_settings.cfg"
 var _volumes := DEFAULTS.duplicate()
 var _muted := false
+var music_state_change_count := 0
+var preview_count := 0
+var _music_state: StringName = &"silent"
+var _music_players: Array[AudioStreamPlayer] = []
+var _sfx_players: Array[AudioStreamPlayer] = []
+var _voice_player: AudioStreamPlayer
+var _last_preview_ms := -1000
+var _music_tween: Tween
+var _current_music := 0
+## Recent cues as "sfx:name" / "voice:name" so tests can assert playback without audio output.
+var cue_log: Array[String] = []
+
+const MUSIC_FADE_SECONDS := 0.6
+const SILENT_DB := -40.0
 
 func _ready() -> void:
+	# Music keeps playing on the pause screen; effects and voice freeze with the fight.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	_ensure_buses()
 	_apply_all()
+	_create_players()
 
 func configure_for_tests(path: String) -> void:
 	settings_path = path
@@ -78,6 +95,129 @@ func reset_defaults() -> void:
 	_muted = false
 	_apply_all()
 	save_settings()
+
+func play_sfx(cue: StringName, variant := -1) -> AudioStreamPlayer:
+	var stream := _load_cue("sfx", cue)
+	if stream == null:
+		push_warning("Missing SFX cue: %s" % cue)
+		return null
+	var player := _available_sfx_player()
+	player.stream = stream
+	player.pitch_scale = 1.0 if variant < 0 else clampf(0.96 + float(variant % 5) * 0.02, 0.9, 1.1)
+	player.play()
+	_log_cue("sfx", cue)
+	return player
+
+func play_voice(cue: StringName) -> AudioStreamPlayer:
+	var stream := _load_cue("voice", cue)
+	if stream == null:
+		push_warning("Missing voice cue: %s" % cue)
+		return null
+	_voice_player.stream = stream
+	_voice_player.play()
+	_log_cue("voice", cue)
+	return _voice_player
+
+func set_music_state(state: StringName) -> void:
+	if state == _music_state:
+		return
+	_music_state = state
+	music_state_change_count += 1
+	if state in [&"silent", &"result"]:
+		stop_music()
+		return
+	var cue: StringName = &"low_health" if state == &"fight_low_health" else state
+	var stream := _load_cue("music", cue)
+	if stream == null:
+		push_warning("Missing music cue: %s" % cue)
+		return
+	if _music_tween:
+		_music_tween.kill()
+	var outgoing := _music_players[_current_music]
+	_current_music = 1 - _current_music
+	var incoming := _music_players[_current_music]
+	incoming.stop()
+	incoming.stream = stream
+	incoming.volume_db = SILENT_DB
+	incoming.play()
+	_music_tween = create_tween().set_parallel(true)
+	_music_tween.tween_property(incoming, "volume_db", 0.0, MUSIC_FADE_SECONDS)
+	if outgoing.playing:
+		_music_tween.tween_property(outgoing, "volume_db", SILENT_DB, MUSIC_FADE_SECONDS)
+		_music_tween.chain().tween_callback(outgoing.stop)
+
+func get_music_state() -> StringName:
+	return _music_state
+
+func stop_music(fade_seconds := 0.25) -> void:
+	if _music_tween:
+		_music_tween.kill()
+		_music_tween = null
+	if fade_seconds <= 0.0 or not is_inside_tree():
+		for player in _music_players:
+			player.stop()
+		return
+	var fading := _music_players.filter(func(player: AudioStreamPlayer) -> bool: return player.playing)
+	if fading.is_empty():
+		return
+	_music_tween = create_tween().set_parallel(true)
+	for player in fading:
+		if player.playing:
+			_music_tween.tween_property(player, "volume_db", SILENT_DB, fade_seconds)
+	_music_tween.chain().tween_callback(func() -> void:
+		for player in _music_players:
+			player.stop())
+
+func preview(category: StringName) -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_preview_ms < 250:
+		return
+	_last_preview_ms = now
+	preview_count += 1
+	if category == &"voice":
+		play_voice(&"fight")
+	elif category == &"sfx":
+		play_sfx(&"ui_press")
+
+func _create_players() -> void:
+	if not _music_players.is_empty():
+		return
+	for i in range(2):
+		var player := AudioStreamPlayer.new()
+		player.bus = &"Music"
+		add_child(player)
+		_music_players.append(player)
+	for i in range(8):
+		var player := AudioStreamPlayer.new()
+		player.bus = &"SFX"
+		player.process_mode = Node.PROCESS_MODE_PAUSABLE
+		add_child(player)
+		_sfx_players.append(player)
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.bus = &"Voice"
+	_voice_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(_voice_player)
+
+func _log_cue(category: String, cue: StringName) -> void:
+	cue_log.append("%s:%s" % [category, cue])
+	if cue_log.size() > 64:
+		cue_log.pop_front()
+
+func _available_sfx_player() -> AudioStreamPlayer:
+	for player in _sfx_players:
+		if not player.playing:
+			return player
+	return _sfx_players[0]
+
+func _load_cue(category: String, cue: StringName) -> AudioStream:
+	var path := "res://assets/audio/%s/%s.ogg" % [category, cue]
+	if not ResourceLoader.exists(path):
+		return null
+	var stream := load(path) as AudioStream
+	# *.import files are not committed, so loop music in code instead of import options.
+	if category == "music" and stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	return stream
 
 func _ensure_buses() -> void:
 	for bus_name in [&"Music", &"SFX", &"Voice"]:

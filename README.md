@@ -12,6 +12,7 @@ This repository is the source of truth for the game. New contributors and agents
 - Five stages, including the Knesset exterior, Knesset chamber and three studio arenas.
 - Keyboard and touch controls.
 - Fighter Sprite Lab for inspecting every animation outside a match.
+- CC0 audio: menu, fight and low-health music, hit/guard/movement/UI effects and a round announcer (`ROUND ONE`, `ROUND TWO`, `FINAL ROUND`, `FIGHT`, `YOU WIN`, `YOU LOSE`). Sources are listed in `assets/audio/README.md`.
 
 The thin gold bar under each health bar in the combat HUD is **Special Energy** (labelled `SPECIAL ENERGY` with a percentage). Clean hits charge the attacker, blocked hits charge it a little, and the defender gains comeback energy from damage taken. At 55% the keyboard special move unlocks; at 100% the `SP` finisher unlocks and its button lights up with an electric aura.
 
@@ -68,6 +69,8 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `scripts/fighter_visual.gd` | Fighter height, grounding, sprite clips and shadow setup |
 | `scripts/character_debug.gd` | Fighter Sprite Lab |
 | `scripts/opponent_selector.gd` | Random rival selection |
+| `scripts/audio/audio_manager.gd` | Music/SFX/Voice buses, saved volumes, music crossfades and cue playback |
+| `assets/audio/` | Music, effects and announcer OGG files (CC0) |
 | `assets/characters/*-card.png` | Canonical full character artwork |
 | `assets/characters/portraits/` | Face-focused selection and HUD portraits |
 | `assets/characters/sprites/` | Normalized transparent combat frames |

@@ -49,6 +49,25 @@ func _run() -> void:
 	assert(manager.get_volume(&"music") == 45.0)
 	assert(manager.get_volume(&"sfx") == 31.0)
 	assert(manager.get_volume(&"voice") == 0.0)
+	var first = manager.play_sfx(&"jab_hit")
+	var second = manager.play_sfx(&"cross_hit")
+	assert(first != null and second != null and first != second)
+	assert(first.bus == &"SFX" and second.bus == &"SFX")
+	var voice = manager.play_voice(&"round_one")
+	assert(voice != null and voice.bus == &"Voice")
+	manager.set_music_state(&"menu")
+	assert(manager.get_music_state() == &"menu")
+	var changes: int = manager.music_state_change_count
+	manager.set_music_state(&"menu")
+	assert(manager.music_state_change_count == changes, "same music state restarted")
+	assert(manager.play_sfx(&"does_not_exist") == null, "missing cue must be non-fatal")
+	manager.preview(&"sfx")
+	var previews: int = manager.preview_count
+	manager.preview(&"sfx")
+	assert(manager.preview_count == previews, "preview was not throttled")
+	first = null
+	second = null
+	voice = null
 	manager.free()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SETTINGS_PATH))
 	print("PASS: audio settings defaults, buses, persistence, mute, reset and malformed fields")

@@ -279,6 +279,7 @@ func _dispatch(event: Dictionary) -> void:
 				return
 			var player := AudioStreamPlayer.new()
 			player.stream = stream
+			player.bus = &"SFX"
 			add_child(player)
 			_presentation.append(player)
 			player.play()
