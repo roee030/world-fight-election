@@ -46,7 +46,7 @@ const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
 # The fight camera never pans, so the arena ends at the screen edge. Fighter
 # centres stop this far (metres + pixels) inside it so the whole body stays visible.
-const ARENA_BODY_HALF_WIDTH := 0.5
+const ARENA_BODY_HALF_WIDTH := 0.6
 const ARENA_SCREEN_MARGIN_PX := 12.0
 const ARENA_FIGHTER_TOP_M := 2.2
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"

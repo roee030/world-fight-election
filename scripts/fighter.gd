@@ -227,6 +227,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, 12.0 * delta)
 		if not is_on_floor(): velocity.y -= 22.0 * delta
 		move_and_slide()
+		_clamp_to_arena()
 		return
 	if is_cpu:
 		_run_cpu(delta)
@@ -332,10 +333,9 @@ func _physics_process(delta: float) -> void:
 		_start_attack(opening_move)
 	if input_block and action_allowed:
 		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
-	position.x = clampf(position.x, -arena_bounds, arena_bounds)
-	position.z = clampf(position.z, -arena_depth_bounds, arena_depth_bounds)
 	var grounded_before_move := is_on_floor()
 	move_and_slide()
+	_clamp_to_arena()
 	if grounded_before_move and not is_on_floor():
 		jump_phase = "takeoff"
 		jump_phase_time = 0.10
@@ -347,10 +347,27 @@ func _physics_process(delta: float) -> void:
 	var separation := global_position.x - rival.global_position.x
 	var lane_separation := absf(global_position.z - rival.global_position.z)
 	if is_on_floor() and rival.is_on_floor() and knockdown_time <= 0.0 and rival.knockdown_time <= 0.0 and lane_separation < 0.54 and absf(separation) < 1.05:
-		global_position.x = rival.global_position.x + (1.05 if separation >= 0.0 else -1.05)
+		var side := 1.0 if separation >= 0.0 else -1.0
+		global_position.x = rival.global_position.x + side * 1.05
 		velocity.x = 0.0
+		_clamp_to_arena()
+		# Pinned against the edge: the rival yields instead of pushing this
+		# fighter out of the arena.
+		if absf(global_position.x - rival.global_position.x) < 1.05:
+			rival.global_position.x = global_position.x - side * 1.05
+			rival._clamp_to_arena()
 	_animate()
 	input_jump = false
+
+
+# The arena edge is the visible screen edge (main.gd sets arena_bounds from the
+# fight camera), so nothing may leave it: walking, knockback, lunges or pushes.
+func _clamp_to_arena() -> void:
+	var clamped_x := clampf(position.x, -arena_bounds, arena_bounds)
+	if clamped_x != position.x and signf(velocity.x) == signf(position.x):
+		velocity.x = 0.0
+	position.x = clamped_x
+	position.z = clampf(position.z, -arena_depth_bounds, arena_depth_bounds)
 
 
 func _run_cpu(delta: float) -> void:
