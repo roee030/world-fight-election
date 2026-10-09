@@ -144,5 +144,24 @@ The game is playable and under active visual and combat polish. The current prio
 - **Campaign:** beat every other fighter in a shuffled ladder; Bibi is always the final boss (a mirror match if you picked Bibi). Difficulty ramps from level 1 to 4. A progress screen shows the ladder before every fight. A loss retries the same rival.
 - **Menu:** START FIGHT, CAMPAIGN and CONTACT THE CREATOR. The contact button appears once `linkedin_url` is set in `data/site_config.json`. Fighter Lab is developer-only (`scenes/character_debug.tscn`).
 - **Disclaimer:** the Web shell shows a Hebrew/English satire disclaimer. Play starts only after the checkbox is ticked; acceptance is stored per device (`wf-disclaimer-v1`). This text is not legal advice; have a lawyer review it.
-- **Analytics:** set `goatcounter_code` in `data/site_config.json` (a free GoatCounter account, no cookies) to count visits and game events (`fight_start`, `match_end`, `finisher`, `campaign_progress`, `contact_click`, …). Without a code, events are only listed in `?diag=1`.
+- **Analytics:** anonymous, cookie-free GoatCounter (`goatcounter_code` in `data/site_config.json`); dashboard https://roeeangel.goatcounter.com. See "Analytics guide" below.
 - **QA URLs:** `?qa=finisher`, `?qa=win`, `?qa=loss`, `?qa=campaign` jump straight to those screens for screenshots.
+
+## Analytics guide
+
+GoatCounter is anonymous by design: it counts visits and events, with country, device, browser and time, but never identifies a person. Each game event has a readable path, so each dimension gets its own dashboard row. Type a prefix into **Filter paths** to group them:
+
+| Filter | What it answers |
+|---|---|
+| `session/start` | Sessions per day (`touch` = phones/tablets, `desktop`) |
+| `playtime/` | How long people play: `playtime/01min`, `03min`, `05min`, `10min`, `20min`, `30min`, `60min` count sessions that reached that much visible play time. |
+| `fight/` | Which fighters players pick: `fight/quick/<fighter>`, `fight/campaign/<fighter>`. The rival and stage are in the row title. |
+| `sp-press/` | SP button presses: `ready` (finisher available) vs `not-ready` (pressed too early) |
+| `sp/` | Finishers performed per fighter, `hit` or `miss` |
+| `result/` | Match results per mode (`win` / `loss`) |
+| `campaign/` | `campaign/start/<fighter>`, then progress `campaign/won-03-of-12` (players who beat their 3rd rival), and `campaign/complete/<fighter>` |
+| `linkedin/click` | Clicks on the creator card |
+| `menu/` | Start Fight / Campaign / Rematch / New Opponent |
+| `disclaimer/accepted` | Players who accepted the disclaimer |
+
+**Moving to a custom domain:** the dashboard is tied to the site code (`roeeangel`), not to the domain, so all history stays and new data keeps arriving in the same dashboard. In GitHub go to *Settings → Pages → Custom domain*, add the domain, and point a DNS `CNAME` record to `roee030.github.io` (or `A` records for an apex domain). The only visible change: the page-view row switches from `/world-fight-election` to `/`; all event rows are unchanged. If GoatCounter's *Settings → Sites/allowed domains* is ever restricted, add the new domain there.

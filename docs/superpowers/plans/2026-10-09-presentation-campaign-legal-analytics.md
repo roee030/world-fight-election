@@ -111,11 +111,12 @@
 | LinkedIn + creator photo | Done | `linkedin_url` set. A `CreatorCard` in the main menu shows `assets/ui/creator.png` (circular), `CREATED BY ROEE ANGEL`, and opens the profile. The separate CONTACT action was removed; the menu actions are START FIGHT and CAMPAIGN. |
 | Legal wording | Done | Disclaimer v2 opens with the owner's exact sentence: "המשחק הוא סאטירה בלבד, כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי". Then: parody caricatures, no affiliation, free/non-commercial, anonymous statistics. The version bump re-shows it to everyone. A persistent satire line sits in the main menu. Not adopted: parody name changes (that changes the game's identity; owner decision). |
 | Finisher names | Done | `display_name` set for all 13 finishers in `data/finishers.json`. |
-| Illustrated finisher art | Brief ready | `docs/finisher-art-brief.md`: specs, shared and negative prompts, a prompt line per fighter, background removal and an integration checklist. The code already prefers `assets/finishers/<id>/super-card.png` (shown unmirrored). |
+| Illustrated finisher art | Done | 2026-10-09: generated and integrated one `assets/finishers/<id>/super-card.png` for every fighter from the approved brief and canonical character-card references. All 13 are transparent, left-facing, exact 1200x1400 PNGs with fighter-specific props and accent colours. The complete 13-card in-game contact sheet was reviewed at 1280x720; Mansour was also inspected at 780x360 and 568x320 with no title overlap or cropping. Godot imported every texture; 44/44 Godot tests and 24/24 Python tests passed. |
+
+| Analytics v2 | Done | Readable per-dimension paths (`fight/<mode>/<fighter>`, `sp/<fighter>/<hit|miss>`, `sp-press/<ready|not-ready>`, `campaign/won-NN-of-M`, `campaign/complete/<fighter>`, `linkedin/click`, `playtime/NNmin`); an early-event queue (session starts were lost before count.js loaded). `analytics_path()` in `main.gd` is tested by `test_analytics_paths.gd`. Dashboard guide and custom-domain notes are in the README. |
 
 ### Remaining owner actions
-1. Generate the 13 `super-card.png` images using `docs/finisher-art-brief.md`.
-2. Legal review of the disclaimer wording, and a decision about parody names.
+1. Legal review of the disclaimer wording, and a decision about parody names.
 
 ### Next ideas for a future agent
 - A Hebrew-capable font, to localise the in-game UI.

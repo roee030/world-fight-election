@@ -311,7 +311,7 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
     event.preventDefault();
     try { localStorage.setItem(key, 'accepted'); } catch (error) {}
     document.documentElement.classList.remove('wf-legal-open');
-    window.worldFightTrack?.('disclaimer_accepted');
+    window.worldFightTrack?.('disclaimer_accepted', { path: 'disclaimer/accepted' });
     // The accept tap is a user gesture: use it to enter fullscreen on phones.
     if (innerWidth > innerHeight && (navigator.maxTouchPoints || 0) > 0) window.requestWorldFightFullscreen?.();
     window.layoutWorldFightViewport?.();
@@ -322,28 +322,49 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
 
 ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
 (() => {
-  // Named game events. With a GoatCounter code they are counted as
-  // "event-<name>" paths (cookie-free); without one they stay in a ring
-  // buffer shown by ?diag=1.
+  // Anonymous, cookie-free game analytics (GoatCounter). GoatCounter groups
+  // rows by path, so each event carries a readable path such as
+  // "fight/quick/bibi" or "playtime/05min"; the details also go in the title.
+  // Events wait in a queue until count.js has loaded, so early events such as
+  // the session start are not lost. Without a code they stay in a ring buffer
+  // shown by ?diag=1.
   const code = '__CODE__';
+  const queue = [];
   window.worldFightEvents = [];
+  const send = (entry) => {
+    const detail = Object.entries(entry.props || {}).filter(([k]) => k !== 'path').map(([k, v]) => k + '=' + v).join(' ');
+    window.goatcounter.count({ path: entry.path, title: detail || entry.name, event: true });
+  };
+  const ready = () => Boolean(code && window.goatcounter && window.goatcounter.count);
   window.worldFightTrack = (name, props = {}) => {
-    const entry = { name: String(name), props, at: Date.now() };
+    const entry = { name: String(name), props: props || {}, path: String((props && props.path) || ('event/' + name)), at: Date.now() };
     window.worldFightEvents.push(entry);
     if (window.worldFightEvents.length > 100) window.worldFightEvents.shift();
-    if (code && window.goatcounter && window.goatcounter.count) {
-      const detail = Object.entries(props || {}).map(([k, v]) => k + '=' + v).join(' ');
-      window.goatcounter.count({ path: 'event-' + entry.name, title: detail || entry.name, event: true });
-    }
+    if (!code) return;
+    if (ready()) send(entry); else queue.push(entry);
   };
   if (code) {
     const tag = document.createElement('script');
     tag.async = true;
     tag.src = 'https://gc.zgo.at/count.js';
     tag.dataset.goatcounter = 'https://' + code + '.goatcounter.com/count';
+    tag.addEventListener('load', () => { while (queue.length && ready()) send(queue.shift()); });
     document.head.appendChild(tag);
   }
-  window.worldFightTrack('session_start', { touch: (navigator.maxTouchPoints || 0) > 0, w: innerWidth, h: innerHeight, lang: navigator.language });
+  const device = (navigator.maxTouchPoints || 0) > 0 ? 'touch' : 'desktop';
+  window.worldFightTrack('session_start', { path: 'session/start/' + device, w: innerWidth, h: innerHeight });
+  // Play-time milestones: only visible time counts. The share of sessions
+  // reaching each milestone is the play-time distribution.
+  const milestones = [1, 3, 5, 10, 20, 30, 60];
+  let visibleSeconds = 0;
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    visibleSeconds += 5;
+    if (milestones.length && visibleSeconds >= milestones[0] * 60) {
+      const minutes = milestones.shift();
+      window.worldFightTrack('playtime', { path: 'playtime/' + String(minutes).padStart(2, '0') + 'min' });
+    }
+  }, 5000);
 })();
 </script>
 """

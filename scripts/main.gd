@@ -351,6 +351,7 @@ func _submit_touch_special() -> void:
 	if _touch_special_consumed:
 		return
 	_touch_special_consumed = true
+	_track("sp_press", {"ready": is_instance_valid(player) and _finisher_eligible()})
 	_input_down["special"] = false
 	_input_held["special"] = false
 	_special_release_pending = false
@@ -455,13 +456,37 @@ func _open_creator_profile() -> void:
 	OS.shell_open(url)
 
 
+func analytics_path(event_name: String, props: Dictionary = {}) -> String:
+	# GoatCounter aggregates by path, so the interesting dimension (fighter,
+	# result, campaign step) is part of the path and gets its own dashboard row.
+	var mode := str(props.get("mode", "quick"))
+	match event_name:
+		"fight_start": return "fight/%s/%s" % [mode, props.get("player", "unknown")]
+		"finisher": return "sp/%s/%s" % [props.get("fighter", "unknown"), "hit" if bool(props.get("in_range", false)) else "miss"]
+		"sp_press": return "sp-press/%s" % ("ready" if bool(props.get("ready", false)) else "not-ready")
+		"match_end": return "result/%s/%s" % [mode, props.get("result", "unknown")]
+		"campaign_start": return "campaign/start/%s" % props.get("player", "unknown")
+		"campaign_progress": return "campaign/won-%02d-of-%d" % [int(props.get("index", 0)), int(props.get("total", 0))]
+		"campaign_complete": return "campaign/complete/%s" % props.get("player", "unknown")
+		"contact_click": return "linkedin/click"
+		"menu_start_fight": return "menu/start-fight"
+		"menu_campaign": return "menu/campaign"
+		"rematch": return "menu/rematch"
+		"new_opponent": return "menu/new-opponent"
+		"round_end": return "round/%s" % props.get("reason", "unknown")
+	return "event/" + event_name
+
+
 func _track(event_name: String, props: Dictionary = {}) -> void:
-	# Analytics hook: the Web shell forwards events to GoatCounter when a code is
-	# configured (data/site_config.json), else keeps them for ?diag=1.
-	tracked_events.append(event_name)
+	# Analytics hook: the Web shell forwards events to GoatCounter (anonymous,
+	# cookie-free) when a code is configured (data/site_config.json), else keeps
+	# them for ?diag=1.
+	var payload := props.duplicate()
+	payload["path"] = analytics_path(event_name, props)
+	tracked_events.append(str(payload.path))
 	if tracked_events.size() > 64: tracked_events.pop_front()
 	if OS.has_feature("web"):
-		JavaScriptBridge.eval("window.worldFightTrack && window.worldFightTrack(%s, %s)" % [JSON.stringify(event_name), JSON.stringify(props)])
+		JavaScriptBridge.eval("window.worldFightTrack && window.worldFightTrack(%s, %s)" % [JSON.stringify(event_name), JSON.stringify(payload)])
 
 
 func _poll_web_shell() -> void:
@@ -2414,6 +2439,7 @@ func _show_result(won: bool) -> void:
 		if campaign_mode:
 			campaign_index += 1
 			if campaign_index >= campaign_ladder.size():
+				_track("campaign_complete", {"player": selecting})
 				detail.text = "Every rival is down — you are the champion of the campaign!"
 				button.text = "CAMPAIGN COMPLETE"
 			else:

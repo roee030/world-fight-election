@@ -51,7 +51,13 @@ class AnalyticsTests(unittest.TestCase):
         page = _patched({"goatcounter_code": "worldfight", "linkedin_url": ""})
         self.assertIn("const code = 'worldfight'", page)
         self.assertIn("https://gc.zgo.at/count.js", page)
-        self.assertIn("'event-' + entry.name", page)
+        # Readable per-dimension paths, an early-event queue and play-time milestones.
+        self.assertIn("(props && props.path) || ('event/' + name)", page)
+        self.assertIn("queue.push(entry)", page)
+        self.assertIn("tag.addEventListener('load'", page)
+        self.assertIn("'playtime/'", page)
+        self.assertIn("document.visibilityState !== 'visible'", page)
+        self.assertIn("path: 'disclaimer/accepted'", page)
 
     def test_site_config_enables_owner_analytics_and_profile(self):
         config = load_site_config()
