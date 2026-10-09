@@ -1357,16 +1357,19 @@ func _build_select() -> void:
 	var panel_back := _wash(design, Rect2(50, 72, 400, 548), Color(0.02, 0.09, 0.13, 0.55))
 	panel_back.name = "PlayerArtPanel"
 	_ornament(design, "grid", Rect2(50, 72, 400, 548), ACCENT_CYAN)
-	_ornament(design, "brackets", Rect2(50, 76, 400, 540), ACCENT_CYAN)
+	var player_brackets := _ornament(design, "brackets", Rect2(50, 76, 400, 540), ACCENT_CYAN)
 	select_portrait = TextureRect.new()
 	select_portrait.name = "SelectPortrait"
 	select_portrait.texture = _fighter_art("bennet")
 	select_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	select_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	select_portrait.position = Vector2(30, 70)
-	select_portrait.size = Vector2(470, 556)
+	# The card art has an opaque background: fill the framed panel exactly.
+	select_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	select_portrait.position = panel_back.position
+	select_portrait.size = panel_back.size
 	select_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	design.add_child(select_portrait)
+	# Brackets frame the art, so they draw above it.
+	player_brackets.move_to_front()
 	var name_shade := _wash(design, Rect2(30, 286, 470, 112), Color(0.01, 0.03, 0.05, 0.0))
 	name_shade.name = "NameShade"
 	select_name_label = _label(design, "BENNET", Rect2(32, 292, 560, 64), 46, Color("#ffffff"), HORIZONTAL_ALIGNMENT_LEFT)

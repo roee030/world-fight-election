@@ -66,6 +66,11 @@ func _run() -> void:
 		return _fail("fighter select does not show a mystery CPU slot")
 	if main.select_rival_name.text != "RANDOM OPPONENT":
 		return _fail("fighter select exposes a fixed rival")
+	# The player card art (opaque background) must fill its framed panel exactly.
+	var art_panel := main.select_root.find_child("PlayerArtPanel", true, false) as Control
+	var portrait := main.select_portrait as TextureRect
+	if portrait.get_rect() != art_panel.get_rect() or portrait.stretch_mode != TextureRect.STRETCH_KEEP_ASPECT_COVERED:
+		return _fail("player card art %s is not aligned with its frame %s" % [portrait.get_rect(), art_panel.get_rect()])
 	var roster_grid := main.select_root.find_child("RosterGrid", true, false) as GridContainer
 	if roster_grid == null:
 		return _fail("fighter select has no fixed roster grid")
