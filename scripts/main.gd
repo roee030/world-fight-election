@@ -44,6 +44,11 @@ const CONTROL_BINDINGS := {
 }
 const OpponentSelectorScript = preload("res://scripts/opponent_selector.gd")
 const ARENA_EDGE := 5.8
+# The fight camera never pans, so the arena ends at the screen edge. Fighter
+# centres stop this far (metres + pixels) inside it so the whole body stays visible.
+const ARENA_BODY_HALF_WIDTH := 0.5
+const ARENA_SCREEN_MARGIN_PX := 12.0
+const ARENA_FIGHTER_TOP_M := 2.2
 const MAIN_HERO_PATH := "res://assets/ui/main-hero-b.png"
 const CELEBRATION_PLAYBACK_SCALE := 0.40
 const CELEBRATION_CLEAR_SECONDS := 3.0
@@ -150,6 +155,13 @@ var _celebration_result_marked := false
 var _celebration_won := false
 var _touch_special_consumed := false
 var current_rival_id := ""
+# Quick Fight rival chosen by the select-screen reveal shuffle (CONFIRM FIGHT).
+var pending_rival_id := ""
+var rival_reveal_active := false
+# Headless runs reveal instantly; tests enable the animation explicitly.
+var rival_reveal_animated := DisplayServer.get_name() != "headless"
+var _rival_reveal_tween: Tween
+var _rival_reveal_highlight := ""
 var _last_campaign_result_lost := false
 var tutorial: Control
 var _tutorial_pending := false
@@ -204,6 +216,7 @@ func _ready() -> void:
 	_finisher_director.sequence_finished.connect(_on_finisher_sequence_finished)
 	_build_ui()
 	get_viewport().size_changed.connect(_fit_stage_backdrop.bind(null))
+	get_viewport().size_changed.connect(_apply_arena_edge)
 	_create_audio()
 	_show_menu()
 	_install_web_menu_bridge()
@@ -893,6 +906,34 @@ func _build_stage(stage_id: String = "") -> void:
 	_arena.add_child(floor_body)
 
 
+func _apply_arena_edge() -> void:
+	var edge := visible_arena_edge()
+	for fighter in [player, enemy]:
+		if is_instance_valid(fighter):
+			fighter.arena_bounds = edge
+			fighter._clamp_to_arena()
+
+
+# Largest |x| a fighter centre may reach while its body, feet to head, at any
+# depth lane stays inside the visible frame. The camera has no yaw, so screen x
+# is linear in world x at a fixed height and depth.
+func visible_arena_edge() -> float:
+	if not is_instance_valid(_fight_camera) or not _fight_camera.is_inside_tree():
+		return ARENA_EDGE
+	var depth := float(player.arena_depth_bounds) if is_instance_valid(player) else 0.82
+	var screen_width := get_viewport().get_visible_rect().size.x
+	var edge := ARENA_EDGE
+	for z in [-depth, depth]:
+		for y in [0.0, ARENA_FIGHTER_TOP_M]:
+			var centre := _fight_camera.unproject_position(Vector3(0.0, y, z))
+			var pixels_per_metre := _fight_camera.unproject_position(Vector3(1.0, y, z)).x - centre.x
+			if pixels_per_metre <= 0.0:
+				continue
+			var room := screen_width * 0.5 - absf(centre.x - screen_width * 0.5) - ARENA_SCREEN_MARGIN_PX
+			edge = minf(edge, room / pixels_per_metre - ARENA_BODY_HALF_WIDTH)
+	return maxf(edge, 1.6)
+
+
 func _fit_stage_backdrop(backdrop: MeshInstance3D = null) -> void:
 	# Cover the camera frame without distorting the art: on wider phones the
 	# plate grows to the frame width and crops a little top and bottom.
@@ -1348,7 +1389,8 @@ func _build_select() -> void:
 	select_rival_portrait.size = Vector2(416, 526)
 	select_rival_portrait.modulate = Color(0.22, 0.25, 0.30, 1)
 	design.add_child(select_rival_portrait)
-	_ornament(design, "gold_frame", Rect2(990, 168, 96, 132), ACCENT_GOLD)
+	var mystery_frame = _ornament(design, "gold_frame", Rect2(990, 168, 96, 132), ACCENT_GOLD)
+	mystery_frame.name = "MysteryCpuFrame"
 	var mystery_mark := _label(design, "?", Rect2(960, 150, 156, 170), 128, Color("#f2c35a"), HORIZONTAL_ALIGNMENT_CENTER)
 	mystery_mark.name = "MysteryCpuMark"
 	_strong_text(mystery_mark)
@@ -1468,16 +1510,98 @@ func _open_select(mode: String) -> void:
 
 
 func _select_fighter(id: String) -> void:
-	if not FIGHTER_DATA.has(id): return
+	if not FIGHTER_DATA.has(id) or rival_reveal_active: return
 	selecting = id
-	var data: Dictionary = FIGHTER_DATA[id]
 	select_portrait.texture = _fighter_art(id)
 	_select_fighter_text(id)
-	select_rival_portrait.texture = null
-	select_rival_name.text = "RANDOM OPPONENT"
-	select_rival_style.text = "REVEALED IN THE ARENA"
+	_reset_rival_slot()
 	_refresh_roster()
 	_play_sound("menu")
+
+
+func _reset_rival_slot() -> void:
+	_cancel_rival_reveal()
+	pending_rival_id = ""
+	select_rival_portrait.texture = null
+	select_rival_portrait.modulate = Color(0.22, 0.25, 0.30, 1)
+	select_rival_name.text = "RANDOM OPPONENT"
+	select_rival_style.text = "REVEALED IN THE ARENA"
+	for node_name in ["MysteryCpuMark", "MysteryCpuFrame"]:
+		(select_root.find_child(node_name, true, false) as CanvasItem).visible = true
+
+
+func _cancel_rival_reveal() -> void:
+	if _rival_reveal_tween != null and _rival_reveal_tween.is_valid():
+		_rival_reveal_tween.kill()
+	_rival_reveal_tween = null
+	rival_reveal_active = false
+	_rival_reveal_highlight = ""
+
+
+func rival_reveal_sequence(rival_id: String, player_id: String, steps: int, rng: RandomNumberGenerator = null) -> Array[String]:
+	# Faces flicked through the CPU frame: never the player, never the same face
+	# twice in a row, always ending on the chosen rival.
+	var pool: Array[String] = []
+	for id in PLAYABLE_IDS:
+		if id != player_id: pool.append(id)
+	var random_source := rng if rng != null else RandomNumberGenerator.new()
+	if rng == null: random_source.randomize()
+	var sequence: Array[String] = []
+	for i in range(steps - 1):
+		var previous := sequence[-1] if not sequence.is_empty() else ""
+		var next_id := previous
+		while pool.size() > 1 and (next_id == previous or (i == steps - 2 and next_id == rival_id)):
+			next_id = pool[random_source.randi_range(0, pool.size() - 1)]
+		sequence.append(next_id)
+	sequence.append(rival_id)
+	return sequence
+
+
+func _start_rival_reveal() -> void:
+	# CONFIRM FIGHT in Quick Fight: shuffle the roster faces through the CPU
+	# frame, slow down and land on the random rival, then open the arena select.
+	_cancel_rival_reveal()
+	pending_rival_id = _opponent_selector.pick_opponent(PLAYABLE_IDS, selecting)
+	if pending_rival_id.is_empty(): return
+	for node_name in ["MysteryCpuMark", "MysteryCpuFrame"]:
+		(select_root.find_child(node_name, true, false) as CanvasItem).visible = false
+	select_rival_portrait.modulate = Color.WHITE
+	select_rival_name.text = "CHOOSING..."
+	select_rival_style.text = "RANDOM OPPONENT"
+	if not rival_reveal_animated:
+		_finish_rival_reveal()
+		return
+	rival_reveal_active = true
+	var sequence := rival_reveal_sequence(pending_rival_id, selecting, 22)
+	_rival_reveal_tween = create_tween()
+	for i in range(sequence.size() - 1):
+		# Fast flicks that slow down towards the reveal.
+		var t := float(i) / float(sequence.size() - 1)
+		_rival_reveal_tween.tween_callback(_show_rival_reveal_face.bind(sequence[i]))
+		_rival_reveal_tween.tween_interval(lerpf(0.05, 0.24, t * t))
+	_rival_reveal_tween.tween_callback(_finish_rival_reveal)
+	_rival_reveal_tween.tween_interval(0.9)
+	_rival_reveal_tween.tween_callback(_open_map_select)
+
+
+func _show_rival_reveal_face(id: String) -> void:
+	select_rival_portrait.texture = load(_fighter_thumbnail_path(id))
+	select_rival_name.text = _fighter_name(id).to_upper()
+	_rival_reveal_highlight = id
+	_refresh_roster()
+	_play_sound("menu")
+
+
+func _finish_rival_reveal() -> void:
+	var data: Dictionary = FIGHTER_DATA.get(pending_rival_id, FIGHTER_DATA.bennet)
+	select_rival_portrait.texture = _fighter_art(pending_rival_id, true)
+	select_rival_name.text = str(data.name).to_upper()
+	select_rival_style.text = "YOUR OPPONENT  •  " + str(data.style).to_upper()
+	_rival_reveal_highlight = pending_rival_id
+	_refresh_roster()
+	_play_sound("special")
+	if not rival_reveal_animated:
+		_open_map_select()
 
 
 func _select_fighter_text(id: String) -> void:
@@ -1493,11 +1617,12 @@ func _refresh_roster() -> void:
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("#14242e")
 		var is_selected: bool = PLAYABLE_IDS[i] == selecting
-		style.border_color = ACCENT_CYAN.lightened(0.2) if is_selected else Color("#3a5363")
-		style.set_border_width_all(3 if is_selected else 1)
+		var is_rival: bool = PLAYABLE_IDS[i] == _rival_reveal_highlight
+		style.border_color = ACCENT_CYAN.lightened(0.2) if is_selected else (ACCENT_GOLD.lightened(0.1) if is_rival else Color("#3a5363"))
+		style.set_border_width_all(3 if is_selected or is_rival else 1)
 		style.set_corner_radius_all(3)
-		if is_selected:
-			style.shadow_color = Color(ACCENT_CYAN, 0.55)
+		if is_selected or is_rival:
+			style.shadow_color = Color(ACCENT_CYAN if is_selected else ACCENT_GOLD, 0.55)
 			style.shadow_size = 8
 		roster_tiles[i].add_theme_stylebox_override("normal", style)
 		roster_tiles[i].add_theme_stylebox_override("hover", style)
@@ -1523,11 +1648,17 @@ func _set_3d_visible(value: bool) -> void:
 
 
 func _confirm_selection() -> void:
+	if rival_reveal_active: return
 	if pending_mode == "campaign":
 		# The campaign picks a stage per fight; go straight to the ladder.
 		select_root.visible = false
 		_start_campaign()
 		return
+	_start_rival_reveal()
+
+
+func _open_map_select() -> void:
+	rival_reveal_active = false
 	select_root.visible = false
 	_load_stage_card_art()
 	map_select_root.visible = true
@@ -2147,6 +2278,7 @@ func _show_menu() -> void:
 	if is_instance_valid(_finisher_director):
 		_finisher_director.cancel()
 	_cancel_special_hold()
+	if is_instance_valid(select_root): _reset_rival_slot()
 	fight_live = false
 	paused = false
 	hud_root.visible = false
@@ -2172,7 +2304,12 @@ func _show_menu() -> void:
 func _start_quick_fight() -> void:
 	campaign_mode = false
 	campaign_wins = 0
-	var rival_id := _opponent_selector.pick_opponent(PLAYABLE_IDS, selecting)
+	# The select-screen reveal already chose the rival; NEW OPPONENT and direct
+	# starts pick a fresh one.
+	var rival_id := pending_rival_id
+	pending_rival_id = ""
+	if rival_id.is_empty() or rival_id == selecting:
+		rival_id = _opponent_selector.pick_opponent(PLAYABLE_IDS, selecting)
 	if rival_id.is_empty(): return
 	_setup_bout(selecting, rival_id, 1, "SINGLE FIGHT")
 
@@ -2264,8 +2401,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	add_child(enemy)
 	player.rival = enemy
 	enemy.rival = player
-	player.arena_bounds = ARENA_EDGE
-	enemy.arena_bounds = ARENA_EDGE
+	_apply_arena_edge()
 	player.health_changed.connect(_on_health_changed)
 	enemy.health_changed.connect(_on_health_changed)
 	player.meter_changed.connect(_on_meter_changed)

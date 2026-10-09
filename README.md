@@ -7,7 +7,7 @@ This repository is the source of truth for the game. New contributors and agents
 ## Current game
 
 - 13 playable fighters: Bennet, Avigdor Lieberman, Bibi, Yair Golan, Aryeh Deri, Yair Lapid, Mansour Abbas, Benny Gantz, Itamar Ben-Gvir, Bezalel Smotrich, Gadi Eisenkot, Donald Trump and Joint List.
-- Single Fight with one player choice and a random CPU rival.
+- Single Fight with one player choice and a random CPU rival, revealed by a quick roster shuffle on CONFIRM FIGHT.
 - Four-fight campaign, best-of-three rounds, health, hit stun, guard, combos and a charged special meter.
 - Five stages, including the Knesset exterior, Knesset chamber and three studio arenas.
 - Keyboard and touch controls.
