@@ -63,12 +63,12 @@ class AnalyticsTests(unittest.TestCase):
         self.assertIn("'playtime/'", page)
         self.assertIn("document.visibilityState !== 'visible'", page)
         self.assertIn("path: 'disclaimer/accepted'", page)
-
-    def test_site_config_enables_owner_analytics_and_profile(self):
-        config = load_site_config()
         # Exit point: reported once when the page is hidden or closed.
         self.assertIn("'leave/' + where()", page)
         self.assertIn("addEventListener('pagehide', leave)", page)
+
+    def test_site_config_enables_owner_analytics_and_profile(self):
+        config = load_site_config()
         self.assertEqual(set(config), {"goatcounter_code", "linkedin_url"})
         self.assertEqual(config["goatcounter_code"], "roeeangel")
         self.assertTrue(config["linkedin_url"].startswith("https://www.linkedin.com/in/"))

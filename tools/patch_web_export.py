@@ -396,6 +396,7 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
   // shown by ?diag=1.
   const code = '__CODE__';
   const queue = [];
+  let lastPath = 'session/start';
   window.worldFightEvents = [];
   const send = (entry) => {
     const detail = Object.entries(entry.props || {}).filter(([k]) => k !== 'path').map(([k, v]) => k + '=' + v).join(' ');
@@ -404,6 +405,7 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
   const ready = () => Boolean(code && window.goatcounter && window.goatcounter.count);
   window.worldFightTrack = (name, props = {}) => {
     const entry = { name: String(name), props: props || {}, path: String((props && props.path) || ('event/' + name)), at: Date.now() };
+    if (!/^(playtime|leave)[/]/.test(entry.path)) lastPath = entry.path;
     window.worldFightEvents.push(entry);
     if (window.worldFightEvents.length > 100) window.worldFightEvents.shift();
     if (!code) return;
@@ -421,40 +423,6 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
   window.worldFightTrack('session_start', { path: 'session/start/' + device, w: innerWidth, h: innerHeight });
   // Play-time milestones: only visible time counts. The share of sessions
   // reaching each milestone is the play-time distribution.
-  const milestones = [1, 3, 5, 10, 20, 30, 60];
-  let visibleSeconds = 0;
-  setInterval(() => {
-    if (document.visibilityState !== 'visible') return;
-    visibleSeconds += 5;
-    if (milestones.length && visibleSeconds >= milestones[0] * 60) {
-      const minutes = milestones.shift();
-  let lastPath = 'session/start';
-      window.worldFightTrack('playtime', { path: 'playtime/' + String(minutes).padStart(2, '0') + 'min' });
-    }
-  }, 5000);
-})();
-</script>
-"""
-
-
-    if (!/^(playtime|leave)[/]/.test(entry.path)) lastPath = entry.path;
-def legal_markup(version: str = DISCLAIMER_VERSION) -> str:
-    return LEGAL_MARKUP.replace("__VERSION__", version)
-
-
-def analytics_script(code: str) -> str:
-    safe = re.sub(r"[^a-z0-9-]", "", code.lower())
-    return ANALYTICS_SCRIPT.replace("__CODE__", safe)
-
-
-# Blocks written by older patcher versions without markers.
-LEGACY_PATTERNS = (
-    re.compile(r'<script id="world-fight-cache-retirement">.*?</script>\s*', re.S),
-    re.compile(r'<style id="world-fight-responsive-style">.*?</style>\s*', re.S),
-    re.compile(r'<script id="world-fight-responsive-script">.*?</script>\s*', re.S),
-    re.compile(r'<div id="world-fight-startup">.*?<script>window\.initializeWorldFightShell\(\)</script>', re.S),
-)
-
   // Exit point: when the page is hidden or closed, report where the player
   // was, judged by the last game event ("leave/in-fight", "leave/after-result").
   const where = () => {
@@ -475,6 +443,38 @@ LEGACY_PATTERNS = (
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); });
   window.addEventListener('pagehide', leave);
+  const milestones = [1, 3, 5, 10, 20, 30, 60];
+  let visibleSeconds = 0;
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    visibleSeconds += 5;
+    if (milestones.length && visibleSeconds >= milestones[0] * 60) {
+      const minutes = milestones.shift();
+      window.worldFightTrack('playtime', { path: 'playtime/' + String(minutes).padStart(2, '0') + 'min' });
+    }
+  }, 5000);
+})();
+</script>
+"""
+
+
+def legal_markup(version: str = DISCLAIMER_VERSION) -> str:
+    return LEGAL_MARKUP.replace("__VERSION__", version)
+
+
+def analytics_script(code: str) -> str:
+    safe = re.sub(r"[^a-z0-9-]", "", code.lower())
+    return ANALYTICS_SCRIPT.replace("__CODE__", safe)
+
+
+# Blocks written by older patcher versions without markers.
+LEGACY_PATTERNS = (
+    re.compile(r'<script id="world-fight-cache-retirement">.*?</script>\s*', re.S),
+    re.compile(r'<style id="world-fight-responsive-style">.*?</style>\s*', re.S),
+    re.compile(r'<script id="world-fight-responsive-script">.*?</script>\s*', re.S),
+    re.compile(r'<div id="world-fight-startup">.*?<script>window\.initializeWorldFightShell\(\)</script>', re.S),
+)
+
 
 def _strip(html: str) -> str:
     html = re.sub(r"<!--wf:(\w+)-->.*?<!--/wf:\1-->", "", html, flags=re.S)
