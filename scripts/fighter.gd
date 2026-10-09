@@ -7,6 +7,10 @@ signal defeated(who: int)
 signal combo_changed(who: int, hits: int)
 signal strike_landed(attacker: int, defender: int, move: String, blocked: bool, combo: int)
 signal attack_started(attacker: int, move: String)
+## A named combo string completed (data/combos.json): name, total combo damage.
+signal combo_string(who: int, name: String, damage: float)
+## This fighter escaped the rival's combo with the combo breaker.
+signal combo_broken(who: int)
 
 const MOVES := {
 	"light": {"duration": 0.46, "startup": 0.12, "active": 0.09, "cancel_from": 0.205, "cancel_to": 0.34, "damage": 7.0, "reach": 1.32, "lunge": 2.45, "clip": "jab"},
@@ -15,7 +19,10 @@ const MOVES := {
 	"special": {"duration": 0.84, "startup": 0.28, "active": 0.13, "cancel_from": 0.51, "cancel_to": 0.65, "damage": 23.0, "reach": 2.18, "lunge": 2.6, "clip": "kick"}
 }
 const INPUT_BUFFER_SECONDS := 0.34
-const MAX_COMBO_HITS := 3
+# Combo rules live in data/combos.json (routes, scaling, strings, breaker).
+const MAX_COMBO_HITS := 4
+const COMBO_DATA_PATH := "res://data/combos.json"
+static var _combo_data: Dictionary = {}
 # Special Energy economy. MAX spends SPECIAL_COST; FINISH (SP) needs the full
 # bar. Clean hits charge the attacker, blocked hits charge it a little, and the
 # defender receives comeback energy from the damage it actually takes.
@@ -59,6 +66,12 @@ var attack_hit := false
 var attack_confirmed := false
 var combo_count := 0
 var combo_timer := 0.0
+var combo_moves: Array[String] = []
+var combo_damage := 0.0
+var _pending_string := ""
+var _guard_was_down := false
+var _last_guard_tap := -10.0
+var _combat_clock := 0.0
 var attack_lunge := 0.0
 var lunge_speed := 0.0
 var round_over := false
@@ -214,6 +227,12 @@ func set_controls(axis: float, jump: bool, block: bool, crouch: bool, requested_
 	input_axis = clampf(axis, -1.0, 1.0)
 	input_depth = clampf(depth, -1.0, 1.0)
 	input_jump = jump
+	if block and not _guard_was_down:
+		# Combo breaker: a second GUARD tap within the window while being hit.
+		if stun > 0.0 and _combat_clock - _last_guard_tap <= float(combo_data().breaker.double_tap):
+			try_combo_breaker()
+		_last_guard_tap = _combat_clock
+	_guard_was_down = block
 	input_block = block
 	input_crouch = crouch
 	if requested_attack != "":
@@ -229,6 +248,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		_clamp_to_arena()
 		return
+	_combat_clock += delta
 	if is_cpu:
 		_run_cpu(delta)
 	if attack_request != "":
@@ -385,7 +405,6 @@ func _start_attack(kind: String, chained: bool = false) -> void:
 	if kind == "special" and meter < SPECIAL_COST: return
 	if not MOVES.has(kind): return
 	if chained and not _can_chain_to(kind): return
-	if not chained and combo_count > 0: _clear_combo()
 	if kind == "special":
 		meter -= SPECIAL_COST
 		meter_changed.emit(who, meter)
@@ -400,7 +419,6 @@ func _start_attack(kind: String, chained: bool = false) -> void:
 	attack_lunge = 0.12 if kind == "light" else (0.15 if kind == "heavy" else 0.16)
 	lunge_speed = attack_facing * move.lunge
 	var clip_name := str(move.clip)
-	if kind == "heavy" and chained and combo_count == 1: clip_name = "cross"
 	_visual.sprite.animation = clip_name
 	attack_clip = clip_name
 	_visual.sprite.set_frame_and_progress(0, 0.0)
@@ -415,9 +433,76 @@ func _can_chain_now(move: Dictionary, elapsed: float) -> bool:
 
 func _can_chain_to(next_move: String) -> bool:
 	if attack_kind == "special" or combo_count >= MAX_COMBO_HITS: return false
-	if attack_kind == "light": return next_move in ["light", "heavy", "special"]
-	if attack_kind == "heavy": return next_move in ["heavy", "special"]
-	return false
+	var routes: Dictionary = combo_data().routes
+	return next_move in routes.get(attack_kind, [])
+
+
+static func combo_data() -> Dictionary:
+	if _combo_data.is_empty():
+		var file := FileAccess.open(COMBO_DATA_PATH, FileAccess.READ)
+		var parsed = JSON.parse_string(file.get_as_text()) if file != null else null
+		_combo_data = parsed if parsed is Dictionary else {"max_hits": 4, "scaling": [1.0], "finale_relief": 0.5, "routes": {}, "universal": [], "signature": {}, "breaker": {"cost": 35, "push": 3.4, "invulnerable": 0.45, "double_tap": 0.35}}
+	return _combo_data
+
+
+func combo_strings() -> Array:
+	# This fighter's signature string first, then the universal strings.
+	var strings: Array = []
+	var signature: Dictionary = combo_data().signature.get(character_id, {})
+	if not signature.is_empty():
+		strings.append(signature)
+	strings.append_array(combo_data().universal)
+	return strings
+
+
+func _completed_string(moves: Array) -> Dictionary:
+	for entry in combo_strings():
+		if Array(entry.sequence) == moves:
+			return entry
+	return {}
+
+
+func _string_is_terminal(moves: Array) -> bool:
+	# Terminal when no longer string of this fighter continues from here.
+	for entry in combo_strings():
+		var sequence: Array = entry.sequence
+		if sequence.size() > moves.size() and sequence.slice(0, moves.size()) == moves:
+			return false
+	return true
+
+
+func _apply_finale(kind: String) -> void:
+	if rival == null or rival.health <= 0.0:
+		return
+	match kind:
+		"knockback": rival.velocity.x = attack_facing * 5.2
+		"knockdown": rival.knock_down_and_recover()
+		"stagger": rival.hit_stop = maxf(rival.hit_stop, 0.2)
+
+
+func try_combo_breaker() -> bool:
+	# Escape the rival's combo: costs Special Energy, pushes the rival back and
+	# grants a short invulnerability. Breaking ends that combo, so it can be
+	# used once per combo.
+	var rules: Dictionary = combo_data().breaker
+	if stun <= 0.0 or knockdown_time > 0.0 or round_over or cinematic_locked or rival == null:
+		return false
+	if rival.combo_count < 1 or meter < float(rules.cost):
+		return false
+	meter -= float(rules.cost)
+	meter_changed.emit(who, meter)
+	var away := signf(rival.global_position.x - global_position.x)
+	rival._finish_attack()
+	rival._clear_combo()
+	rival.stun = maxf(rival.stun, 0.25)
+	rival.busy = maxf(rival.busy, 0.25)
+	rival.velocity.x = away * float(rules.push)
+	stun = 0.0
+	busy = 0.0
+	hit_stop = 0.0
+	invulnerable = float(rules.invulnerable)
+	combo_broken.emit(who)
+	return true
 
 
 func _finish_attack() -> void:
@@ -469,10 +554,32 @@ func _try_hit() -> void:
 	if character_id in ["mansour_abbas", "gadi_eisenkot"]: damage *= 1.10
 	if character_id in ["yair_lapid", "bezalel_smotrich"]: damage *= 0.93
 	attack_confirmed = true
+	# A hit continues the combo only while the rival is still reeling from the
+	# previous one (standard true-combo counting), however it was input.
+	var continues := combo_count > 0 and (rival.stun > 0.0 or rival.hit_stop > 0.0)
+	if combo_count > 0 and not continues:
+		_clear_combo()
+	combo_moves.append(attack_kind)
+	var rules := combo_data()
+	var scaling: Array = rules.scaling
+	var hit_scale := float(scaling[mini(combo_moves.size() - 1, scaling.size() - 1)])
+	var completed := _completed_string(combo_moves)
+	var terminal := not completed.is_empty() and _string_is_terminal(combo_moves)
+	if terminal:
+		# The finale keeps more of its damage so the payoff feels strong.
+		hit_scale = 1.0 - (1.0 - hit_scale) * float(rules.finale_relief)
+	damage *= hit_scale
 	combo_count += 1
+	combo_damage += damage
 	combo_timer = 0.9
 	combo_changed.emit(who, combo_count)
 	rival.receive_hit(damage, attack_facing, attack_kind)
+	if not completed.is_empty():
+		_pending_string = str(completed.name)
+	if terminal:
+		_apply_finale(str(completed.get("finale", "none")))
+		combo_string.emit(who, _pending_string, combo_damage)
+		_pending_string = ""
 	rival.hit_stop = maxf(rival.hit_stop, 0.075 if attack_kind != "light" else 0.055)
 	hit_stop = maxf(hit_stop, 0.055 if attack_kind == "light" else 0.075)
 	if attack_kind != "special":
@@ -626,6 +733,12 @@ func _gain_meter(amount: float) -> void:
 
 
 func _clear_combo() -> void:
+	if not _pending_string.is_empty():
+		# A shorter string completed and the combo stopped there.
+		combo_string.emit(who, _pending_string, combo_damage)
+		_pending_string = ""
+	combo_moves.clear()
+	combo_damage = 0.0
 	if combo_count != 0:
 		combo_count = 0
 		combo_timer = 0.0
