@@ -29,7 +29,7 @@ static var _combo_data: Dictionary = {}
 const SPECIAL_COST := 55.0
 # Global scale for ordinary hits so rounds last long enough to read the rival
 # and build Special Energy (play-testing: players died in a handful of hits).
-const DAMAGE_SCALE := 0.62
+const DAMAGE_SCALE := 0.6
 const METER_HIT_BASE := 3.5
 const METER_HIT_DAMAGE_SCALE := 0.55
 const METER_BLOCKED_ATTACKER := 2.5
