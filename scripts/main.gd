@@ -110,6 +110,8 @@ var timer_label: Label
 var round_label: Label
 var message_label: Label
 var callout: Control
+var combo_callout: Control
+var _player_combo_peak := 0
 var combo_label: Label
 var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
@@ -512,6 +514,9 @@ func analytics_path(event_name: String, props: Dictionary = {}) -> String:
 		"rematch": return "menu/rematch"
 		"new_opponent": return "menu/new-opponent"
 		"round_end": return "round/%s" % props.get("reason", "unknown")
+		"combo": return "combo/%s" % str(props.get("name", "unknown")).to_lower().replace(" ", "-")
+		"combo_hits": return "combo/hits-%d" % int(props.get("hits", 0))
+		"combo_break": return "combo/break-%s" % props.get("by", "unknown")
 		"tutorial_start": return "tutorial/start"
 		"tutorial_step": return "tutorial/step-%s" % props.get("step", "unknown")
 		"tutorial_complete": return "tutorial/complete"
@@ -576,6 +581,9 @@ func _run_web_qa_scenario() -> void:
 			_start_campaign()
 		"tutorial":
 			TutorialScript.mark_completed(false)
+			_setup_bout(selecting, "benny_gantz", 1, "QA")
+		"fight":
+			TutorialScript.mark_completed(true)
 			_setup_bout(selecting, "benny_gantz", 1, "QA")
 		"finisher", "win", "loss":
 			_setup_bout(selecting, "benny_gantz", 1, "QA")
@@ -1091,6 +1099,12 @@ func _build_hud() -> void:
 		overlay.anchor_right = 0.5
 		overlay.offset_left = rect.position.x - DESIGN_SIZE.x * 0.5
 		overlay.offset_right = rect.end.x - DESIGN_SIZE.x * 0.5
+	# The combo counter and combo names use the same animated banner style.
+	combo_callout = CalloutScript.new()
+	combo_callout.setup(combo_label, _bold_font())
+	hud_root.add_child(combo_callout)
+	combo_callout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud_root.move_child(combo_callout, combo_label.get_index())
 	# Every announcement (ROUND, FIGHT!, feedback) plays as an animated banner.
 	callout = CalloutScript.new()
 	callout.setup(message_label, _bold_font())
@@ -1783,6 +1797,31 @@ func _build_pause() -> void:
 	settings.name = "SettingsButton"
 	settings.pressed.connect(_show_settings.bind(&"pause"))
 	_label(box, "ESC  /  RESUME", Rect2(0, 406, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
+	var moves := Panel.new()
+	moves.name = "MoveList"
+	var moves_style := StyleBoxFlat.new()
+	moves_style.bg_color = Color(0.01, 0.03, 0.05, 0.9)
+	moves_style.border_color = Color(ACCENT_CYAN, 0.6)
+	moves_style.set_border_width_all(2)
+	moves_style.set_corner_radius_all(4)
+	moves.add_theme_stylebox_override("panel", moves_style)
+	pause_root.add_child(moves)
+	moves.anchor_left = 1.0
+	moves.anchor_right = 1.0
+	moves.anchor_top = 0.5
+	moves.anchor_bottom = 0.5
+	moves.offset_left = -640
+	moves.offset_right = -40
+	moves.offset_top = -270
+	moves.offset_bottom = 270
+	var title := _label(moves, "MOVE LIST", Rect2(24, 14, 400, 40), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+	_strong_text(title)
+	var rows := VBoxContainer.new()
+	rows.name = "MoveRows"
+	rows.position = Vector2(24, 64)
+	rows.size = Vector2(552, 460)
+	rows.add_theme_constant_override("separation", 6)
+	moves.add_child(rows)
 	pause_root.visible = false
 
 
@@ -2562,6 +2601,9 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	player.defeated.connect(_on_defeated)
 	enemy.defeated.connect(_on_defeated)
 	player.combo_changed.connect(_on_combo_changed)
+	player.combo_string.connect(_on_combo_string)
+	player.combo_broken.connect(_on_combo_broken)
+	enemy.combo_broken.connect(_on_combo_broken)
 	enemy.combo_changed.connect(_on_combo_changed)
 	player.attack_started.connect(_on_attack_started)
 	enemy.attack_started.connect(_on_attack_started)
@@ -2654,18 +2696,33 @@ func _update_recoverable_health(delta: float) -> void:
 
 func _on_combo_changed(who: int, hits: int) -> void:
 	if who != 0 or not is_instance_valid(combo_label): return
+	if hits == 0:
+		if _player_combo_peak >= 2:
+			_track("combo_hits", {"hits": _player_combo_peak})
+		_player_combo_peak = 0
+		return
+	_player_combo_peak = maxi(_player_combo_peak, hits)
 	if hits >= 2:
-		combo_label.text = "%d HIT COMBO" % hits
+		combo_label.text = "%d HITS%s" % [hits, "  ·  GREAT!" if hits >= 4 else ("  ·  GOOD!" if hits == 3 else "")]
 		combo_label.visible = true
-		combo_label.scale = Vector2(0.78, 0.78)
-		combo_label.modulate.a = 1.0
 		combo_label_time = 1.1
-		var tween := create_tween().set_parallel(true)
-		tween.tween_property(combo_label, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		if hits >= 3:
-			combo_label.add_theme_color_override("font_color", Color("#72e8dc"))
-		else:
-			combo_label.add_theme_color_override("font_color", Color("#ffe1a0"))
+
+
+func _on_combo_string(who: int, combo_name: String, damage: float) -> void:
+	# A named combo landed: show its name and total damage, reward with sound.
+	if who != 0 or not is_instance_valid(combo_label): return
+	combo_label.text = "%s  ·  %d DMG" % [combo_name, roundi(damage)]
+	combo_label.visible = true
+	combo_label_time = 1.6
+	_play_sfx(&"special")
+	_track("combo", {"name": combo_name, "damage": roundi(damage)})
+
+
+func _on_combo_broken(who: int) -> void:
+	_show_special_feedback("COMBO BREAK!" if who == 0 else "CPU BREAKS FREE!")
+	_play_sfx(&"guard_hit")
+	camera_shake = 0.2
+	_track("combo_break", {"by": "player" if who == 0 else "cpu"})
 
 
 func _on_attack_started(attacker: int, move: String) -> void:
@@ -2867,9 +2924,38 @@ func _rematch() -> void:
 	_setup_bout(selecting, current_rival_id, current_level, "REMATCH")
 
 
+func _refresh_move_list() -> void:
+	# Signature string first (gold), then universal strings and the breaker.
+	var rows := pause_root.find_child("MoveRows", true, false) as VBoxContainer
+	if rows == null or not is_instance_valid(player):
+		return
+	for child in rows.get_children(): child.free()
+	var button_names := {"light": "JAB", "heavy": "CROSS", "kick": "KICK"}
+	var entries: Array = []
+	for entry in player.combo_strings():
+		entries.append(entry)
+	for i in range(entries.size()):
+		var entry: Dictionary = entries[i]
+		var inputs: Array = []
+		for move in entry.sequence: inputs.append(button_names.get(move, str(move).to_upper()))
+		var row := _label(rows, "", Rect2(0, 0, 552, 46), 18, ACCENT_GOLD if i == 0 else Color("#e8eef0"), HORIZONTAL_ALIGNMENT_LEFT)
+		row.custom_minimum_size = Vector2(552, 44)
+		var is_signature: bool = i == 0 and Array(entry.sequence).size() == 4
+		row.text = "%s%s\n   %s" % ["SIGNATURE  ·  " if is_signature else "", str(entry.name), "  ·  ".join(inputs)]
+		row.add_theme_color_override("font_color", ACCENT_GOLD if is_signature else Color("#e8eef0"))
+		row.add_theme_font_override("font", _bold_font())
+		row.add_theme_font_size_override("font_size", 16)
+		row.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var breaker := _label(rows, "COMBO BREAKER\n   double-tap GUARD while being hit  ·  35% SPECIAL ENERGY", Rect2(0, 0, 552, 46), 15, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
+	breaker.custom_minimum_size = Vector2(552, 44)
+	breaker.add_theme_font_override("font", _bold_font())
+
+
 func _toggle_pause() -> void:
 	if not fight_live: return
 	paused = not paused
+	if paused:
+		_refresh_move_list()
 	if is_instance_valid(_finisher_director):
 		_finisher_director.set_paused(paused)
 	pause_root.visible = paused

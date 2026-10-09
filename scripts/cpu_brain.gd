@@ -42,6 +42,10 @@ var player_guard_rate := 0.3
 var player_attack_range := 1.4
 var intent_history: Array[String] = []
 var attack_history: Array[String] = []
+# Combo plan: the string the CPU is executing (same data as the player).
+var combo_plan: Array = []
+var _plan_made := false
+var _requested_at_hits := -1
 
 
 func _init(cpu_level: int = 1) -> void:
@@ -128,6 +132,9 @@ func decide(cpu, rival, delta: float) -> Dictionary:
 	if cpu.stun > 0.0 or cpu.knockdown_time > 0.0 or cpu.recovery_time > 0.0:
 		# Keep holding a committed guard through blockstun.
 		controls.block = guard_time > 0.0
+		# Combo breaker: higher levels escape long player combos more often.
+		if cpu.stun > 0.0 and rival.combo_count >= 2 and cpu.meter >= float(cpu.combo_data().breaker.cost) and randf() < delta * breaker_rate():
+			cpu.try_combo_breaker()
 		return controls
 	if intent_time <= 0.0:
 		_choose_intent(cpu, rival)
@@ -161,13 +168,24 @@ func decide(cpu, rival, delta: float) -> Dictionary:
 	if sidestep_time > 0.0:
 		controls.depth = sidestep_dir
 		return controls
-	# 3. Cancel a confirmed hit into a stronger follow-up (combo).
+	# 3. Continue a confirmed hit along a named combo string (hit-confirm: a
+	# blocked opener never starts a plan, because blocked hits do not confirm).
 	var own_move: Dictionary = cpu.MOVES.get(cpu.attack_kind, {})
 	if not own_move.is_empty() and cpu.attack_confirmed:
 		var own_elapsed: float = cpu.attack_duration - cpu.attack_time
-		if own_elapsed >= float(own_move.cancel_from) and cpu.combo_count < cpu.MAX_COMBO_HITS and randf() < 0.25 + 0.15 * float(level):
-			controls.request = "heavy" if cpu.attack_kind == "light" else ("special" if cpu.meter >= cpu.SPECIAL_COST else "heavy")
+		if not _plan_made:
+			_plan_combo(cpu)
+			_plan_made = true
+		# One follow-up request per confirmed hit, inside the cancel window.
+		if own_elapsed >= float(own_move.cancel_from) - 0.04 and cpu.combo_count < combo_plan.size() and _requested_at_hits != cpu.combo_count:
+			controls.request = str(combo_plan[cpu.combo_count])
+			_requested_at_hits = cpu.combo_count
+			_record_attack(controls.request)
 		return controls
+	if cpu.combo_count == 0:
+		combo_plan = []
+		_plan_made = false
+		_requested_at_hits = -1
 	if cpu.attack_kind != "" or cpu.busy > 0.0:
 		return controls
 	# 4. Lane alignment: get back in line before trading hits.
@@ -201,6 +219,38 @@ func decide(cpu, rival, delta: float) -> Dictionary:
 		attack_cooldown = randf_range(0.22, 0.5) - 0.04 * float(level)
 		_record_attack(controls.request)
 	return controls
+
+
+func breaker_rate() -> float:
+	# Chance per second of breaking a player combo (level 1 rarely, boss often).
+	return [0.35, 0.9, 1.6, 2.4][clampi(level, 1, 4) - 1]
+
+
+func _plan_combo(cpu) -> void:
+	# Pick a string that starts with the move that just landed. Level gates the
+	# length (L1-L2: 3 hits, L3+: signature). Some openers are left alone so
+	# the CPU stays unpredictable.
+	combo_plan = []
+	if cpu.combo_moves.is_empty():
+		return
+	var max_length: int = [3, 3, 4, 4][clampi(level, 1, 4) - 1]
+	var candidates: Array = []
+	for entry in cpu.combo_strings():
+		var sequence: Array = entry.sequence
+		if sequence.size() <= max_length and sequence[0] == cpu.combo_moves[0]:
+			candidates.append(sequence)
+	if candidates.is_empty() or randf() < 0.1:
+		return
+	# Longer strings are favoured (weight = length squared) but short ones stay
+	# possible. Copy: the plan must never alias the shared combo data.
+	var weights := {}
+	for i in range(candidates.size()):
+		weights[str(i)] = float(candidates[i].size() * candidates[i].size())
+	combo_plan = Array(candidates[int(_weighted_pick(weights))]).duplicate()
+	# With enough energy, cap the string with the special move when the route allows.
+	var routes: Dictionary = cpu.combo_data().routes
+	if combo_plan.size() < cpu.MAX_COMBO_HITS and cpu.meter >= cpu.SPECIAL_COST and "special" in routes.get(combo_plan[-1], []) and randf() < 0.8:
+		combo_plan.append("special")
 
 
 func _choose_intent(cpu, rival) -> void:

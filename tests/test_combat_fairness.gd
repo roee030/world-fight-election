@@ -40,6 +40,9 @@ func _run() -> void:
 	player.set_physics_process(false)
 	cpu.set_physics_process(false)
 	var cpu_attacks := {}
+	var breaks := {"player": 0, "cpu": 0}
+	player.combo_broken.connect(func(_who: int): breaks.player += 1)
+	cpu.combo_broken.connect(func(_who: int): breaks.cpu += 1)
 	cpu.attack_started.connect(func(_who: int, move: String): cpu_attacks[move] = int(cpu_attacks.get(move, 0)) + 1)
 	var stats := {"player_rounds": 0, "cpu_rounds": 0, "round_seconds": 0.0, "rounds": 0, "player_dealt": 0.0, "cpu_dealt": 0.0, "sp_matches": 0}
 	for match_index in range(MATCHES):
@@ -70,7 +73,7 @@ func _run() -> void:
 	var early_samples: int = _last_habit_samples
 	_guard_rate_against_habit(player, cpu, 20.0)
 	var late := _guard_rate_against_habit(player, cpu, 30.0)
-	print("FAIRNESS: player_round_wins=%.2f avg_round=%.1fs player_dealt=%.0f cpu_dealt=%.0f sp_matches=%d/%d cpu_attack_entropy=%.2f bits attacks=%s habit_guard early=%.2f late=%.2f" % [win_ratio, average_round, stats.player_dealt, stats.cpu_dealt, stats.sp_matches, MATCHES, entropy, cpu_attacks, early, late])
+	print("FAIRNESS: player_round_wins=%.2f avg_round=%.1fs player_dealt=%.0f cpu_dealt=%.0f sp_matches=%d/%d cpu_attack_entropy=%.2f bits attacks=%s habit_guard early=%.2f late=%.2f breaks=%s" % [win_ratio, average_round, stats.player_dealt, stats.cpu_dealt, stats.sp_matches, MATCHES, entropy, cpu_attacks, early, late, breaks])
 	main.free()
 	if win_ratio > 0.82:
 		return _fail("the level-1 CPU is too easy (player wins %.2f of rounds)" % win_ratio)

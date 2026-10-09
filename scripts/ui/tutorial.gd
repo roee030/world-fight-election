@@ -21,6 +21,7 @@ const STEPS := [
 	{"id": "kick", "title": "KICK", "text": "Tap KICK for a long-range kick.", "key": "U", "target": "kick"},
 	{"id": "jump", "title": "JUMP", "text": "Push the joystick up to jump.", "key": "W", "target": "stick"},
 	{"id": "guard", "title": "GUARD", "text": "Hold GUARD to block incoming hits.", "key": "S", "target": "block"},
+	{"id": "combo", "title": "COMBO", "text": "Chain JAB, JAB, CROSS fast - each hit lands while the rival still reels. Pause > MOVE LIST shows all combos.", "key": "J, J, K", "target": "light"},
 	{"id": "special", "title": "SPECIAL ENERGY", "text": "Hits fill the gold SPECIAL ENERGY bar. At 100% the SP button lights up - tap SP for your finisher!", "key": "L", "target": "special"},
 ]
 
@@ -125,6 +126,7 @@ func begin() -> void:
 	step = 0
 	host._track("tutorial_start")
 	host.player.attack_started.connect(_on_attack_started)
+	host.player.combo_string.connect(_on_combo_string)
 	# The match host pauses per-frame updates while a finisher plays, so the SP
 	# step uses director signals instead of polling for it. Starting the sequence
 	# hides the coach overlay; only the real sequence end completes the tutorial.
@@ -202,9 +204,17 @@ func _on_finisher_finished(_lethal: bool) -> void:
 		_complete_step()
 
 
+func _on_combo_string(_who: int, _name: String, _damage: float) -> void:
+	# Any named string of three or more hits completes the combo step.
+	if active and current_id() == "combo" and host.player.combo_moves.size() >= 3:
+		_complete_step()
+
+
 func _disconnect_host() -> void:
 	if is_instance_valid(host.player) and host.player.attack_started.is_connected(_on_attack_started):
 		host.player.attack_started.disconnect(_on_attack_started)
+	if is_instance_valid(host.player) and host.player.combo_string.is_connected(_on_combo_string):
+		host.player.combo_string.disconnect(_on_combo_string)
 	if host._finisher_director.sequence_started.is_connected(_on_finisher_started):
 		host._finisher_director.sequence_started.disconnect(_on_finisher_started)
 	if host._finisher_director.sequence_finished.is_connected(_on_finisher_finished):

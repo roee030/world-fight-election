@@ -20,6 +20,7 @@ Build a polished satirical 2.5D fighting game in Godot 4. The quality target is 
 - Keep `tests/test_combat_fairness.gd` green when tuning AI or damage. CPU behaviour lives in `scripts/cpu_brain.gd`; Special Energy carries over between rounds of one match.
 - The UI must stay left-to-right on RTL locales (Hebrew users); never remove the forced LTR layout direction.
 - The one-time first-fight tutorial lives in `scripts/ui/tutorial.gd` (`user://tutorial.cfg`). It never auto-starts in headless runs; `tests/test_tutorial.gd` drives it explicitly. Steps that happen during a finisher must use signals, because the host skips per-frame updates while a finisher plays.
+- Combos: one engine in `fighter.gd` (`combo_data()`, `_try_hit`, `try_combo_breaker`) driven by `data/combos.json`; the CPU (`cpu_brain.gd`), HUD, MOVE LIST and tutorial consume it. Never add a parallel combo tracker. Never mutate arrays from `combo_data()` (copy them). Keep `tests/test_combo_strings.gd` green.
 - Punch clips (`jab`, `cross`, `hook`) must never contain the kick frame (frame 6 of the 12-frame contract).
 - Menus share the console style helpers in `main.gd` (`_screen_title`, `_split_background`, `_bottom_bar`, `_primary_button`, `_secondary_button`) and `scripts/ui/ornament.gd`. The bundled font lacks symbols such as ← ✓ ⛶; use plain text.
 - Player selection chooses only the player fighter. Quick Fight chooses a different CPU rival randomly. Campaign: every other fighter, Bibi always last (`campaign_ladder_for`).

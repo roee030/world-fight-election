@@ -1,6 +1,6 @@
 # Combo System Plan (proposal — awaiting owner decisions)
 
-> Status: **design approved 2026-10-09, not implemented yet.** Read `AGENTS.md` first. The owner's decisions are recorded in section 6; they override the recommendations above where they differ (combo into SP is **out of scope**).
+> Status: **implemented 2026-10-09** (see Delivery record). Read `AGENTS.md` first. The owner's decisions are recorded in section 6; they override the recommendations above where they differ (combo into SP is **out of scope**).
 
 ## 1. What exists today (`scripts/fighter.gd`)
 
@@ -120,3 +120,15 @@ Estimated size: phases 1–3 are the core, roughly a day of focused agent work w
 | trump | THE DEAL | C, C, C, K | Knockdown + gold sparks |
 
 Next step: implement phases 1–5 (without the SP cancel), starting with `data/combos.json` and `tests/test_combo_strings.gd`.
+
+## 7. Delivery record (2026-10-09)
+
+| Phase | Status | Evidence / notes |
+|---|---|---|
+| 1 Core | Done | The existing chain/cancel code was extended **in place**; no parallel system. `combo_data()` reads `data/combos.json`. Routes include KICK. A hit continues the combo while the rival is in hitstun or hit-stop (this fixes the counter resetting on a slightly late press). Scaling `[1.0, 0.9, 0.8, 0.7]` (softened from 0.85/0.7/0.6 after balancing). Finale relief 0.5. `MAX_COMBO_HITS = 4`. The obsolete chained-heavy clip swap was removed. `tests/test_combo_strings.gd` plays all 5 universal and 13 signature strings for real. |
+| 2 Feedback | Done | `combo_label` gets its own `Callout` (`N HITS · GOOD!/GREAT!`, then `NAME · N DMG`). The duplicate "special" sound on every 3-hit combo was removed and moved to named strings. MOVE LIST panel in pause (`_refresh_move_list`). Playwright `?qa=fight` screenshots reviewed. |
+| 3 Breaker | Done | `try_combo_breaker()`: double-tap GUARD in hitstun (`set_controls` rising edges), 35% energy, push-back, 0.45 s invulnerability. `combo_broken` signal → "COMBO BREAK!". Combo → SP: **not built** (owner decision). |
+| 4 CPU and balance | Done | `cpu_brain.gd` plans a string after a confirmed first hit (level gate 3/3/4/4 hits; length² weighting; may cap with the special at ≥55% energy) and breaks player combos (0.35/0.9/1.6/2.4 per second). Fairness: player wins 0.50, average round 22.9 s, entropy 1.82 bits, habit guard 0.71 → 0.92. CPU damage factor `0.84 + 0.06 × level`. Bug found and fixed: the plan aliased the shared data array, and `clear()` wiped combo sequences. |
+| 5 Onboarding and analytics | Done | Tutorial step 7 "COMBO" (8 steps total); events `combo/<name>`, `combo/hits-N`, `combo/break-player|cpu`. |
+
+**Parallel work note:** another session was editing `main.gd`/`fighter.gd` in the shared checkout at the same time. This work was moved to the `feat/combo-system` worktree and merged through git, so neither session committed the other's half-finished changes.

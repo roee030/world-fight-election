@@ -547,7 +547,7 @@ func _try_hit() -> void:
 		return
 	var damage: float = move.damage * DAMAGE_SCALE
 	if character_id == "avigdor": damage *= 1.16
-	if is_cpu: damage *= 0.72 + 0.07 * cpu_level
+	if is_cpu: damage *= 0.92 + 0.06 * cpu_level
 	if attack_kind == "special": damage *= 1.18
 	if character_id == "yair_golan": damage *= 0.96
 	if character_id == "bibi" and attack_kind == "light": damage *= 0.93
@@ -686,6 +686,9 @@ func reset_round(position_x: float, health_value: float = 100.0, keep_meter: boo
 	_visual.sprite.position.y = float(_visual.ground_y)
 	combo_timer = 0.0
 	combo_count = 0
+	combo_moves.clear()
+	combo_damage = 0.0
+	_pending_string = ""
 	buffered_attack = ""
 	buffer_time = 0.0
 	# round_over already protects both fighters during the announcer intro. Keeping

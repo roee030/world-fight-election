@@ -35,6 +35,12 @@ func setup(target: Label, font: Font) -> void:
 
 static func style_for(text: String) -> Dictionary:
 	var upper := text.to_upper()
+	if upper.contains(" DMG"):
+		return {"accent": GOLD, "size": 34}
+	if upper.contains(" HITS"):
+		return {"accent": GOLD, "size": 30}
+	if upper.contains("BREAK"):
+		return {"accent": GOLD, "size": 44}
 	if upper.begins_with("FIGHT") or upper.contains("K.O") or upper == "KO":
 		return {"accent": GOLD, "size": 68}
 	if upper.contains("ROUND FOR YOU") or upper.contains("YOU WIN"):

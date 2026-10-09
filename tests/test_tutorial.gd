@@ -74,9 +74,31 @@ func _run() -> void:
 	_ready_player(main)
 	main.player.input_block = true
 	tutorial.advance(0.4)
-	assert(tutorial.current_id() == "special", "holding GUARD did not complete the GUARD step")
+	assert(tutorial.current_id() == "combo", "holding GUARD did not complete the GUARD step")
 	main.player.input_block = false
-	# 7. Special Energy at 100% and SP.
+	# 7. Combo: JAB, JAB, CROSS through the real combo engine.
+	main.player.position.x = -0.55
+	main.enemy.position.x = 0.55
+	_ready_player(main)
+	var sequence := ["light", "light", "heavy"]
+	var started := [0]
+	main.player.attack_started.connect(func(_who: int, _move: String): started[0] += 1)
+	main.player.set_controls(0.0, false, false, false, sequence[0])
+	var next := 1
+	for frame in range(200):
+		main.player._physics_process(DT)
+		main.enemy._physics_process(DT)
+		if next < sequence.size() and started[0] == next and main.player.attack_confirmed and main.player.attack_kind != "":
+			var move: Dictionary = main.player.MOVES[main.player.attack_kind]
+			if main.player.attack_duration - main.player.attack_time >= float(move.cancel_from) - 0.05:
+				main.player.set_controls(0.0, false, false, false, sequence[next])
+				next += 1
+		main.player.combo_timer = minf(main.player.combo_timer, 0.9)
+		main.player.set_controls(0.0, false, false, false, "")
+		if tutorial.current_id() == "special": break
+	assert(tutorial.current_id() == "special", "a 3-hit combo did not complete the COMBO step (at %s)" % tutorial.current_id())
+	main.player._clear_combo()
+	# 8. Special Energy at 100% and SP.
 	assert(main.player.meter == 100.0 and main.buttons.special.charged, "the SP step must show a full, charged SP")
 	assert(main.round_clock == clock, "the round clock must stay frozen during the tutorial")
 	main.player.position.x = -0.6
