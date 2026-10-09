@@ -126,9 +126,12 @@ func begin() -> void:
 	host._track("tutorial_start")
 	host.player.attack_started.connect(_on_attack_started)
 	# The match host pauses per-frame updates while a finisher plays, so the SP
-	# step listens for the finisher starting instead of polling for it.
+	# step uses director signals instead of polling for it. Starting the sequence
+	# hides the coach overlay; only the real sequence end completes the tutorial.
 	if not host._finisher_director.sequence_started.is_connected(_on_finisher_started):
 		host._finisher_director.sequence_started.connect(_on_finisher_started)
+	if not host._finisher_director.sequence_finished.is_connected(_on_finisher_finished):
+		host._finisher_director.sequence_finished.connect(_on_finisher_finished)
 	_show_step()
 
 
@@ -191,6 +194,11 @@ func _finish(skipped: bool) -> void:
 
 func _on_finisher_started(_attacker_id: String) -> void:
 	if active and current_id() == "special":
+		visible = false
+
+
+func _on_finisher_finished(_lethal: bool) -> void:
+	if active and current_id() == "special":
 		_complete_step()
 
 
@@ -199,6 +207,8 @@ func _disconnect_host() -> void:
 		host.player.attack_started.disconnect(_on_attack_started)
 	if host._finisher_director.sequence_started.is_connected(_on_finisher_started):
 		host._finisher_director.sequence_started.disconnect(_on_finisher_started)
+	if host._finisher_director.sequence_finished.is_connected(_on_finisher_finished):
+		host._finisher_director.sequence_finished.disconnect(_on_finisher_finished)
 
 
 func _on_attack_started(attacker: int, move: String) -> void:

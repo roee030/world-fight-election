@@ -31,14 +31,19 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	assert(not main.tutorial_auto_enabled(), "headless runs must not auto-start the tutorial")
+	assert(not main.tutorial.active and main.menu_root.visible, "tutorial must stay closed on the startup menu")
 	TutorialScript.mark_completed(false)
 	main._setup_bout("bennet", "avigdor", 1, "TUTORIAL QA")
+	# Headless runs disable automatic onboarding, so inject the same pending flag
+	# a first-time graphical player receives when their first bout is created.
+	main._tutorial_pending = true
+	assert(not main.tutorial.active, "tutorial must not open before the first fight intro finishes")
 	for i in range(100): await physics_frame
+	assert(main.tutorial.active, "tutorial must open when the player's first fight becomes active")
 	main.set_physics_process(false)
 	main.player.set_physics_process(false)
 	main.enemy.set_physics_process(false)
 	main._set_touch_controls_visible(true)
-	main.begin_tutorial()
 	var tutorial = main.tutorial
 	assert(tutorial.active and tutorial.visible and not main.enemy.is_cpu, "tutorial must start with a passive target")
 	var clock: float = main.round_clock
@@ -80,11 +85,14 @@ func _run() -> void:
 	main.buttons.special.emit_signal("button_down")
 	main.buttons.special.emit_signal("button_up")
 	assert(main._finisher_director.active, "SP did not launch the tutorial finisher")
-	# No manual advance: the real host skips tutorial updates during a finisher.
-	assert(not tutorial.active and TutorialScript.is_completed(), "tutorial must finish and be remembered")
+	# The tutorial must not complete merely because the finisher started. Its
+	# completion and fresh fight are gated by the real sequence-finished signal.
+	assert(tutorial.active and not TutorialScript.is_completed(), "tutorial completed before the SP finisher ended")
 	for i in range(400):
 		main._process(DT)
 		if main.match_state == main.MatchState.Value.ROUND_INTRO: break
+	assert(not main._finisher_director.active, "tutorial SP finisher did not finish")
+	assert(not tutorial.active and TutorialScript.is_completed(), "tutorial must finish and be remembered after SP ends")
 	assert(main.enemy.is_cpu, "the CPU must fight again after the tutorial")
 	assert(main.enemy.health == main.enemy.max_health() and main.player.meter == 0.0 and main.enemy.meter == 0.0, "the real round must start fresh")
 	assert(main.tracked_events.has("tutorial/complete"), "tutorial completion was not tracked")

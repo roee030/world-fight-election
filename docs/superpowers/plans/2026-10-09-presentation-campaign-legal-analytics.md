@@ -115,7 +115,7 @@
 
 | Analytics v2 | Done | Readable per-dimension paths (`fight/<mode>/<fighter>`, `sp/<fighter>/<hit|miss>`, `sp-press/<ready|not-ready>`, `campaign/won-NN-of-M`, `campaign/complete/<fighter>`, `linkedin/click`, `playtime/NNmin`); an early-event queue (session starts were lost before count.js loaded). `analytics_path()` in `main.gd` is tested by `test_analytics_paths.gd`. Dashboard guide and custom-domain notes are in the README. |
 
-| First-fight tutorial | Done | `scripts/ui/tutorial.gd`: 7 steps (move, JAB, CROSS, KICK, jump, GUARD, SP at 100%), pulsing pointer, coach panel, SKIP, frozen clock, passive CPU, fresh round afterwards, `user://tutorial.cfg`, pause *HOW TO PLAY*, funnel analytics. `tests/test_tutorial.gd`; full browser run via `?qa=tutorial` with keyboard. That run caught and fixed the SP step never completing while a finisher played. |
+| First-fight tutorial | Done | `scripts/ui/tutorial.gd`: 7 steps (move, JAB, CROSS, KICK, jump, GUARD, SP at 100%), pulsing pointer, coach panel, SKIP, frozen clock, passive CPU, fresh round afterwards, `user://tutorial.cfg`, pause *HOW TO PLAY*, funnel analytics. It opens only after the first selected fight reaches `FIGHTING`; the SP step hides the coach during the cinematic and completes from `sequence_finished`, so the fresh fight cannot start before the move ends. `tests/test_tutorial.gd`; full browser run via `?qa=tutorial` with keyboard. |
 | Illustrated finisher art | Done (owner commit `84f155f`) | 13 `super-card.png` files; the package is now about 19.8 MB. |
 
 ### Remaining owner actions
