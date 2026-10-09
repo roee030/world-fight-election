@@ -134,6 +134,8 @@ func begin() -> void:
 		host._finisher_director.sequence_started.connect(_on_finisher_started)
 	if not host._finisher_director.sequence_finished.is_connected(_on_finisher_finished):
 		host._finisher_director.sequence_finished.connect(_on_finisher_finished)
+	if not host._finisher_director.cancelled.is_connected(_on_finisher_cancelled):
+		host._finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_show_step()
 
 
@@ -199,6 +201,18 @@ func _on_finisher_started(_attacker_id: String) -> void:
 		visible = false
 
 
+func _on_finisher_cancelled(_reason: String) -> void:
+	# An out-of-range SP opens with a miss and spends the energy. Without this
+	# the SP step could never complete and the tutorial stayed stuck with a
+	# passive rival. Re-arm the step so the player can get closer and retry.
+	if not active or current_id() != "special":
+		return
+	visible = true
+	host.player.meter = 100.0
+	host.player.meter_changed.emit(0, 100.0)
+	host._announce_tutorial("TOO FAR - GET CLOSER AND TAP SP AGAIN")
+
+
 func _on_finisher_finished(_lethal: bool) -> void:
 	if active and current_id() == "special":
 		_complete_step()
@@ -219,6 +233,8 @@ func _disconnect_host() -> void:
 		host._finisher_director.sequence_started.disconnect(_on_finisher_started)
 	if host._finisher_director.sequence_finished.is_connected(_on_finisher_finished):
 		host._finisher_director.sequence_finished.disconnect(_on_finisher_finished)
+	if host._finisher_director.cancelled.is_connected(_on_finisher_cancelled):
+		host._finisher_director.cancelled.disconnect(_on_finisher_cancelled)
 
 
 func _on_attack_started(attacker: int, move: String) -> void:

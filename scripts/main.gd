@@ -26,6 +26,7 @@ const OrnamentScript = preload("res://scripts/ui/ornament.gd")
 const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const TutorialScript = preload("res://scripts/ui/tutorial.gd")
+const SoundToggleScript = preload("res://scripts/ui/sound_toggle.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
@@ -174,6 +175,8 @@ var _rival_reveal_tween: Tween
 var _rival_reveal_highlight := ""
 var _last_campaign_result_lost := false
 var tutorial: Control
+var hud_sound_toggle: Button
+var menu_sound_toggle: Button
 var _tutorial_pending := false
 var _tutorial_restart_pending := false
 var current_level := 1
@@ -514,6 +517,7 @@ func analytics_path(event_name: String, props: Dictionary = {}) -> String:
 		"rematch": return "menu/rematch"
 		"new_opponent": return "menu/new-opponent"
 		"round_end": return "round/%s" % props.get("reason", "unknown")
+		"sound_toggle": return "sound/%s" % ("muted" if bool(props.get("muted", false)) else "on")
 		"combo": return "combo/%s" % str(props.get("name", "unknown")).to_lower().replace(" ", "-")
 		"combo_hits": return "combo/hits-%d" % int(props.get("hits", 0))
 		"combo_break": return "combo/break-%s" % props.get("by", "unknown")
@@ -1074,14 +1078,19 @@ func _build_hud() -> void:
 	system_buttons.name = "SystemButtons"
 	frame.add_child(system_buttons)
 	system_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	system_buttons.offset_left = -136
+	system_buttons.offset_left = -232
 	system_buttons.offset_right = -14
 	system_buttons.offset_top = HUD_FRAME_HEIGHT + 2
 	system_buttons.offset_bottom = HUD_FRAME_HEIGHT + 44
-	var pause_btn := _button(system_buttons, "II", Rect2(0, 0, 44, 40), "#1d3140", 16)
+	hud_sound_toggle = SoundToggleScript.new()
+	hud_sound_toggle.setup(self, _bold_font())
+	hud_sound_toggle.position = Vector2(0, 0)
+	hud_sound_toggle.size = Vector2(88, 40)
+	system_buttons.add_child(hud_sound_toggle)
+	var pause_btn := _button(system_buttons, "II", Rect2(96, 0, 44, 40), "#1d3140", 16)
 	pause_btn.name = "PauseButton"
 	pause_btn.pressed.connect(_toggle_pause)
-	var fullscreen_btn := _button(system_buttons, "FULL", Rect2(52, 0, 70, 40), "#1d3140", 12)
+	var fullscreen_btn := _button(system_buttons, "FULL", Rect2(148, 0, 70, 40), "#1d3140", 12)
 	fullscreen_btn.name = "FullscreenButton"
 	fullscreen_btn.pressed.connect(_toggle_fullscreen)
 	message_label = _label(hud_root, "", Rect2(280, 144, 720, 78), 32, Color("#f0f4f3"), HORIZONTAL_ALIGNMENT_CENTER)
@@ -1365,6 +1374,14 @@ func _build_menu() -> void:
 	fullscreen_btn.offset_top = 24
 	fullscreen_btn.offset_bottom = 64
 	fullscreen_btn.pressed.connect(_toggle_fullscreen)
+	menu_sound_toggle = SoundToggleScript.new()
+	menu_sound_toggle.setup(self, _bold_font())
+	menu_root.add_child(menu_sound_toggle)
+	menu_sound_toggle.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	menu_sound_toggle.offset_left = -252
+	menu_sound_toggle.offset_right = -156
+	menu_sound_toggle.offset_top = 24
+	menu_sound_toggle.offset_bottom = 64
 
 
 func _build_select() -> void:
@@ -2927,31 +2944,50 @@ func _rematch() -> void:
 	_setup_bout(selecting, current_rival_id, current_level, "REMATCH")
 
 
+func move_chip(action: String) -> String:
+	# BBCode chip in the same colour as the matching touch button.
+	var titles := {"light": "JAB", "heavy": "CROSS", "kick": "KICK", "block": "GUARD"}
+	var color := "#4e6573"
+	for spec in TOUCH_CONTROL_LAYOUT:
+		if str(spec.action) == action:
+			color = str(spec.color)
+	return "[bgcolor=%s][color=#ffffff] %s [/color][/bgcolor]" % [color, titles.get(action, action.to_upper())]
+
+
 func _refresh_move_list() -> void:
 	# Signature string first (gold), then universal strings and the breaker.
+	# Each input is a chip coloured like its touch button.
 	var rows := pause_root.find_child("MoveRows", true, false) as VBoxContainer
 	if rows == null or not is_instance_valid(player):
 		return
 	for child in rows.get_children(): child.free()
-	var button_names := {"light": "JAB", "heavy": "CROSS", "kick": "KICK"}
-	var entries: Array = []
-	for entry in player.combo_strings():
-		entries.append(entry)
+	var entries: Array = player.combo_strings()
 	for i in range(entries.size()):
 		var entry: Dictionary = entries[i]
-		var inputs: Array = []
-		for move in entry.sequence: inputs.append(button_names.get(move, str(move).to_upper()))
-		var row := _label(rows, "", Rect2(0, 0, 552, 46), 18, ACCENT_GOLD if i == 0 else Color("#e8eef0"), HORIZONTAL_ALIGNMENT_LEFT)
-		row.custom_minimum_size = Vector2(552, 44)
 		var is_signature: bool = i == 0 and Array(entry.sequence).size() == 4
-		row.text = "%s%s\n   %s" % ["SIGNATURE  ·  " if is_signature else "", str(entry.name), "  ·  ".join(inputs)]
-		row.add_theme_color_override("font_color", ACCENT_GOLD if is_signature else Color("#e8eef0"))
-		row.add_theme_font_override("font", _bold_font())
-		row.add_theme_font_size_override("font_size", 16)
-		row.autowrap_mode = TextServer.AUTOWRAP_OFF
-	var breaker := _label(rows, "COMBO BREAKER\n   double-tap GUARD while being hit  ·  35% SPECIAL ENERGY", Rect2(0, 0, 552, 46), 15, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
-	breaker.custom_minimum_size = Vector2(552, 44)
-	breaker.add_theme_font_override("font", _bold_font())
+		var chips: Array = []
+		for move in entry.sequence: chips.append(move_chip(str(move)))
+		var title_color := "#e8b94f" if is_signature else "#e8eef0"
+		var row := _move_row(rows, "[color=%s]%s%s[/color]\n   %s" % [title_color, "SIGNATURE  ·  " if is_signature else "", str(entry.name), "  ".join(chips)])
+		row.name = "MoveRow_%d" % i
+	var breaker := _move_row(rows, "[color=#46dcd8]COMBO BREAKER[/color]\n   %s  %s  [color=#a9c3cb]while being hit  ·  35%% SPECIAL ENERGY[/color]" % [move_chip("block"), move_chip("block")])
+	breaker.name = "MoveRow_Breaker"
+
+
+func _move_row(parent: Control, bbcode: String) -> RichTextLabel:
+	var row := RichTextLabel.new()
+	row.bbcode_enabled = true
+	row.fit_content = true
+	row.scroll_active = false
+	row.autowrap_mode = TextServer.AUTOWRAP_OFF
+	row.custom_minimum_size = Vector2(552, 46)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_font_override("normal_font", _bold_font())
+	row.add_theme_font_size_override("normal_font_size", 16)
+	row.add_theme_constant_override("line_separation", 4)
+	row.text = bbcode
+	parent.add_child(row)
+	return row
 
 
 func _toggle_pause() -> void:
