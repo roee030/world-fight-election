@@ -39,8 +39,15 @@ func _run() -> void:
 	var action_panel: Node = main.menu_root.get_node_or_null("MenuActionPanel")
 	if action_panel == null:
 		return _fail("main menu action panel is missing")
-	if action_panel.find_children("*", "Button", true, false).size() != 2:
-		return _fail("main menu must expose exactly START FIGHT and CAMPAIGN")
+	if action_panel.find_children("*", "Button", true, false).size() != 3:
+		return _fail("main menu must expose START FIGHT, CAMPAIGN and SETTINGS")
+	if action_panel.find_child("MenuSettingsButton", true, false) == null:
+		return _fail("main menu settings entry is missing")
+	if main.settings_root == null or main.settings_root.is_layout_rtl():
+		return _fail("audio settings must exist and remain left-to-right")
+	for control_name in ["MasterSlider", "MusicSlider", "SfxSlider", "VoiceSlider"]:
+		if main.settings_root.find_child(control_name, true, false) == null:
+			return _fail("audio settings is missing " + control_name)
 	for button in action_panel.find_children("*", "Button", true, false):
 		if (button as Button).text == "FIGHTER LAB":
 			return _fail("Fighter Lab must not be a player-facing menu action")

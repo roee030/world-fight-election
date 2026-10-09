@@ -25,6 +25,7 @@ const OrnamentScript = preload("res://scripts/ui/ornament.gd")
 const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const TutorialScript = preload("res://scripts/ui/tutorial.gd")
+const AudioManagerScript = preload("res://scripts/audio/audio_manager.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
@@ -85,6 +86,11 @@ var select_rival_name: Label
 var select_rival_style: Label
 var roster_tiles: Array[Button] = []
 var pause_root: Control
+var settings_root: Control
+var audio_manager: AudioManager
+var _settings_origin: StringName = &"menu"
+var _settings_sliders := {}
+var _settings_values := {}
 var result_root: Control
 var player_health_bar: SlantBarScript
 var enemy_health_bar: SlantBarScript
@@ -137,8 +143,6 @@ var _arena: Node3D
 var _fight_camera: Camera3D
 var camera_shake := 0.0
 var camera_home := Vector3(0, 3.6, 9.7)
-var _audio_player: AudioStreamPlayer
-var _sounds := {}
 var _art_cache := {}
 var _last_second := -1
 var round_ready := false
@@ -202,9 +206,12 @@ func _ready() -> void:
 	_finisher_director.result_ready.connect(_on_celebration_result_ready)
 	_finisher_director.cancelled.connect(_on_finisher_cancelled)
 	_finisher_director.sequence_finished.connect(_on_finisher_sequence_finished)
+	audio_manager = AudioManagerScript.new()
+	audio_manager.name = "AudioManager"
+	add_child(audio_manager)
+	audio_manager.load_settings()
 	_build_ui()
 	get_viewport().size_changed.connect(_fit_stage_backdrop.bind(null))
-	_create_audio()
 	_show_menu()
 	_install_web_menu_bridge()
 
@@ -262,7 +269,9 @@ func _process(delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE and fight_live:
+		if event.keycode == KEY_ESCAPE and is_instance_valid(settings_root) and settings_root.visible:
+			_close_settings()
+		elif event.keycode == KEY_ESCAPE and fight_live:
 			_toggle_pause()
 		elif event.keycode == KEY_ESCAPE and select_root.visible:
 			_show_menu()
@@ -956,6 +965,7 @@ func _build_ui() -> void:
 	_build_select()
 	_build_map_select()
 	_build_pause()
+	_build_settings()
 	_build_result()
 	_build_campaign()
 
@@ -1277,6 +1287,9 @@ func _build_menu() -> void:
 	var campaign := _menu_text_button(action_panel, "CAMPAIGN", Rect2(0, 214, 330, 52), 18)
 	campaign.name = "CampaignButton"
 	campaign.pressed.connect(func(): _track("menu_campaign"); _open_select("campaign"))
+	var settings := _menu_text_button(action_panel, "SETTINGS", Rect2(0, 276, 330, 52), 18)
+	settings.name = "MenuSettingsButton"
+	settings.pressed.connect(func(): _show_settings(&"menu"))
 	# Fighter Lab stays available to developers (scenes/character_debug.tscn)
 	# but is not a player-facing menu action. The creator card below the menu
 	# links to the creator's LinkedIn profile.
@@ -1477,7 +1490,7 @@ func _select_fighter(id: String) -> void:
 	select_rival_name.text = "RANDOM OPPONENT"
 	select_rival_style.text = "REVEALED IN THE ARENA"
 	_refresh_roster()
-	_play_sound("menu")
+	if is_instance_valid(audio_manager): audio_manager.play_sfx(&"ui_focus")
 
 
 func _select_fighter_text(id: String) -> void:
@@ -1618,13 +1631,86 @@ func _build_pause() -> void:
 	_label(box, "THE ARENA IS FROZEN", Rect2(0, 90, 320, 24), 11, Color("#a9b8bf"), HORIZONTAL_ALIGNMENT_LEFT)
 	var resume := _menu_text_button(box, "RESUME", Rect2(0, 158, 300, 54), 20)
 	resume.pressed.connect(_toggle_pause)
-	var menu := _menu_text_button(box, "RETURN TO MENU", Rect2(0, 222, 300, 54), 17)
+	var settings := _menu_text_button(box, "SETTINGS", Rect2(0, 222, 300, 54), 17)
+	settings.name = "PauseSettingsButton"
+	settings.pressed.connect(func(): _show_settings(&"pause"))
+	var menu := _menu_text_button(box, "RETURN TO MENU", Rect2(0, 286, 300, 54), 17)
 	menu.pressed.connect(_return_to_menu)
-	var how_to := _menu_text_button(box, "HOW TO PLAY", Rect2(0, 286, 300, 54), 17)
+	var how_to := _menu_text_button(box, "HOW TO PLAY", Rect2(0, 350, 300, 54), 17)
 	how_to.name = "HowToPlayButton"
 	how_to.pressed.connect(_replay_tutorial)
-	_label(box, "ESC  /  RESUME", Rect2(0, 342, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
+	_label(box, "ESC  /  RESUME", Rect2(0, 414, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
 	pause_root.visible = false
+
+
+func _build_settings() -> void:
+	settings_root = Control.new()
+	settings_root.name = "AudioSettings"
+	settings_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_root.process_mode = Node.PROCESS_MODE_WHEN_PAUSED
+	settings_root.layout_direction = Control.LAYOUT_DIRECTION_LTR
+	ui.add_child(settings_root)
+	_split_background(settings_root)
+	var design := _design_frame(settings_root, "SettingsDesign")
+	_screen_title(design, "AUDIO ", "SETTINGS", 18)
+	var categories := [&"master", &"music", &"sfx", &"voice"]
+	for i in range(categories.size()):
+		var category: StringName = categories[i]
+		var y := 142.0 + i * 82.0
+		var title := String(category).to_upper()
+		_label(design, title, Rect2(300, y, 190, 34), 20, Color.WHITE, HORIZONTAL_ALIGNMENT_LEFT)
+		var slider := HSlider.new()
+		slider.name = title.capitalize().replace(" ", "") + "Slider"
+		slider.position = Vector2(490, y)
+		slider.size = Vector2(400, 48)
+		slider.min_value = 0
+		slider.max_value = 100
+		slider.step = 1
+		slider.value = audio_manager.get_volume(category)
+		slider.custom_minimum_size.y = 48
+		design.add_child(slider)
+		var value_label := _label(design, "%d%%" % roundi(slider.value), Rect2(920, y, 100, 40), 19, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+		value_label.name = title.capitalize().replace(" ", "") + "Value"
+		_settings_sliders[category] = slider
+		_settings_values[category] = value_label
+		slider.value_changed.connect(func(value: float, key: StringName = category):
+			audio_manager.set_volume(key, value, false)
+			(_settings_values[key] as Label).text = "%d%%" % roundi(value)
+			if key in [&"sfx", &"voice"]: audio_manager.preview(key)
+		)
+		slider.drag_ended.connect(func(_changed: bool, key: StringName = category): audio_manager.set_volume(key, (_settings_sliders[key] as HSlider).value, true))
+	var mute := _secondary_button(design, "MUTE ALL", Rect2(300, 492, 190, 52))
+	mute.name = "MuteAllButton"
+	mute.pressed.connect(func(): audio_manager.set_muted(not audio_manager.is_muted()); mute.text = "UNMUTE ALL" if audio_manager.is_muted() else "MUTE ALL")
+	var reset := _secondary_button(design, "RESET TO DEFAULTS", Rect2(520, 492, 260, 52))
+	reset.name = "ResetAudioButton"
+	reset.pressed.connect(_reset_audio_settings)
+	var back := _primary_button(design, "BACK", Rect2(820, 486, 180, 58))
+	back.name = "SettingsBackButton"
+	back.pressed.connect(_close_settings)
+	settings_root.visible = false
+
+
+func _reset_audio_settings() -> void:
+	audio_manager.reset_defaults()
+	for category in _settings_sliders:
+		(_settings_sliders[category] as HSlider).value = audio_manager.get_volume(category)
+		(_settings_values[category] as Label).text = "%d%%" % roundi(audio_manager.get_volume(category))
+
+
+func _show_settings(origin: StringName) -> void:
+	_settings_origin = origin
+	menu_root.visible = false
+	pause_root.visible = false
+	settings_root.visible = true
+
+
+func _close_settings() -> void:
+	settings_root.visible = false
+	if _settings_origin == &"pause":
+		pause_root.visible = true
+	else:
+		menu_root.visible = true
 
 
 func _build_campaign() -> void:
@@ -2159,6 +2245,8 @@ func _show_menu() -> void:
 	map_select_root.visible = false
 	pause_root.visible = false
 	result_root.visible = false
+	if is_instance_valid(settings_root): settings_root.visible = false
+	if is_instance_valid(audio_manager): audio_manager.set_music_state(&"menu")
 	for fighter in [player, enemy]:
 		if is_instance_valid(fighter): fighter.queue_free()
 	player = null
@@ -2283,6 +2371,7 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	fight_live = true
 	round_ready = false
 	paused = false
+	audio_manager.set_music_state(&"fight")
 	intermission = 0
 	_start_round()
 
@@ -2319,8 +2408,11 @@ func _start_round() -> void:
 	_update_scores()
 	message_label.text = "ROUND %d" % round_num
 	message_label.visible = true
+	audio_manager.play_voice(round_voice_cue(round_num))
 	await get_tree().create_timer(0.72, false).timeout
-	if fight_live and not paused: message_label.text = "FIGHT!"
+	if fight_live and not paused:
+		message_label.text = "FIGHT!"
+		audio_manager.play_voice(&"fight")
 	await get_tree().create_timer(0.65, false).timeout
 	if fight_live: message_label.visible = false
 	round_ready = true
@@ -2344,6 +2436,9 @@ func _on_health_changed(who: int, value: float) -> void:
 	bar.set_fill_color(healthy if ratio > 0.55 else (Color("#e9bf55") if ratio > 0.25 else Color("#ff3b47")))
 	if round_ready:
 		_spawn_hit_flash(who)
+	if round_ready and is_instance_valid(player) and is_instance_valid(enemy):
+		var low := player.health / player.max_health() <= 0.25 or enemy.health / enemy.max_health() <= 0.25
+		audio_manager.set_music_state(&"fight_low_health" if low else &"fight")
 
 
 func _update_recoverable_health(delta: float) -> void:
@@ -2378,13 +2473,14 @@ func _on_attack_started(attacker: int, move: String) -> void:
 
 func _on_strike_landed(attacker: int, defender: int, move: String, blocked: bool, combo: int) -> void:
 	if not round_ready: return
-	_play_sound("hit")
+	var cue: StringName = &"guard_hit" if blocked else (&"jab_hit" if move == "light" else (&"cross_hit" if move == "heavy" else &"kick_hit"))
+	audio_manager.play_sfx(cue, combo)
 	if blocked:
 		camera_shake = 0.11
 	else:
 		camera_shake = 0.15 if move == "light" else (0.28 if move == "heavy" else 0.34)
 	if move == "special" or (combo >= 3 and attacker == 0):
-		_play_sound("special")
+		audio_manager.play_sfx(&"special")
 
 
 func _spawn_hit_flash(victim_index: int) -> void:
@@ -2529,7 +2625,9 @@ func _show_result(won: bool) -> void:
 	if not won:
 		detail.text = "You lost %d–%d. Change your rhythm and take the arena back." % [player_rounds, enemy_rounds]
 		button.text = "TRY AGAIN" if not campaign_mode else "RETRY"
-	_play_sound("victory" if won else "hit")
+	audio_manager.set_music_state(&"result")
+	audio_manager.play_sfx(&"victory" if won else &"loss")
+	audio_manager.play_voice(&"you_win" if won else &"you_lose")
 func _show_result_with_celebration(won: bool) -> void:
 	var winner: GameFighter = player if won else enemy
 	var loser: GameFighter = enemy if won else player
@@ -2584,32 +2682,7 @@ func _return_to_menu() -> void:
 	_show_menu()
 
 
-func _create_audio() -> void:
-	_audio_player = AudioStreamPlayer.new()
-	_audio_player.bus = "Master"
-	add_child(_audio_player)
-	for sound_name in ["hit", "special", "victory", "menu"]:
-		var samples := 4800 if sound_name == "hit" else 8400
-		var data := PackedByteArray()
-		data.resize(samples * 2)
-		for i in range(samples):
-			var t := float(i) / 48000.0
-			var env := exp(-t * (18.0 if sound_name == "hit" else 10.0))
-			var hz := 155.0 if sound_name == "hit" else (95.0 if sound_name == "special" else (520.0 if sound_name == "victory" else 340.0))
-			var wave := sin(TAU * hz * t) * env * 0.18
-			if sound_name == "special": wave += sin(TAU * 340.0 * t) * env * 0.10
-			if sound_name == "victory": wave *= 1.0 + 0.3 * sin(TAU * 7.0 * t)
-			var sample := int(clampf(wave, -1.0, 1.0) * 32767.0)
-			data[i * 2] = sample & 0xff
-			data[i * 2 + 1] = (sample >> 8) & 0xff
-		var stream := AudioStreamWAV.new()
-		stream.format = AudioStreamWAV.FORMAT_16_BITS
-		stream.mix_rate = 48000
-		stream.data = data
-		_sounds[sound_name] = stream
-
-
-func _play_sound(sound_name: String) -> void:
-	if _sounds.has(sound_name):
-		_audio_player.stream = _sounds[sound_name]
-		_audio_player.play()
+func round_voice_cue(round_number: int) -> StringName:
+	if round_number <= 1: return &"round_one"
+	if round_number == 2: return &"round_two"
+	return &"final_round"

@@ -1,13 +1,22 @@
 # Audio asset sources
 
-All files in this directory are distributed under the **Creative Commons CC0 1.0 Universal** public-domain dedication. Attribution is not required, but the sources are recorded here for provenance and future replacement work.
+Most files in this directory are distributed under the **Creative Commons CC0 1.0 Universal** public-domain dedication. The menu track is distributed under Creative Commons Attribution 3.0 and its required credit is recorded below.
 
-## Music and two UI/result cues
+## Menu music
+
+- Source: **Some unused menu stuff** by Alexandr Zhelanov
+- Page: https://opengameart.org/content/some-unused-menu-stuff
+- Selected source file: `Menu_4.mp3` (bundled as `menu.mp3`)
+- License: **Creative Commons Attribution 3.0**
+- Required attribution: Alexandr Zhelanov https://soundcloud.com/alexandr-zhelanov
+- In-game use: energetic main-menu and selection loop.
+
+## Fight music and two UI/result cues
 
 - Source: **Dark Sci-Fi Audio Pack** by SRG774
 - Page: https://opengameart.org/content/dark-sci-fi-audio-pack
-- Selected files: `title.ogg`, `pulse.ogg`, `urgent.ogg`, `hover.ogg`, `victory.ogg`
-- In-game use: restrained menu loop, fight loop, low-health tension, focus and victory.
+- Selected files: `pulse.ogg`, `urgent.ogg`, `hover.ogg`, `victory.ogg`
+- In-game use: restrained fight loop, low-health tension, focus and victory.
 
 ## Announcer
 
@@ -28,4 +37,4 @@ All files in this directory are distributed under the **Creative Commons CC0 1.0
 - Page: https://kenney.nl/assets/interface-sounds
 - Selected files: confirmation, back, scratch, maximize and error cues.
 
-Only the selected, renamed OGG files are bundled. The source ZIP archives and unused files are intentionally excluded. Music defaults below effects and voice in the game mix so the ambient loops remain supportive rather than dominant.
+Only the selected, renamed OGG/MP3 files are bundled. The source ZIP archives and unused files are intentionally excluded. Music defaults below effects and voice in the game mix so it remains supportive rather than dominant.
