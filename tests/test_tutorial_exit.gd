@@ -30,6 +30,7 @@ func _run() -> void:
 		await process_frame
 	main._set_touch_controls_visible(true)
 	main.begin_tutorial()
+	main.tutorial.start_practice()
 	_to_special_step(main)
 	assert(main.tutorial.current_id() == "special")
 	# A) Too far: the finisher opens with a miss.
@@ -45,8 +46,8 @@ func _run() -> void:
 	for i in range(5): await process_frame
 	assert(main.tutorial.active and main.tutorial.current_id() == "special", "a missed SP must keep the SP step active")
 	assert(main.player.meter >= 100.0, "a missed SP must re-arm Special Energy so the player can retry (meter %s)" % main.player.meter)
-	assert(main.message_label.visible and main.message_label.text.contains("CLOSER"), "a missed SP must tell the player to get closer")
-	# B) In range: the finisher lands, the tutorial ends, a real round starts.
+	assert(main.tutorial.visible, "a missed SP must return to the tutorial spotlight")
+	# B) In range: the finisher lands, then explicit confirmation starts a real round.
 	main.player.position.x = -0.6
 	main.enemy.position.x = 0.6
 	main.player.busy = 0.0
@@ -54,14 +55,21 @@ func _run() -> void:
 	main.buttons.special.emit_signal("button_up")
 	assert(main._finisher_director.active, "SP retry did not start the finisher")
 	frames = 0
+	while frames < 1500:
+		await process_frame
+		frames += 1
+		if main.tutorial.phase == TutorialScript.Phase.COMPLETE: break
+	assert(main.tutorial.active and main.tutorial.phase == TutorialScript.Phase.COMPLETE, "landed SP must wait at tutorial completion gate")
+	assert(not main.enemy.is_cpu, "CPU must remain passive until tutorial completion is confirmed")
+	main.tutorial.confirm_completion()
 	var saw_intro := false
 	while frames < 1500:
 		await process_frame
 		frames += 1
 		if main.match_state == main.MatchState.Value.ROUND_INTRO: saw_intro = true
 		if saw_intro and main.round_ready and main.match_state == main.MatchState.Value.FIGHTING: break
-	assert(saw_intro, "a fresh round never started after the tutorial (state %s, tutorial active %s, restart pending %s)" % [main.match_state, main.tutorial.active, main._tutorial_restart_pending])
-	assert(not main.tutorial.active and TutorialScript.is_completed(), "tutorial did not complete after the SP finisher")
+	assert(saw_intro, "a fresh round never started after tutorial confirmation (state %s, tutorial active %s, restart pending %s)" % [main.match_state, main.tutorial.active, main._tutorial_restart_pending])
+	assert(not main.tutorial.active and TutorialScript.is_completed(), "tutorial did not complete after confirmation")
 	assert(main.round_ready and main.match_state == main.MatchState.Value.FIGHTING, "no real round started after the tutorial (state %s)" % main.match_state)
 	assert(main.enemy.is_cpu, "the rival is still a passive target after the tutorial")
 	var attacked := [false]

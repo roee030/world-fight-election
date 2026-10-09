@@ -109,21 +109,21 @@ Capture 1280×720 and 780×360 fight/combo views; confirm the lone lane sits abo
 - Consumes: `Tutorial.begin()`, `Tutorial.finished(skipped)`, `target_rect()`, finisher `sequence_started`, `sequence_finished`, and `cancelled` signals.
 - Produces: `Tutorial.begin()` initially enters an intro gate; `Tutorial.start_practice()` starts step zero; `Tutorial.confirm_completion()` emits `finished(false)` only after the completion gate.
 
-- [ ] **Step 1: Extend tutorial tests with failing gate/spotlight assertions**
+- [x] **Step 1: Extend tutorial tests with failing gate/spotlight assertions**
 
 Assert that begin shows `TutorialIntro`, the intro starts no action until `start_practice()`, spotlight drawing has a non-empty target during steps without intercepting it, landed SP reaches `TutorialComplete`, and `confirm_completion()` is required before the CPU is restored and the real round begins.
 
-- [ ] **Step 2: Run tutorial tests to verify they fail**
+- [x] **Step 2: Run tutorial tests to verify they fail**
 
 Run: `res://tests/test_tutorial.gd` and `res://tests/test_tutorial_exit.gd`.
 
 Expected: FAIL because the current tutorial begins immediately and emits completion directly after SP.
 
-- [ ] **Step 3: Implement tutorial phases and spotlight overlay**
+- [x] **Step 3: Implement tutorial phases and spotlight overlay**
 
 Add explicit intro/practice/completion state within `tutorial.gd`; draw four dimmer regions around a grown `target_rect()` plus the existing gold ring. Put intro/completion buttons in the overlay, keep the spotlight target input pass-through, and retain signal-driven SP behavior. Update `main.gd` so only the confirmation handoff calls `_restart_after_tutorial()`.
 
-- [ ] **Step 4: Run focused tutorial and presentation tests**
+- [x] **Step 4: Run focused tutorial and presentation tests**
 
 Run: `res://tests/test_tutorial.gd`, `res://tests/test_tutorial_exit.gd`, and `res://tests/test_ui_presentation.gd`.
 

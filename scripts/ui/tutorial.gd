@@ -11,6 +11,8 @@ extends Control
 
 signal finished(skipped: bool)
 
+enum Phase { INTRO, PRACTICE, COMPLETE }
+
 const SAVE_PATH := "user://tutorial.cfg"
 const CYAN := Color("#59f0ff")
 const GOLD := Color("#f2c35a")
@@ -28,6 +30,7 @@ const STEPS := [
 var host: Node
 var step := 0
 var active := false
+var phase: Phase = Phase.INTRO
 var _progress := 0.0
 var _clock := 0.0
 var _panel: Panel
@@ -35,6 +38,9 @@ var _title: Label
 var _text: Label
 var _key: Label
 var _dots: Array[Panel] = []
+var _intro: Panel
+var _complete: Panel
+var _font: Font
 
 
 static func is_completed() -> bool:
@@ -50,6 +56,7 @@ static func mark_completed(value: bool = true) -> void:
 
 func setup(main: Node, font: Font) -> void:
 	host = main
+	_font = font
 	name = "Tutorial"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -69,8 +76,8 @@ func setup(main: Node, font: Font) -> void:
 	_panel.anchor_right = 0.5
 	_panel.offset_left = -330
 	_panel.offset_right = 330
-	_panel.offset_top = 150
-	_panel.offset_bottom = 282
+	_panel.offset_top = 412
+	_panel.offset_bottom = 544
 	_title = _make_label(font, 24, GOLD, Rect2(22, 10, 470, 32))
 	_title.name = "StepTitle"
 	_text = _make_label(font, 17, Color("#e9f6f8"), Rect2(22, 44, 616, 50))
@@ -103,7 +110,62 @@ func setup(main: Node, font: Font) -> void:
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_panel.add_child(dot)
 		_dots.append(dot)
+	_intro = _make_gate("TutorialIntro", "LEARN THE BASICS", "A short practice round. Your rival waits while you learn the controls.", "START TUTORIAL", start_practice)
+	_complete = _make_gate("TutorialComplete", "TRAINING COMPLETE", "You are ready. The next round is a real fight.", "START FIGHT", confirm_completion)
 	visible = false
+
+
+func _make_gate(node_name: String, title_text: String, body_text: String, button_text: String, action: Callable) -> Panel:
+	var gate := Panel.new()
+	gate.name = node_name
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.01, 0.03, 0.06, 0.96)
+	style.border_color = GOLD
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(6)
+	style.shadow_color = Color(GOLD, 0.35)
+	style.shadow_size = 20
+	gate.add_theme_stylebox_override("panel", style)
+	gate.anchor_left = 0.5
+	gate.anchor_right = 0.5
+	gate.anchor_top = 0.5
+	gate.anchor_bottom = 0.5
+	gate.offset_left = -260
+	gate.offset_right = 260
+	gate.offset_top = -115
+	gate.offset_bottom = 115
+	gate.mouse_filter = Control.MOUSE_FILTER_STOP
+	var title := Label.new()
+	title.text = title_text
+	title.position = Vector2(24, 28)
+	title.size = Vector2(472, 38)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", _font)
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", GOLD)
+	gate.add_child(title)
+	var body := Label.new()
+	body.text = body_text
+	body.position = Vector2(36, 78)
+	body.size = Vector2(448, 46)
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_font_override("font", _font)
+	body.add_theme_font_size_override("font_size", 16)
+	body.add_theme_color_override("font_color", Color("#e9f6f8"))
+	gate.add_child(body)
+	var button := Button.new()
+	button.name = "Confirm"
+	button.text = button_text
+	button.position = Vector2(150, 154)
+	button.size = Vector2(220, 42)
+	button.add_theme_font_override("font", _font)
+	button.add_theme_font_size_override("font_size", 16)
+	button.pressed.connect(action)
+	gate.add_child(button)
+	add_child(gate)
+	gate.visible = false
+	return gate
 
 
 func _make_label(font: Font, size_px: int, color: Color, rect: Rect2) -> Label:
@@ -124,6 +186,7 @@ func begin() -> void:
 	active = true
 	visible = true
 	step = 0
+	phase = Phase.INTRO
 	host._track("tutorial_start")
 	host.player.attack_started.connect(_on_attack_started)
 	host.player.combo_string.connect(_on_combo_string)
@@ -136,7 +199,24 @@ func begin() -> void:
 		host._finisher_director.sequence_finished.connect(_on_finisher_finished)
 	if not host._finisher_director.cancelled.is_connected(_on_finisher_cancelled):
 		host._finisher_director.cancelled.connect(_on_finisher_cancelled)
+	_panel.visible = false
+	_intro.visible = true
+	_complete.visible = false
+	queue_redraw()
+
+
+func start_practice() -> void:
+	if not active or phase != Phase.INTRO:
+		return
+	phase = Phase.PRACTICE
+	_intro.visible = false
+	_panel.visible = true
 	_show_step()
+
+
+func confirm_completion() -> void:
+	if active and phase == Phase.COMPLETE:
+		_finish(false)
 
 
 func current_id() -> String:
@@ -163,12 +243,18 @@ func _show_step() -> void:
 
 func _complete_step() -> void:
 	host._track("tutorial_step", {"step": current_id()})
-	host._announce_tutorial("NICE!")
 	step += 1
 	if step >= STEPS.size():
-		_finish(false)
+		_show_completion()
 	else:
 		_show_step()
+
+
+func _show_completion() -> void:
+	phase = Phase.COMPLETE
+	_panel.visible = false
+	_complete.visible = true
+	queue_redraw()
 
 
 func abort() -> void:
@@ -177,6 +263,7 @@ func abort() -> void:
 		return
 	active = false
 	visible = false
+	phase = Phase.INTRO
 	_disconnect_host()
 
 
@@ -189,6 +276,7 @@ func skip_tutorial() -> void:
 func _finish(skipped: bool) -> void:
 	active = false
 	visible = false
+	phase = Phase.INTRO
 	mark_completed()
 	_disconnect_host()
 	if not skipped:
@@ -197,24 +285,23 @@ func _finish(skipped: bool) -> void:
 
 
 func _on_finisher_started(_attacker_id: String) -> void:
-	if active and current_id() == "special":
-		visible = false
+	if active and phase == Phase.PRACTICE and current_id() == "special":
+		_panel.visible = false
 
 
 func _on_finisher_cancelled(_reason: String) -> void:
 	# An out-of-range SP opens with a miss and spends the energy. Without this
 	# the SP step could never complete and the tutorial stayed stuck with a
 	# passive rival. Re-arm the step so the player can get closer and retry.
-	if not active or current_id() != "special":
+	if not active or phase != Phase.PRACTICE or current_id() != "special":
 		return
-	visible = true
+	_panel.visible = true
 	host.player.meter = 100.0
 	host.player.meter_changed.emit(0, 100.0)
-	host._announce_tutorial("TOO FAR - GET CLOSER AND TAP SP AGAIN")
 
 
 func _on_finisher_finished(_lethal: bool) -> void:
-	if active and current_id() == "special":
+	if active and phase == Phase.PRACTICE and current_id() == "special":
 		_complete_step()
 
 
@@ -238,7 +325,7 @@ func _disconnect_host() -> void:
 
 
 func _on_attack_started(attacker: int, move: String) -> void:
-	if not active or attacker != 0:
+	if not active or phase != Phase.PRACTICE or attacker != 0:
 		return
 	var want := {"jab": "light", "cross": "heavy", "kick": "kick"}
 	if want.get(current_id(), "") == move:
@@ -247,7 +334,7 @@ func _on_attack_started(attacker: int, move: String) -> void:
 
 func advance(delta: float) -> void:
 	# Called by the match host every frame while the tutorial runs.
-	if not active:
+	if not active or phase != Phase.PRACTICE:
 		return
 	_clock += delta
 	var player = host.player
@@ -264,6 +351,8 @@ func advance(delta: float) -> void:
 
 
 func target_rect() -> Rect2:
+	if phase != Phase.PRACTICE:
+		return Rect2()
 	var data: Dictionary = STEPS[mini(step, STEPS.size() - 1)]
 	var target := str(data.target)
 	var node: Control = host.stick if target == "stick" else host.buttons.get(target)
@@ -275,9 +364,16 @@ func target_rect() -> Rect2:
 func _draw() -> void:
 	if not active:
 		return
+	var full := Rect2(Vector2.ZERO, size)
 	var rect := target_rect()
 	if rect.size == Vector2.ZERO:
+		draw_rect(full, Color(0.0, 0.01, 0.03, 0.72))
 		return
+	var hole := rect.grow(18.0).intersection(full)
+	draw_rect(Rect2(full.position, Vector2(full.size.x, hole.position.y)), Color(0.0, 0.01, 0.03, 0.72))
+	draw_rect(Rect2(Vector2(0, hole.position.y), Vector2(hole.position.x, hole.size.y)), Color(0.0, 0.01, 0.03, 0.72))
+	draw_rect(Rect2(Vector2(hole.end.x, hole.position.y), Vector2(full.end.x - hole.end.x, hole.size.y)), Color(0.0, 0.01, 0.03, 0.72))
+	draw_rect(Rect2(Vector2(0, hole.end.y), Vector2(full.size.x, full.end.y - hole.end.y)), Color(0.0, 0.01, 0.03, 0.72))
 	var center := rect.get_center()
 	var pulse := 0.5 + 0.5 * sin(_clock * 6.0)
 	var radius := maxf(rect.size.x, rect.size.y) * (0.6 + 0.08 * pulse)

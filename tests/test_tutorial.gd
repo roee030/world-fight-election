@@ -47,6 +47,9 @@ func _run() -> void:
 	main._set_touch_controls_visible(true)
 	var tutorial = main.tutorial
 	assert(tutorial.active and tutorial.visible and not main.enemy.is_cpu, "tutorial must start with a passive target")
+	assert(tutorial.phase == TutorialScript.Phase.INTRO and tutorial.get_node("TutorialIntro").visible, "tutorial must open with an explicit introduction gate")
+	tutorial.start_practice()
+	assert(tutorial.phase == TutorialScript.Phase.PRACTICE and tutorial.target_rect().size != Vector2.ZERO, "starting practice must reveal the highlighted control")
 	var clock: float = main.round_clock
 	# 1. Move.
 	assert(tutorial.current_id() == "move")
@@ -115,13 +118,20 @@ func _run() -> void:
 		main._process(DT)
 		if main.match_state == main.MatchState.Value.ROUND_INTRO: break
 	assert(not main._finisher_director.active, "tutorial SP finisher did not finish")
-	assert(not tutorial.active and TutorialScript.is_completed(), "tutorial must finish and be remembered after SP ends")
-	assert(main.enemy.is_cpu, "the CPU must fight again after the tutorial")
+	assert(tutorial.active and tutorial.phase == TutorialScript.Phase.COMPLETE and tutorial.get_node("TutorialComplete").visible, "the landed SP must end at an explicit completion gate")
+	assert(not main.enemy.is_cpu, "the CPU must remain passive until START FIGHT")
+	tutorial.confirm_completion()
+	for i in range(120):
+		main._process(DT)
+		if main.match_state == main.MatchState.Value.ROUND_INTRO: break
+	assert(not tutorial.active and TutorialScript.is_completed(), "tutorial confirmation must save completion")
+	assert(main.enemy.is_cpu, "the CPU must fight again after tutorial confirmation")
 	assert(main.enemy.health == main.enemy.max_health() and main.player.meter == 0.0 and main.enemy.meter == 0.0, "the real round must start fresh")
 	assert(main.tracked_events.has("tutorial/complete"), "tutorial completion was not tracked")
 	# Skip path and pause replay.
 	TutorialScript.mark_completed(false)
 	main.tutorial.begin()
+	main.tutorial.start_practice()
 	main.tutorial.skip_tutorial()
 	assert(TutorialScript.is_completed() and main.tracked_events.has("tutorial/skip-at-move"))
 	assert(main.pause_root.find_child("HowToPlayButton", true, false) != null, "pause menu must offer HOW TO PLAY")
