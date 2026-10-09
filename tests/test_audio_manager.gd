@@ -53,6 +53,7 @@ func _run() -> void:
 	var second = manager.play_sfx(&"cross_hit")
 	assert(first != null and second != null and first != second)
 	assert(first.bus == &"SFX" and second.bus == &"SFX")
+	assert(first.volume_db <= -8.0 and second.volume_db <= -8.0, "impact cues must stay restrained")
 	var voice = manager.play_voice(&"round_one")
 	assert(voice != null and voice.bus == &"Voice")
 	manager.set_music_state(&"menu")

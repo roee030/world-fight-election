@@ -14,6 +14,7 @@ const BUS_NAMES := {
 	&"sfx": &"SFX",
 	&"voice": &"Voice",
 }
+const QUIET_IMPACT_CUES := [&"jab_hit", &"cross_hit", &"kick_hit", &"guard_hit"]
 
 var settings_path := "user://audio_settings.cfg"
 var _volumes := DEFAULTS.duplicate()
@@ -103,6 +104,7 @@ func play_sfx(cue: StringName, variant := -1) -> AudioStreamPlayer:
 		return null
 	var player := _available_sfx_player()
 	player.stream = stream
+	player.volume_db = -9.0 if cue in QUIET_IMPACT_CUES else (-5.0 if cue == &"finisher" else 0.0)
 	player.pitch_scale = 1.0 if variant < 0 else clampf(0.96 + float(variant % 5) * 0.02, 0.9, 1.1)
 	player.play()
 	_log_cue("sfx", cue)
@@ -214,14 +216,18 @@ func _available_sfx_player() -> AudioStreamPlayer:
 	return _sfx_players[0]
 
 func _load_cue(category: String, cue: StringName) -> AudioStream:
-	var path := "res://assets/audio/%s/%s.ogg" % [category, cue]
-	if not ResourceLoader.exists(path):
-		return null
-	var stream := load(path) as AudioStream
-	# *.import files are not committed, so loop music in code instead of import options.
-	if category == "music" and stream is AudioStreamOggVorbis:
-		(stream as AudioStreamOggVorbis).loop = true
-	return stream
+	for extension in ["ogg", "mp3", "wav"]:
+		var path := "res://assets/audio/%s/%s.%s" % [category, cue, extension]
+		if not ResourceLoader.exists(path):
+			continue
+		var stream := load(path) as AudioStream
+		# *.import files are not committed, so loop music in code instead of import options.
+		if category == "music" and stream is AudioStreamOggVorbis:
+			(stream as AudioStreamOggVorbis).loop = true
+		elif category == "music" and stream is AudioStreamMP3:
+			(stream as AudioStreamMP3).loop = true
+		return stream
+	return null
 
 func _ensure_buses() -> void:
 	for bus_name in [&"Music", &"SFX", &"Voice"]:
