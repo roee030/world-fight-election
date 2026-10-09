@@ -9,7 +9,7 @@ This repository is the source of truth for the game. New contributors and agents
 - 13 playable fighters: Bennet, Avigdor Lieberman, Bibi, Yair Golan, Aryeh Deri, Yair Lapid, Mansour Abbas, Benny Gantz, Itamar Ben-Gvir, Bezalel Smotrich, Gadi Eisenkot, Donald Trump and Joint List.
 - Single Fight with one player choice and a random CPU rival, revealed by a quick roster shuffle on CONFIRM FIGHT.
 - Four-fight campaign, best-of-three rounds, health, hit stun, guard, combos and a charged special meter.
-- Five stages, including the Knesset exterior, Knesset chamber and three studio arenas.
+- Six stages, including the Knesset exterior, Knesset chamber, Kaplan Junction and three studio arenas.
 - Keyboard and touch controls.
 - Fighter Sprite Lab for inspecting every animation outside a match.
 - CC0 audio: menu, fight and low-health music, hit/guard/movement/UI effects and a round announcer (`ROUND ONE`, `ROUND TWO`, `FINAL ROUND`, `FIGHT`, `YOU WIN`, `YOU LOSE`). Sources are listed in `assets/audio/README.md`.

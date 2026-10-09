@@ -117,6 +117,7 @@
 
 | First-fight tutorial | Done | `scripts/ui/tutorial.gd`: 7 steps (move, JAB, CROSS, KICK, jump, GUARD, SP at 100%), pulsing pointer, coach panel, SKIP, frozen clock, passive CPU, fresh round afterwards, `user://tutorial.cfg`, pause *HOW TO PLAY*, funnel analytics. It opens only after the first selected fight reaches `FIGHTING`; the SP step hides the coach during the cinematic and completes from `sequence_finished`, so the fresh fight cannot start before the move ends. `tests/test_tutorial.gd`; full browser run via `?qa=tutorial` with keyboard. |
 | Illustrated finisher art | Done (owner commit `84f155f`) | 13 `super-card.png` files; the package is now about 19.8 MB. |
+| Kaplan Junction stage | Done | The supplied photo is preserved as a centre-cropped 1920×1080 arena, registered as the sixth stage, and shown in a balanced 3×2 arena grid. `tests/test_kaplan_stage.gd`; fight framing inspected at 1280×720 and 780×360. |
 
 ### Remaining owner actions
 1. Legal review of the disclaimer wording, and a decision about parody names.

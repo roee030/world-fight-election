@@ -203,7 +203,8 @@ const STAGES := [
 	{"id": "knesset_chamber", "name": "KNESSET • CHAMBER", "subtitle": "Inside the debating hall", "image": "res://assets/stages/knesset-chamber-arena.png", "kind": "knesset_inside", "accent": "#e2bd63", "base": "#392b22", "backdrop_y": 0.78, "backdrop_scale": 1.18, "camera_target_y": 1.42},
 	{"id": "patriots_studio", "name": "THE PATRIOTS", "subtitle": "Live studio · Red alert", "image": "res://assets/stages/patriots-studio-arena.png", "kind": "studio", "accent": "#42cafa", "base": "#102033"},
 	{"id": "friday_studio", "name": "FRIDAY STUDIO", "subtitle": "Prime time · Jerusalem", "image": "res://assets/stages/friday-studio-arena.png", "kind": "studio", "accent": "#e5b944", "base": "#132238"},
-	{"id": "hatzinor_studio", "name": "THE PIPELINE", "subtitle": "The Hatzinor newsroom", "image": "res://assets/stages/hatzinor-studio-arena.png", "kind": "studio", "accent": "#3ccafa", "base": "#101a2c"}
+	{"id": "hatzinor_studio", "name": "THE PIPELINE", "subtitle": "The Hatzinor newsroom", "image": "res://assets/stages/hatzinor-studio-arena.png", "kind": "studio", "accent": "#3ccafa", "base": "#101a2c"},
+	{"id": "kaplan_junction", "name": "KAPLAN JUNCTION", "subtitle": "Tel Aviv · Protest night", "image": "res://assets/stages/kaplan-junction-arena.jpg", "kind": "street", "accent": "#6eb7ff", "base": "#172637"}
 ]
 
 
@@ -1510,13 +1511,12 @@ func _build_map_select() -> void:
 	_split_background(map_select_root)
 	var design := _design_frame(map_select_root, "MapDesign")
 	_screen_title(design, "SELECT YOUR ", "ARENA", 18)
-	_label(design, "FIVE STAGES  ·  PICK THE SETTING FOR YOUR FIGHT", Rect2(340, 70, 600, 22), 13, Color("#cfdde1"), HORIZONTAL_ALIGNMENT_CENTER)
+	_label(design, "SIX STAGES  ·  PICK THE SETTING FOR YOUR FIGHT", Rect2(340, 70, 600, 22), 13, Color("#cfdde1"), HORIZONTAL_ALIGNMENT_CENTER)
 	_diamond(design, Vector2(640, 100), 5.0, ACCENT_CYAN)
 	for i in range(STAGES.size()):
 		var col := i % 3
 		var row := i / 3
 		var rect := Rect2(45 + col * 398, 116 + row * 242, 376, 220)
-		if row == 1: rect.position.x += 199.0
 		var card := _button(design, "", rect, "#14212c", 15)
 		card.name = "StageCard_" + str(i)
 		var art := TextureRect.new()
