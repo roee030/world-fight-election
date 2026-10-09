@@ -139,6 +139,30 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("fullscreenSupported()", patched)
             self.assertIn("screen.orientation?.lock?.('landscape')", patched)
 
+    def test_ios_safari_landscape_gets_install_gate(self):
+        # iPhone Safari has no element-fullscreen API, so the TAP TO FIGHT gate
+        # never shows there. Landscape players must still learn the Home Screen
+        # route, and one tap must always let them play in the Safari tab.
+        with TemporaryDirectory() as folder:
+            root = Path(folder)
+            html = root / "index.html"
+            html.write_text(GODOT_SHELL, encoding="utf-8")
+            patch(html)
+
+            patched = html.read_text(encoding="utf-8")
+            self.assertIn('id="worldFightIosGate"', patched)
+            self.assertIn(".wf-needs-ios-install #worldFightIosGate{display:flex}", patched)
+            self.assertIn(".wf-legal-open #worldFightIosGate{display:none!important}", patched)
+            self.assertIn("wf-needs-ios-install", patched)
+            self.assertIn("!fullscreenSupported()", patched)
+            self.assertIn("worldFightIosPlayButton", patched)
+            self.assertIn("הוספה למסך הבית", patched)
+            self.assertIn("sessionStorage", patched)
+            self.assertLess(
+                patched.index('id="worldFightIosGate"'),
+                patched.index('<script src="index.js">'),
+            )
+
     def test_patching_replaces_old_and_repeated_shells(self):
         with TemporaryDirectory() as folder:
             root = Path(folder)

@@ -120,7 +120,7 @@ Additional evidence:
 
 - [ ] **2B.1** In landscape on touch devices, show a "TAP TO FIGHT" gate before the game is interactive. The tap calls `requestFullscreen()` + `screen.orientation.lock('landscape')`.
 - [ ] **2B.2** If fullscreen is exited (`fullscreenchange`), pause the game and show the gate again; resuming re-enters fullscreen.
-- [ ] **2B.3** iPhone Safari has no element-fullscreen API. There, fall back to the full-viewport layout plus an "Add to Home Screen" hint. Android Chrome gets true 100 % fullscreen.
+- [x] **2B.3** iPhone Safari has no element-fullscreen API. There, fall back to the full-viewport layout plus an "Add to Home Screen" hint. Android Chrome gets true 100 % fullscreen.
 - [ ] **2B.4** Tests in `test_web_responsive_layout.py` / a shell JS test for gate visibility states.
 
 ## Phase 3B — HUD and controls restyle to the user's reference image
