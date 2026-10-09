@@ -13,6 +13,8 @@ signal sequence_finished(lethal: bool)
 var catalog: Variant
 const TimelineScript = preload("res://scripts/finishers/finisher_timeline.gd")
 const ActorScript = preload("res://scripts/finishers/finisher_actor.gd")
+const SuperMoveCardScript = preload("res://scripts/ui/super_move_card.gd")
+const CalloutScript = preload("res://scripts/ui/callout.gd")
 var timeline := TimelineScript.new()
 var active := false
 var diagnostic := ""
@@ -138,9 +140,8 @@ func _celebration(id: String) -> Dictionary:
 func advance(delta: float) -> void:
 	if not active or _paused: return
 	for actor in _actors.values(): actor.advance(delta)
-	if _camera_mode == "projectile_track" and _camera and not _actors.is_empty():
-		var tracked: Node3D = _actors.values().back()
-		_camera.position.x = clampf(tracked.position.x * 0.3, -1.0, 1.0)
+	for node in _presentation:
+		if is_instance_valid(node) and node.has_method("advance"): node.advance(delta)
 	for node in _lifetimes.keys():
 		_lifetimes[node] -= delta
 		if _lifetimes[node] <= 0:
@@ -263,7 +264,7 @@ func _dispatch(event: Dictionary) -> void:
 				_fail("Duplicate portrait lightbox")
 				return
 			_lightbox = true
-			_caption(_attacker.character_id.to_upper(), true)
+			_super_card()
 		"caption":
 			var label := _caption(str(event.get("text", "")), false)
 			if event.get("ui_position") is Array and event.ui_position.size() == 2:
@@ -294,29 +295,19 @@ func _dispatch(event: Dictionary) -> void:
 		_: _fail("Unknown finisher event: " + str(event.get("type", "")))
 
 func _camera_preset(preset: String) -> void:
+	# Every preset keeps the fight framing. The stage art is a camera-attached
+	# backplate, so zooming or panning lifted fighters off the painted floor and
+	# produced a visible zoom-in / zoom-out jump around the super-move card.
+	# Drama comes from the overlay card, flashes and impact shake instead.
 	if not _camera: return
+	if not preset in ["close_side", "wide_stage", "overhead_pass", "projectile_track", "victory_low"]:
+		_fail("Unknown camera preset: " + preset)
+		return
 	_camera_mode = preset
 	_camera.transform = _camera_transform
-	match preset:
-		"close_side":
-			_camera.size = _camera_size * 0.85
-			_camera.fov = _camera_fov * 0.88
-		"wide_stage", "overhead_pass":
-			_camera.size = _camera_size * 1.12
-			_camera.fov = _camera_fov * 1.12
-			if preset == "overhead_pass":
-				_camera.position.y += 1.0
-				_camera.look_at(Vector3(0, 0.9, 0), Vector3.UP)
-		"projectile_track":
-			_camera.size = _camera_size
-			_camera.fov = _camera_fov
-		"victory_low":
-			# Celebrations keep the exact fight framing. The painted stage floor
-			# is a camera-attached backplate, so lowering or zooming the camera
-			# here lifted the winner off the floor line they fought on.
-			_camera.size = _camera_size
-			_camera.fov = _camera_fov
-		_: _fail("Unknown camera preset: " + preset)
+	_camera.size = _camera_size
+	_camera.fov = _camera_fov
+
 
 func _restore_fight_camera() -> void:
 	# Celebrations play in the fight framing so fighters stay on the painted
@@ -355,6 +346,31 @@ func _set_fighter_art(fighter: GameFighter, event: Dictionary) -> bool:
 	sprite.play("authored")
 	return true
 
+func _super_card() -> CanvasLayer:
+	# Full-screen super-move card (fighter art + electric finisher name).
+	var id := _attacker.character_id
+	# Optional illustrated art, else the fighter's transparent cross-punch pose
+	# (frame 5 of the 12-frame contract). The roster cards have an opaque
+	# background and looked like a pasted box on the effects.
+	var art_path := "res://assets/finishers/%s/super-card.png" % id
+	if not ResourceLoader.exists(art_path):
+		art_path = "res://assets/characters/sprites/%s-5.png" % id
+	var art = ResourceLoader.load(art_path) if ResourceLoader.exists(art_path) else null
+	var font := FontVariation.new()
+	font.base_font = ThemeDB.fallback_font
+	font.variation_embolden = 1.1
+	font.variation_transform = Transform2D(Vector2(1, 0), Vector2(0.28, 1), Vector2.ZERO)
+	var card = SuperMoveCardScript.new()
+	card.reduced_motion = reduced_motion
+	card.dense_effects = effect_density != "mobile"
+	var fighter_name := str(_host.call("_fighter_name", id)) if _host != null and _host.has_method("_fighter_name") else id.replace("_", " ")
+	card.setup(fighter_name, SuperMoveCardScript.display_name_for(_definition), art as Texture2D, font)
+	add_child(card)
+	_presentation.append(card)
+	_lifetimes[card] = SuperMoveCardScript.DURATION
+	return card
+
+
 func _caption(text: String, portrait: bool, flash: bool = false) -> Label:
 	var layer := CanvasLayer.new()
 	layer.layer = 15
@@ -365,10 +381,20 @@ func _caption(text: String, portrait: bool, flash: bool = false) -> Label:
 	label.position = Vector2(390, 135 if portrait else 565)
 	label.size = Vector2(500, 80)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 38 if portrait else 26)
 	label.add_theme_color_override("font_color", Color("#fff0c2"))
 	label.add_theme_color_override("font_outline_color", Color("#07101d"))
 	label.add_theme_constant_override("outline_size", 6)
+	if not text.is_empty():
+		# Finisher captions use the same animated banner as match announcements.
+		var banner = CalloutScript.new()
+		var font := FontVariation.new()
+		font.base_font = ThemeDB.fallback_font
+		font.variation_embolden = 0.85
+		banner.setup(label, font)
+		layer.add_child(banner)
+		banner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(label)
 	if portrait:
 		var path := "res://assets/characters/portraits/%s.png" % _attacker.character_id

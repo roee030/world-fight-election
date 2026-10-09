@@ -47,15 +47,15 @@ func _run() -> void:
 	assert(not main._mobile_input_available(false, false, 0, 900), "wide native mouse-only builds should hide touch controls")
 	main._set_touch_controls_visible(true)
 	assert(main.stick.visible, "phone fight has no joystick")
-	# Reference layout: JAB, CROSS, MAX, SP and GUARD; jumping is joystick-up.
-	var titles := {"light": "JAB", "heavy": "CROSS", "max": "MAX", "special": "SP", "block": "GUARD"}
+	# Reference layout: JAB, CROSS, KICK, SP and GUARD; jumping is joystick-up.
+	var titles := {"light": "JAB", "heavy": "CROSS", "kick": "KICK", "special": "SP", "block": "GUARD"}
 	for action in titles:
 		assert(main.buttons.has(action), "missing touch action: " + action)
 		assert(main.buttons[action].visible, "hidden touch action: " + action)
 		assert(main.buttons[action].text == titles[action], "%s is labelled %s" % [action, main.buttons[action].text])
 	assert(main.buttons.size() == titles.size(), "unexpected extra touch actions")
 	assert(main.buttons.special.shape == "circle", "SP must be the round energy button")
-	for action in ["light", "heavy", "max", "block"]:
+	for action in ["light", "heavy", "kick", "block"]:
 		assert(main.buttons[action].shape == "diamond", "%s must be a diamond" % action)
 	# Hit areas are the drawn shapes, inside the 1280x720 frame, and never overlap.
 	# The window uses the "expand" aspect, so measure against the real HUD size.
@@ -100,20 +100,13 @@ func _run() -> void:
 	var crosses: Array = _count_attacks(main, "heavy", 1.4)
 	assert(crosses == ["heavy"], "one CROSS tap started %s" % [crosses])
 
-	# MAX needs 55% energy and never downgrades into a different attack.
+	# KICK is an ordinary kick: no energy needed, no energy spent, one per tap.
 	_reset_player(main)
-	main.player.meter = 20.0
-	var weak_max: Array = _count_attacks(main, "max", 0.5)
-	assert(weak_max.is_empty(), "MAX below 55%% energy still attacked: %s" % [weak_max])
-	assert(main.message_label.visible and main.message_label.text.contains("55%"), "MAX without energy gave no feedback")
-	assert(not main.buttons.max.available, "MAX must look locked below 55%")
-	_reset_player(main)
-	main.player.meter = 60.0
-	main._on_meter_changed(0, 60.0)
-	assert(main.buttons.max.available and not main.buttons.special.charged, "MAX unlocks at 55%, SP stays locked")
-	var real_max: Array = _count_attacks(main, "max", 0.5)
-	assert(real_max == ["special"], "MAX did not start the special move: %s" % [real_max])
-	assert(is_equal_approx(main.player.meter, 60.0 - main.GameFighterScript.SPECIAL_COST), "MAX did not spend its energy")
+	main.player.meter = 0.0
+	var kicks: Array = _count_attacks(main, "kick", 1.4)
+	assert(kicks == ["kick"], "one KICK tap started %s" % [kicks])
+	assert(main.player.meter >= 0.0 and not main.message_label.text.contains("NEEDS"), "KICK must not require energy")
+	assert(main.buttons.kick.available, "KICK must always be available")
 
 	# SP lights up with the electric aura at 100% and starts the finisher once.
 	_reset_player(main)
@@ -154,5 +147,5 @@ func _run() -> void:
 		"pause": [KEY_ESCAPE]
 	}, "keyboard controls drifted from the documented game contract")
 	main.free()
-	print("PASS: reference touch cluster, one tap one attack, MAX/SP energy gates and keyboard contract")
+	print("PASS: reference touch cluster, one tap one attack, KICK without energy, SP energy gate and keyboard contract")
 	quit(0)

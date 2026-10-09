@@ -13,7 +13,7 @@ This repository is the source of truth for the game. New contributors and agents
 - Keyboard and touch controls.
 - Fighter Sprite Lab for inspecting every animation outside a match.
 
-The thin gold bar under each health bar in the combat HUD is **Special Energy** (labelled `SPECIAL ENERGY` with a percentage). Clean hits charge the attacker, blocked hits charge it a little, and the defender gains comeback energy from damage taken. At 55% the `MAX` special move unlocks; at 100% the `SP` finisher unlocks and its button lights up with an electric aura.
+The thin gold bar under each health bar in the combat HUD is **Special Energy** (labelled `SPECIAL ENERGY` with a percentage). Clean hits charge the attacker, blocked hits charge it a little, and the defender gains comeback energy from damage taken. At 55% the keyboard special move unlocks; at 100% the `SP` finisher unlocks and its button lights up with an electric aura.
 
 ## Controls
 
@@ -25,11 +25,11 @@ The thin gold bar under each health bar in the combat HUD is **Special Energy** 
 | Crouch | `C` |
 | Jab (`JAB`): fast, short-range combo starter | `J` / `1` |
 | Cross (`CROSS`): slower, longer-range high-damage hit | `K` / `2` |
-| Kick (keyboard only) | `U` / `4` |
-| `MAX` special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3` |
+| Kick (`KICK`) | `U` / `4` |
+| Special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3` |
 | Pause / back | `Esc` |
 
-Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `MAX`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. `MAX` stays dim below 55% energy and never falls back to another attack.
+Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. `KICK` needs no energy; the 55% special move is keyboard-only (`L` below 100%).
 
 Finisher controls: fill Special Energy to 100%, then press `L` / `3` once or tap `SP` on touch screens. No prior round win or rival-health threshold is required. The authored sequence always starts and spends the full meter; it damages the rival only when the fighters were inside the configured activation range at the instant of the press. An out-of-range attempt plays as an opening miss, deals no damage and resumes combat. **A finisher is a heavy blow, not an automatic win:** in a match it deals 30% of the rival's max HP. If the rival survives, it falls, gets up and the round continues. If the blow empties the bar, it is a normal round KO; the match ends (and the celebration plays) only when that KO wins the best-of-three. All 13 fighters have an authored Finish Attack and post-match celebration. At the end of a full match, the winner celebrates unobstructed for at least three real-time seconds at 40% authored speed; only then does the compact `YOU WIN` / `YOU LOSE` card appear. `REMATCH` / `TRY AGAIN` replays the same rival; `NEW OPPONENT` draws a different random rival. `WIN CELEBRATION` in Finisher Lab previews the same slower sequence directly.
 
@@ -57,7 +57,7 @@ The UI is authored left-to-right and is forced to stay that way (`internationali
 
 Images are imported as lossy WebP by default (`[importer_defaults]` in `project.godot`), which cut the downloaded package from about 65 MB to about 15 MB. Textures decode to the same GPU format, so runtime performance is unchanged.
 
-In portrait orientation the page now shows a dedicated illustrated rotate gate: the complete fighter roster surrounds a landscape-phone cue beneath the Knesset menorah, with a visible `FULL SCREEN` button. Rotating to landscape triggers a best-effort browser full-screen request, and the first landscape tap also retries it; mobile browsers that require a user gesture retain the button as the reliable fallback. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `MAX`, `SP` and `GUARD`. Editor-only 3D sources, raw sprite sheets, reference images and tests are excluded from the Web package to reduce its initial download without removing runtime fighters, stages or finishers. The web export replaces the former PWA worker with a self-retiring cleanup worker that unregisters itself and clears old caches without reloading open tabs (a forced reload used to download the game twice).
+In portrait orientation the page now shows a dedicated illustrated rotate gate: the complete fighter roster surrounds a landscape-phone cue beneath the Knesset menorah, with a visible `FULL SCREEN` button. Rotating to landscape triggers a best-effort browser full-screen request, and the first landscape tap also retries it; mobile browsers that require a user gesture retain the button as the reliable fallback. In landscape, every Web fight exposes the movement joystick plus `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Editor-only 3D sources, raw sprite sheets, reference images and tests are excluded from the Web package to reduce its initial download without removing runtime fighters, stages or finishers. The web export replaces the former PWA worker with a self-retiring cleanup worker that unregisters itself and clears old caches without reloading open tabs (a forced reload used to download the game twice).
 
 ## Project structure
 
@@ -134,3 +134,15 @@ The shared finisher and celebration system is complete for all 13 fighters: one 
 ## Status
 
 The game is playable and under active visual and combat polish. The current priority is consistent character presentation, readable hit feedback, robust pause behavior, stage grounding and data-driven finishing moves.
+
+
+## Presentation, campaign, legal and analytics (2026-10-09)
+
+- **Finisher card:** every finisher opens with a full-screen super-move card: fighter pose, fighter name, and an electric, slanted finisher name (`display_name` in `data/finishers.json`, else the humanised `finisher_id`). Optional illustrated art: `assets/finishers/<id>/super-card.png`. The camera no longer zooms in or out around it.
+- **Announcements:** ROUND / FIGHT! / feedback messages and finisher captions play as animated console-style banners (`scripts/ui/callout.gd`).
+- **Results:** a framed YOU WIN / YOU LOSE card (cyan with confetti, or red with cracks) over the live arena, with REMATCH, NEW OPPONENT and RETURN TO MENU.
+- **Campaign:** beat every other fighter in a shuffled ladder; Bibi is always the final boss (a mirror match if you picked Bibi). Difficulty ramps from level 1 to 4. A progress screen shows the ladder before every fight. A loss retries the same rival.
+- **Menu:** START FIGHT, CAMPAIGN and CONTACT THE CREATOR. The contact button appears once `linkedin_url` is set in `data/site_config.json`. Fighter Lab is developer-only (`scenes/character_debug.tscn`).
+- **Disclaimer:** the Web shell shows a Hebrew/English satire disclaimer. Play starts only after the checkbox is ticked; acceptance is stored per device (`wf-disclaimer-v1`). This text is not legal advice; have a lawyer review it.
+- **Analytics:** set `goatcounter_code` in `data/site_config.json` (a free GoatCounter account, no cookies) to count visits and game events (`fight_start`, `match_end`, `finisher`, `campaign_progress`, `contact_click`, …). Without a code, events are only listed in `?diag=1`.
+- **QA URLs:** `?qa=finisher`, `?qa=win`, `?qa=loss`, `?qa=campaign` jump straight to those screens for screenshots.

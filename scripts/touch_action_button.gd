@@ -11,7 +11,7 @@ signal button_down
 signal button_up
 signal pressed
 
-const ICONS := ["fist", "cross", "bolt", "spark", "shield", "none"]
+const ICONS := ["fist", "cross", "bolt", "boot", "spark", "shield", "none"]
 
 var action := ""
 var text := ""
@@ -174,6 +174,9 @@ func _draw_icon(at: Vector2, scale_px: float, color: Color) -> void:
 			draw_line(at + Vector2(scale_px * 0.55, -scale_px * 0.55), at + Vector2(-scale_px * 0.55, scale_px * 0.55), color, 3.0, true)
 		"bolt":
 			draw_colored_polygon(PackedVector2Array([at + Vector2(scale_px * 0.15, -scale_px * 0.8), at + Vector2(-scale_px * 0.45, scale_px * 0.1), at + Vector2(-scale_px * 0.02, scale_px * 0.1), at + Vector2(-scale_px * 0.2, scale_px * 0.8), at + Vector2(scale_px * 0.45, -scale_px * 0.15), at + Vector2(scale_px * 0.02, -scale_px * 0.15)]), color)
+		"boot":
+			# Side view of a raised boot: shin, foot and sole.
+			draw_colored_polygon(PackedVector2Array([at + Vector2(-scale_px * 0.35, -scale_px * 0.8), at + Vector2(scale_px * 0.05, -scale_px * 0.8), at + Vector2(scale_px * 0.05, scale_px * 0.05), at + Vector2(scale_px * 0.75, scale_px * 0.2), at + Vector2(scale_px * 0.75, scale_px * 0.6), at + Vector2(-scale_px * 0.35, scale_px * 0.6)]), color)
 		"spark":
 			for i in range(4):
 				var direction := Vector2.UP.rotated(PI * 0.5 * float(i))

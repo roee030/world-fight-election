@@ -22,6 +22,8 @@ const CIRCLE_MASK_SHADER = preload("res://scripts/hud/circle_mask.gdshader")
 const DESIGN_SIZE := Vector2(1280, 720)
 const HUD_FRAME_HEIGHT := 132.0
 const OrnamentScript = preload("res://scripts/ui/ornament.gd")
+const CalloutScript = preload("res://scripts/ui/callout.gd")
+const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const HUD_PANEL_SIZE := Vector2(540, 124)
@@ -53,7 +55,7 @@ const FINISHER_DAMAGE_RATIO := 0.30
 # sit 64 px apart on the diagonal grid, leaving a visible gap between hit areas.
 const TOUCH_PAD_SIZE := Vector2(360, 290)
 const TOUCH_CONTROL_LAYOUT := [
-	{"action": "max", "title": "MAX", "center": Vector2(206, 210), "size": Vector2(116, 116), "color": "#d9792b", "shape": "diamond", "icon": "bolt"},
+	{"action": "kick", "title": "KICK", "center": Vector2(206, 210), "size": Vector2(116, 116), "color": "#d9792b", "shape": "diamond", "icon": "boot"},
 	{"action": "heavy", "title": "CROSS", "center": Vector2(78, 210), "size": Vector2(116, 116), "color": "#d24a5c", "shape": "diamond", "icon": "cross"},
 	{"action": "light", "title": "JAB", "center": Vector2(270, 146), "size": Vector2(116, 116), "color": "#1f9e95", "shape": "diamond", "icon": "fist"},
 	{"action": "special", "title": "SP", "center": Vector2(142, 146), "size": Vector2(80, 80), "color": "#c79a22", "shape": "circle", "icon": "spark"},
@@ -99,13 +101,15 @@ var enemy_round_markers: Array[Panel] = []
 var timer_label: Label
 var round_label: Label
 var message_label: Label
+var callout: Control
 var combo_label: Label
-var result_winner_art: TextureRect
 var result_accent: Panel
 var _web_menu_callback: JavaScriptObject
 var _web_pause_callback: JavaScriptObject
 var _web_poll_time := 0.0
 var _bold_font_cache: Font
+var _site_config := {}
+var tracked_events: Array[String] = []
 var safe_insets := {"left": 0.0, "right": 0.0, "top": 0.0, "bottom": 0.0}
 var combo_label_time := 0.0
 var special_feedback_time := 0.0
@@ -113,7 +117,11 @@ var fight_live := false
 var paused := false
 var selecting := "bennet"
 var campaign_mode := false
-var bout := 0
+var campaign_index := 0
+var campaign_ladder: Array[String] = []
+var campaign_root: Control
+var result_fx: Control
+var result_frame: Control
 var player_rounds := 0
 var enemy_rounds := 0
 var round_clock := 60.0
@@ -140,14 +148,10 @@ var _celebration_result_marked := false
 var _celebration_won := false
 var _touch_special_consumed := false
 var current_rival_id := ""
+var _last_campaign_result_lost := false
 var current_level := 1
 
-const BOUTS := [
-	{"name": "Avigdor", "id": "avigdor", "level": 1, "title": "THE QUIET ROOM"},
-	{"name": "Bennet", "id": "bennet", "level": 2, "title": "THE PITCH FLOOR"},
-	{"name": "Yair Golan", "id": "yair_golan", "level": 3, "title": "THE FIELD COMMAND"},
-	{"name": "Bibi — THE BOSS", "id": "bibi", "level": 4, "title": "THE FINAL OFFICE"}
-]
+const CAMPAIGN_BOSS := "bibi"
 const FIGHTER_DATA := {
 	"bennet": {"name": "BENNET", "callout": "THE FOUNDER  /  COMBO STRIKER", "style": "Close-range pressure", "signature": "Founder’s Rush"},
 	"avigdor": {"name": "AVIGDOR LIEBERMAN", "callout": "THE FIXER  /  COUNTER HEAVY", "style": "Patient guard", "signature": "Iron Verdict"},
@@ -293,13 +297,12 @@ func _physics_process(_delta: float) -> void:
 	var light := _consume("light", KEY_J, KEY_1)
 	var heavy := _consume("heavy", KEY_K, KEY_2)
 	var kick := _consume("kick", KEY_U, KEY_4)
-	var max_move := bool(_input_down.get("max", false))
 	var special_action := _sample_special_input(_delta)
-	var special := special_action == "special" or max_move
+	var special := special_action == "special"
 	if special and player.meter < GameFighterScript.SPECIAL_COST:
-		# MAX never silently downgrades to another attack.
+		# The keyboard special never silently downgrades to another attack.
 		special = false
-		_show_special_feedback("MAX NEEDS %d%% SPECIAL ENERGY" % int(GameFighterScript.SPECIAL_COST))
+		_show_special_feedback("SPECIAL NEEDS %d%% ENERGY" % int(GameFighterScript.SPECIAL_COST))
 	if special_action == "finisher":
 		finisher_requested.emit(player, enemy, _current_finisher_definition())
 		if _finisher_director.active:
@@ -313,7 +316,7 @@ func _physics_process(_delta: float) -> void:
 		depth_axis
 	)
 	_input_down["jump"] = false
-	for action in ["light", "heavy", "kick", "special", "max"]: _input_down[action] = false
+	for action in ["light", "heavy", "kick", "special"]: _input_down[action] = false
 
 
 func _consume(action: String, key: Key, alt_key: Key) -> bool:
@@ -337,9 +340,6 @@ func _on_touch_action_down(action: String) -> void:
 	# hold (GUARD); it never queues a second attack.
 	if action == "special":
 		_submit_touch_special()
-		return
-	if action == "max" and is_instance_valid(player) and player.meter < GameFighterScript.SPECIAL_COST:
-		_show_special_feedback("MAX NEEDS %d%% SPECIAL ENERGY" % int(GameFighterScript.SPECIAL_COST))
 		return
 	_input_down[action] = true
 	_input_held[action] = true
@@ -386,6 +386,33 @@ func _install_web_menu_bridge() -> void:
 		var pending = window.worldFightPendingAction
 		if pending != null and not str(pending).is_empty():
 			_on_web_menu_action([str(pending)])
+		call_deferred("_run_web_qa_scenario")
+
+
+func site_config() -> Dictionary:
+	# Owner-editable settings (LinkedIn URL, analytics code): data/site_config.json.
+	if _site_config.is_empty():
+		var file := FileAccess.open("res://data/site_config.json", FileAccess.READ)
+		var parsed = JSON.parse_string(file.get_as_text()) if file != null else null
+		_site_config = parsed if parsed is Dictionary else {"linkedin_url": "", "goatcounter_code": ""}
+	return _site_config
+
+
+func _open_creator_profile() -> void:
+	var url := str(site_config().get("linkedin_url", ""))
+	if url.is_empty():
+		return
+	_track("contact_click")
+	OS.shell_open(url)
+
+
+func _track(event_name: String, props: Dictionary = {}) -> void:
+	# Analytics hook: the Web shell forwards events to GoatCounter when a code is
+	# configured (data/site_config.json), else keeps them for ?diag=1.
+	tracked_events.append(event_name)
+	if tracked_events.size() > 64: tracked_events.pop_front()
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.worldFightTrack && window.worldFightTrack(%s, %s)" % [JSON.stringify(event_name), JSON.stringify(props)])
 
 
 func _poll_web_shell() -> void:
@@ -420,6 +447,34 @@ func apply_safe_area(css_insets: Dictionary) -> void:
 		action_panel.position.x = 58.0 + safe_insets.left
 
 
+func _run_web_qa_scenario() -> void:
+	# Developer QA entry points for browser screenshots: ?qa=finisher,
+	# ?qa=win, ?qa=loss, ?qa=campaign. Players never pass these.
+	var query := str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('qa') || ''"))
+	if query.is_empty():
+		return
+	selecting = "mansour_abbas"
+	selected_stage_id = "friday_studio"
+	match query:
+		"campaign":
+			_start_campaign()
+		"finisher", "win", "loss":
+			_setup_bout(selecting, "benny_gantz", 1, "QA")
+			await get_tree().create_timer(1.6).timeout
+			player.position.x = -0.6
+			enemy.position.x = 0.6
+			if query == "finisher":
+				player.meter = 100.0
+				player_rounds = 1
+				enemy.health = 20.0
+				_input_down["special"] = true
+			else:
+				player_rounds = 2 if query == "win" else 0
+				enemy_rounds = 0 if query == "win" else 2
+				(enemy if query == "win" else player).receive_hit(999.0, 1.0, "heavy")
+				_show_result_with_celebration(query == "win")
+
+
 func _on_web_pause_request(_arguments: Array) -> void:
 	# The browser left fullscreen (or the tab lost the game surface): freeze the
 	# fight until the player taps back into fullscreen and resumes.
@@ -434,7 +489,6 @@ func _on_web_menu_action(arguments: Array) -> void:
 	match action:
 		"quick": _open_select("quick")
 		"campaign": _open_select("campaign")
-		"lab": get_tree().change_scene_to_file("res://scenes/character_debug.tscn")
 		_: return
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.worldFightAcknowledgeAction?.('%s')" % action)
@@ -530,6 +584,7 @@ func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definitio
 	if not _finisher_director.begin(attacker, defender, match_definition, opening_in_range):
 		return false
 	match_state = MatchState.Value.FINISHER_CINEMATIC
+	_track("finisher", {"fighter": attacker.character_id, "in_range": opening_in_range})
 	round_ready = false
 	message_label.visible = false
 	_input_down.clear()
@@ -585,8 +640,6 @@ func _on_celebration_started(_id: String) -> void:
 		hud_root.visible = false
 	if is_instance_valid(result_root):
 		result_root.visible = false
-	if is_instance_valid(result_winner_art):
-		result_winner_art.visible = false
 
 
 func _on_celebration_result_ready(winner: int) -> void:
@@ -765,6 +818,7 @@ func _build_ui() -> void:
 	_build_map_select()
 	_build_pause()
 	_build_result()
+	_build_campaign()
 
 
 func _build_hud() -> void:
@@ -843,6 +897,12 @@ func _build_hud() -> void:
 		overlay.anchor_right = 0.5
 		overlay.offset_left = rect.position.x - DESIGN_SIZE.x * 0.5
 		overlay.offset_right = rect.end.x - DESIGN_SIZE.x * 0.5
+	# Every announcement (ROUND, FIGHT!, feedback) plays as an animated banner.
+	callout = CalloutScript.new()
+	callout.setup(message_label, _bold_font())
+	hud_root.add_child(callout)
+	callout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hud_root.move_child(callout, message_label.get_index())
 	_build_touch_controls()
 	hud_root.visible = false
 
@@ -1010,9 +1070,7 @@ func _build_touch_controls() -> void:
 func _refresh_touch_energy_state() -> void:
 	if not is_instance_valid(player) or buttons.is_empty():
 		return
-	var max_ready := player.meter >= GameFighterScript.SPECIAL_COST
 	var finish_ready := player.meter >= float(_current_finisher_definition().get("meter_cost", 100.0))
-	if buttons.has("max"): buttons.max.set_state(max_ready, false)
 	if buttons.has("special"): buttons.special.set_state(finish_ready, finish_ready)
 
 
@@ -1072,12 +1130,16 @@ func _build_menu() -> void:
 	caption.add_theme_font_override("font", _bold_font())
 	var quick := _menu_text_button(action_panel, "START FIGHT", Rect2(0, 152, 330, 52), 21)
 	quick.name = "SingleFightButton"
-	quick.pressed.connect(func(): _open_select("quick"))
+	quick.pressed.connect(func(): _track("menu_start_fight"); _open_select("quick"))
 	var campaign := _menu_text_button(action_panel, "CAMPAIGN", Rect2(0, 214, 330, 52), 18)
 	campaign.name = "CampaignButton"
-	campaign.pressed.connect(func(): _open_select("campaign"))
-	var model_lab := _menu_text_button(action_panel, "FIGHTER LAB", Rect2(0, 276, 330, 52), 18)
-	model_lab.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/character_debug.tscn"))
+	campaign.pressed.connect(func(): _track("menu_campaign"); _open_select("campaign"))
+	# Fighter Lab stays available to developers (scenes/character_debug.tscn)
+	# but is not a player-facing menu action.
+	var contact := _menu_text_button(action_panel, "CONTACT THE CREATOR", Rect2(0, 276, 330, 52), 16)
+	contact.name = "ContactCreatorButton"
+	contact.visible = not str(site_config().get("linkedin_url", "")).is_empty()
+	contact.pressed.connect(_open_creator_profile)
 	_label(action_panel, "OFFLINE  •  13 FIGHTERS", Rect2(0, 484, 340, 20), 9, Color("#7f929b"), HORIZONTAL_ALIGNMENT_LEFT)
 	_label(menu_root, "WORLD FIGHT  /  ELECTION EDITION", Rect2(58, 676, 420, 20), 9, Color("#8999a0"), HORIZONTAL_ALIGNMENT_LEFT)
 	var fullscreen_btn := _button(menu_root, "FULL SCREEN", Rect2(1132, 24, 124, 40), "#233440", 12)
@@ -1319,6 +1381,11 @@ func _set_3d_visible(value: bool) -> void:
 
 
 func _confirm_selection() -> void:
+	if pending_mode == "campaign":
+		# The campaign picks a stage per fight; go straight to the ladder.
+		select_root.visible = false
+		_start_campaign()
+		return
 	select_root.visible = false
 	_load_stage_card_art()
 	map_select_root.visible = true
@@ -1415,64 +1482,173 @@ func _build_pause() -> void:
 	pause_root.visible = false
 
 
+func _build_campaign() -> void:
+	# Campaign ladder screen: every rival in order, Bibi last, progress marks,
+	# the next matchup and a NEXT FIGHT / RETRY action.
+	campaign_root = Control.new()
+	campaign_root.name = "CampaignProgress"
+	campaign_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui.add_child(campaign_root)
+	_split_background(campaign_root)
+	var design := _design_frame(campaign_root, "CampaignDesign")
+	_screen_title(design, "ROAD TO THE ", "KNESSET", 16)
+	var step := _label(design, "", Rect2(340, 66, 600, 26), 16, Color("#dff3f3"), HORIZONTAL_ALIGNMENT_CENTER)
+	step.name = "CampaignStep"
+	step.add_theme_font_override("font", _bold_font())
+	for side in [0, 1]:
+		var art := TextureRect.new()
+		art.name = "CampaignPlayerArt" if side == 0 else "CampaignRivalArt"
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.position = Vector2(70, 96) if side == 0 else Vector2(860, 96)
+		art.size = Vector2(350, 360)
+		art.flip_h = side == 1
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		design.add_child(art)
+		var tag := _label(design, "", Rect2(40, 410, 420, 44) if side == 0 else Rect2(820, 410, 420, 44), 30, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		tag.name = "CampaignPlayerName" if side == 0 else "CampaignRivalName"
+		_strong_text(tag)
+	var versus := _label(design, "VS", Rect2(540, 190, 200, 120), 96, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_strong_text(versus)
+	var ladder := HBoxContainer.new()
+	ladder.name = "CampaignLadder"
+	ladder.alignment = BoxContainer.ALIGNMENT_CENTER
+	ladder.add_theme_constant_override("separation", 6)
+	ladder.position = Vector2(20, 470)
+	ladder.size = Vector2(1240, 104)
+	ladder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	design.add_child(ladder)
+	var bar := _bottom_bar(campaign_root)
+	var back := _secondary_button(bar, "BACK TO MENU", Rect2(44, 14, 220, 50))
+	back.pressed.connect(func(): campaign_mode = false; _show_menu())
+	var go := _primary_button(bar, "NEXT FIGHT", Rect2(-296, 10, 252, 58))
+	go.name = "CampaignGoButton"
+	go.pressed.connect(_start_campaign_fight)
+	campaign_root.visible = false
+
+
+func _show_campaign_progress() -> void:
+	for root in [menu_root, select_root, map_select_root, result_root, pause_root]:
+		root.visible = false
+	hud_root.visible = false
+	fight_live = false
+	_set_3d_visible(false)
+	campaign_root.visible = true
+	var total := campaign_ladder.size()
+	var next_index := mini(campaign_index, total - 1)
+	var rival: String = campaign_ladder[next_index]
+	var is_boss := next_index == total - 1
+	(campaign_root.find_child("CampaignStep", true, false) as Label).text = ("FINAL BOSS" if is_boss else "FIGHT %d / %d" % [next_index + 1, total]) + "   ·   %d RIVALS DEFEATED" % campaign_index
+	(campaign_root.find_child("CampaignPlayerArt", true, false) as TextureRect).texture = _fighter_art(selecting)
+	(campaign_root.find_child("CampaignRivalArt", true, false) as TextureRect).texture = _fighter_art(rival)
+	(campaign_root.find_child("CampaignPlayerName", true, false) as Label).text = _fighter_name(selecting)
+	(campaign_root.find_child("CampaignRivalName", true, false) as Label).text = _fighter_name(rival) + ("  ·  BOSS" if is_boss else "")
+	var go := campaign_root.find_child("CampaignGoButton", true, false) as Button
+	go.text = "RETRY" if _last_campaign_result_lost else ("FIGHT THE BOSS" if is_boss else "NEXT FIGHT")
+	var ladder := campaign_root.find_child("CampaignLadder", true, false) as HBoxContainer
+	for child in ladder.get_children(): child.free()
+	var tile_width := clampf((1240.0 - 6.0 * float(total - 1)) / float(total), 60.0, 92.0)
+	for i in range(total):
+		var tile := Panel.new()
+		tile.custom_minimum_size = Vector2(tile_width, 100)
+		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#101c26")
+		style.set_corner_radius_all(3)
+		var beaten := i < campaign_index
+		var current := i == next_index and campaign_index < total
+		style.border_color = ACCENT_CYAN.lightened(0.2) if current else (ACCENT_GOLD if i == total - 1 else Color("#33495a"))
+		style.set_border_width_all(3 if current or i == total - 1 else 1)
+		if current:
+			style.shadow_color = Color(ACCENT_CYAN, 0.55)
+			style.shadow_size = 8
+		tile.add_theme_stylebox_override("panel", style)
+		ladder.add_child(tile)
+		var face := TextureRect.new()
+		face.texture = load(_fighter_thumbnail_path(campaign_ladder[i]))
+		face.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		face.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		face.position = Vector2(3, 3)
+		face.size = Vector2(tile_width - 6, 72)
+		face.modulate = Color(0.45, 0.5, 0.5) if beaten else Color.WHITE
+		face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_child(face)
+		var state := _label(tile, "WON" if beaten else ("BOSS" if i == total - 1 else str(i + 1)), Rect2(0, 76, tile_width, 22), 12, Color("#5ef0a0") if beaten else (ACCENT_GOLD if i == total - 1 else Color("#c9d6da")), HORIZONTAL_ALIGNMENT_CENTER)
+		state.add_theme_font_override("font", _bold_font())
+
+
 func _build_result() -> void:
+	# Result screen per the owner's concepts: the real arena stays visible (the
+	# winner celebrates, the loser lies on the floor) with a framed result card
+	# on the left and a console action bar. Cyan/gold for a win, red for a loss.
 	result_root = Control.new()
 	result_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui.add_child(result_root)
-	# The live winner pose is the focus. Result copy stays in a compact corner
-	# card so authored celebrations remain readable from head to toe.
-	var result_darken := _panel(result_root, Rect2(0, 0, 1280, 720), Color(0.005, 0.008, 0.015, 0.12))
-	result_darken.name = "ResultDarken"
-	var corner_card := _panel(result_root, Rect2(40, 112, 448, 244), Color(0.010, 0.018, 0.030, 0.72))
-	corner_card.name = "ResultCornerCard"
-	var backdrop_word := _label(result_root, "VICTORY", Rect2(46, 126, 430, 58), 43, Color(0.92, 0.76, 0.42, 0.09), HORIZONTAL_ALIGNMENT_LEFT)
-	backdrop_word.name = "ResultBackdropWord"
-	result_winner_art = TextureRect.new()
-	result_winner_art.name = "ResultWinnerArt"
-	result_winner_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	result_winner_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	result_winner_art.position = Vector2(790, 55)
-	result_winner_art.size = Vector2(470, 610)
-	result_winner_art.modulate = Color(1, 1, 1, 0.42)
-	result_winner_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	result_root.add_child(result_winner_art)
-	result_winner_art.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	result_winner_art.offset_left = -490
-	result_winner_art.offset_right = -20
-	result_winner_art.offset_top = 55
-	result_winner_art.offset_bottom = -55
-	result_accent = _panel(result_root, Rect2(40, 112, 6, 244), Color("#39cbc6"))
+	var shade := TextureRect.new()
+	shade.name = "ResultDarken"
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.0, 0.01, 0.03, 0.82))
+	gradient.set_color(1, Color(0.0, 0.01, 0.03, 0.0))
+	gradient.add_point(0.42, Color(0.0, 0.01, 0.03, 0.55))
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.fill_from = Vector2(0, 0)
+	texture.fill_to = Vector2(0.62, 0)
+	shade.texture = texture
+	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	result_root.add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var card := _panel(result_root, Rect2(36, 40, 520, 520), Color(0.01, 0.025, 0.04, 0.80))
+	card.name = "ResultCornerCard"
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.clip_contents = true
+	result_fx = ResultFxScript.new()
+	result_fx.setup("win")
+	card.add_child(result_fx)
+	result_fx.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	result_frame = _ornament(card, "brackets", Rect2(8, 8, 504, 504), ACCENT_CYAN)
+	result_accent = _panel(card, Rect2(0, 0, 6, 520), ACCENT_CYAN)
 	result_accent.name = "ResultAccent"
 	var content := Control.new()
 	content.name = "ResultContent"
-	content.position = Vector2(66, 132)
-	content.size = Vector2(396, 204)
+	content.position = Vector2(64, 70)
+	content.size = Vector2(472, 470)
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	result_root.add_child(content)
-	_label(content, "FINAL RESULT", Rect2(0, 0, 396, 24), 11, Color("#d9b566"), HORIZONTAL_ALIGNMENT_LEFT)
-	var title := _label(content, "FIGHT OVER", Rect2(0, 24, 396, 70), 56, Color("#f7f2e8"), HORIZONTAL_ALIGNMENT_LEFT)
+	var heading := _label(content, "FINAL RESULT", Rect2(0, 0, 472, 30), 18, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	heading.name = "ResultHeading"
+	heading.add_theme_font_override("font", _bold_font())
+	_ornament(content, "title_rule", Rect2(40, 12, 80, 8), ACCENT_GOLD)
+	_ornament(content, "title_rule", Rect2(352, 12, 80, 8), ACCENT_GOLD, true)
+	var title := _label(content, "FIGHT OVER", Rect2(-10, 40, 492, 150), 96, Color("#ffffff"), HORIZONTAL_ALIGNMENT_CENTER)
 	title.name = "ResultTitle"
 	_strong_text(title)
-	var winner_name := _label(content, "", Rect2(0, 94, 396, 32), 21, Color("#72d9d4"), HORIZONTAL_ALIGNMENT_LEFT)
+	title.add_theme_constant_override("outline_size", 12)
+	title.add_theme_constant_override("shadow_outline_size", 26)
+	var winner_name := _label(content, "", Rect2(0, 196, 472, 48), 32, ACCENT_CYAN, HORIZONTAL_ALIGNMENT_CENTER)
 	winner_name.name = "WinnerName"
-	var detail := _label(content, "", Rect2(0, 132, 396, 64), 13, Color("#c3cdd0"), HORIZONTAL_ALIGNMENT_LEFT)
+	_strong_text(winner_name)
+	var detail := _label(content, "", Rect2(0, 250, 472, 70), 18, Color("#d7e1e4"), HORIZONTAL_ALIGNMENT_CENTER)
 	detail.name = "ResultDetail"
 	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var next := _button(result_root, "CONTINUE", Rect2(40, 620, 210, 54), "#1d777a", 16)
+	var bar := _bottom_bar(result_root)
+	var next := _primary_button(bar, "REMATCH", Rect2(44, 10, 250, 58))
 	next.name = "ContinueButton"
-	_style_primary(next)
 	next.pressed.connect(_continue_from_result)
-	var new_opponent := _button(result_root, "NEW OPPONENT", Rect2(262, 620, 210, 54), "#7a4a2a", 14)
+	var new_opponent := _secondary_button(bar, "NEW OPPONENT", Rect2(312, 14, 250, 50))
 	new_opponent.name = "NewOpponentButton"
-	_style_secondary(new_opponent)
-	new_opponent.pressed.connect(_start_quick_fight)
-	var menu := _button(result_root, "RETURN TO MENU", Rect2(484, 620, 210, 54), "#3b4852", 13)
+	new_opponent.pressed.connect(func(): _track("new_opponent"); _start_quick_fight())
+	var menu := _secondary_button(bar, "RETURN TO MENU", Rect2(580, 14, 250, 50))
 	menu.name = "ResultMenuButton"
-	_style_secondary(menu)
 	menu.pressed.connect(_return_to_menu)
-	_label(result_root, "ENTER  /  CONTINUE", Rect2(40, 682, 432, 22), 9, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_LEFT)
+	var hint := _label(bar, "ENTER  /  CONTINUE", Rect2(-260, 26, 216, 24), 12, Color("#a0afb5"), HORIZONTAL_ALIGNMENT_RIGHT)
+	hint.anchor_left = 1.0
+	hint.anchor_right = 1.0
+	hint.offset_left = -260
+	hint.offset_right = -44
 	result_root.visible = false
-
-
 func _panel(parent: Control, rect: Rect2, color: Color) -> Panel:
 	var panel := Panel.new()
 	panel.position = rect.position
@@ -1830,6 +2006,7 @@ func _show_menu() -> void:
 	paused = false
 	hud_root.visible = false
 	menu_root.visible = true
+	if is_instance_valid(campaign_root): campaign_root.visible = false
 	select_root.visible = false
 	map_select_root.visible = false
 	pause_root.visible = false
@@ -1846,7 +2023,6 @@ func _show_menu() -> void:
 
 func _start_quick_fight() -> void:
 	campaign_mode = false
-	bout = 0
 	campaign_wins = 0
 	var rival_id := _opponent_selector.pick_opponent(PLAYABLE_IDS, selecting)
 	if rival_id.is_empty(): return
@@ -1855,13 +2031,53 @@ func _start_quick_fight() -> void:
 
 func _start_campaign() -> void:
 	campaign_mode = true
-	bout = 0
 	campaign_wins = 0
-	var rival_id: String = BOUTS[0].id
-	if rival_id == selecting: rival_id = _next_rival_id(selecting)
-	_setup_bout(selecting, rival_id, BOUTS[0].level, BOUTS[0].title)
+	campaign_index = 0
+	campaign_ladder = campaign_ladder_for(selecting)
+	_last_campaign_result_lost = false
+	_track("campaign_start", {"player": selecting, "rivals": campaign_ladder.size()})
+	_show_campaign_progress()
 
 
+func campaign_ladder_for(player_id: String, rng_seed: int = -1) -> Array[String]:
+	# Every other fighter in a shuffled order, then Bibi as the final boss —
+	# also when the player is Bibi (a mirror match closes the ladder).
+	var rng := RandomNumberGenerator.new()
+	if rng_seed >= 0: rng.seed = rng_seed
+	else: rng.randomize()
+	var rivals: Array[String] = []
+	for id in PLAYABLE_IDS:
+		if id != player_id and id != CAMPAIGN_BOSS:
+			rivals.append(id)
+	for i in range(rivals.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var swap := rivals[i]
+		rivals[i] = rivals[j]
+		rivals[j] = swap
+	rivals.append(CAMPAIGN_BOSS)
+	return rivals
+
+
+func campaign_level_for(index: int, total: int) -> int:
+	# Difficulty ramps from level 1 to level 4 (the boss).
+	if total <= 1: return 4
+	return clampi(1 + int(floor(3.0 * float(index) / float(total - 1))), 1, 4)
+
+
+func _campaign_stage_for(index: int) -> String:
+	if index == campaign_ladder.size() - 1:
+		return "knesset_chamber"
+	return str(STAGES[index % STAGES.size()].id)
+
+
+func _start_campaign_fight() -> void:
+	if campaign_index >= campaign_ladder.size():
+		return
+	campaign_root.visible = false
+	selected_stage_id = _campaign_stage_for(campaign_index)
+	var rival: String = campaign_ladder[campaign_index]
+	var title := "FINAL BOSS" if campaign_index == campaign_ladder.size() - 1 else "FIGHT %d / %d" % [campaign_index + 1, campaign_ladder.size()]
+	_setup_bout(selecting, rival, campaign_level_for(campaign_index, campaign_ladder.size()), title)
 func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: String) -> void:
 	menu_root.visible = false
 	select_root.visible = false
@@ -1869,12 +2085,14 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	result_root.visible = false
 	pause_root.visible = false
 	hud_root.visible = true
+	if is_instance_valid(campaign_root): campaign_root.visible = false
 	current_rival_id = rival_id
 	current_level = level
+	_track("fight_start", {"player": player_id, "rival": rival_id, "stage": selected_stage_id, "mode": "campaign" if campaign_mode else "quick", "level": level})
 	_set_3d_visible(true)
 	_build_stage(selected_stage_id)
 	(_hud_node("PlayerName") as Label).text = _fighter_name(player_id)
-	(_hud_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and bout == 3 else "")
+	(_hud_node("EnemyName") as Label).text = _fighter_name(rival_id) + ("  /  BOSS" if campaign_mode and campaign_index == campaign_ladder.size() - 1 else "")
 	player_hud_portrait.texture = load(_fighter_thumbnail_path(player_id))
 	enemy_hud_portrait.texture = load(_fighter_thumbnail_path(rival_id))
 	var player_name_text := _fighter_name(player_id)
@@ -2071,6 +2289,7 @@ func _on_defeated(who: int) -> void:
 
 func _end_round(reason: String) -> void:
 	if not fight_live or intermission > 0: return
+	_track("round_end", {"reason": reason, "score": "%d-%d" % [player_rounds, enemy_rounds]})
 	match_state = MatchState.Value.KO_HOLD
 	_cancel_special_hold()
 	round_ready = false
@@ -2108,53 +2327,56 @@ func _update_scores() -> void:
 
 
 func _show_result(won: bool) -> void:
+	_track("match_end", {"result": "win" if won else "loss", "score": "%d-%d" % [player_rounds, enemy_rounds], "mode": "campaign" if campaign_mode else "quick"})
 	match_state = MatchState.Value.RESULT
 	fight_live = false
 	hud_root.visible = false
 	result_root.visible = true
-	result_winner_art.visible = true
 	var content := result_root.get_node("ResultContent")
 	var title: Label = content.get_node("ResultTitle")
+	var heading: Label = content.get_node("ResultHeading")
 	var winner_name: Label = content.get_node("WinnerName")
 	var detail: Label = content.get_node("ResultDetail")
-	var button: Button = result_root.get_node("ContinueButton")
-	var backdrop_word: Label = result_root.get_node("ResultBackdropWord")
-	(result_root.get_node("NewOpponentButton") as Button).visible = not campaign_mode
+	var button: Button = result_root.find_child("ContinueButton", true, false)
+	(result_root.find_child("NewOpponentButton", true, false) as Button).visible = not campaign_mode
 	var winner_id := selecting
 	if won and is_instance_valid(player):
 		winner_id = player.character_id
 	elif not won and is_instance_valid(enemy):
 		winner_id = enemy.character_id
-	elif not won:
-		winner_id = _next_rival_id(selecting)
-	result_winner_art.texture = _fighter_art(winner_id, not won)
-	result_winner_art.modulate = Color(0.77, 0.94, 0.93, 0.42) if won else Color(0.96, 0.72, 0.75, 0.38)
+	var accent := ACCENT_CYAN if won else Color("#ff4d5e")
+	result_fx.set_mode("win" if won else "loss")
+	result_frame.color = accent
+	result_frame.queue_redraw()
+	(result_accent.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = accent
+	var card_style := (result_root.get_node("ResultCornerCard") as Panel).get_theme_stylebox("panel") as StyleBoxFlat
+	card_style.border_color = Color(accent, 0.75)
+	card_style.set_border_width_all(2)
+	card_style.shadow_color = Color(accent, 0.35)
+	card_style.shadow_size = 18
+	title.text = "YOU WIN" if won else "YOU LOSE"
+	title.add_theme_color_override("font_shadow_color", Color(ACCENT_GOLD if won else accent, 0.75))
+	heading.add_theme_color_override("font_color", ACCENT_GOLD if won else Color("#c9d2d6"))
 	winner_name.text = "%s WINS" % _fighter_name(winner_id)
-	var accent_color := Color("#39cbc6") if won else Color("#df5968")
-	winner_name.add_theme_color_override("font_color", accent_color.lightened(0.18))
-	var accent_style := result_accent.get_theme_stylebox("panel") as StyleBoxFlat
-	accent_style.bg_color = accent_color
+	winner_name.add_theme_color_override("font_color", accent.lightened(0.15))
 	if won:
 		campaign_wins += 1
-		title.text = "YOU WIN"
-		backdrop_word.text = "VICTORY"
 		detail.text = "You won %d–%d." % [player_rounds, enemy_rounds]
-		if campaign_mode and bout < 3:
-			detail.text += "  The campaign continues."
-			button.text = "NEXT BOUT"
-		elif campaign_mode:
-			detail.text = "The boss is beaten. You cleared the campaign!"
-			button.text = "BACK TO MENU"
-		else:
-			button.text = "REMATCH"
-	else:
-		title.text = "YOU LOSE"
-		backdrop_word.text = "YOU LOSE"
-		detail.text = "The rival took the match. Change your rhythm and take the arena back."
-		button.text = "TRY AGAIN" if not campaign_mode else "RETRY BOUT"
+		button.text = "REMATCH"
+		if campaign_mode:
+			campaign_index += 1
+			if campaign_index >= campaign_ladder.size():
+				detail.text = "Every rival is down — you are the champion of the campaign!"
+				button.text = "CAMPAIGN COMPLETE"
+			else:
+				detail.text = "You won %d–%d.  %d / %d rivals defeated." % [player_rounds, enemy_rounds, campaign_index, campaign_ladder.size()]
+				button.text = "NEXT FIGHT"
+			_track("campaign_progress", {"index": campaign_index, "total": campaign_ladder.size()})
+	_last_campaign_result_lost = not won
+	if not won:
+		detail.text = "You lost %d–%d. Change your rhythm and take the arena back." % [player_rounds, enemy_rounds]
+		button.text = "TRY AGAIN" if not campaign_mode else "RETRY"
 	_play_sound("victory" if won else "hit")
-
-
 func _show_result_with_celebration(won: bool) -> void:
 	var winner: GameFighter = player if won else enemy
 	var loser: GameFighter = enemy if won else player
@@ -2165,7 +2387,6 @@ func _show_result_with_celebration(won: bool) -> void:
 	var celebration_id := str(definition.get("celebration_id", ""))
 	_celebration_won = won
 	result_root.visible = false
-	result_winner_art.visible = false
 	hud_root.visible = false
 	if not _finisher_director.begin_celebration(winner, loser, celebration_id):
 		_show_result(won)
@@ -2175,25 +2396,14 @@ func _continue_from_result() -> void:
 	if not campaign_mode:
 		_rematch()
 		return
-	if player_rounds < 2:
-		var retry_data: Dictionary = BOUTS[bout]
-		var retry_enemy: String = retry_data.id
-		if retry_enemy == selecting:
-			retry_enemy = _next_rival_id(selecting)
-		_setup_bout(selecting, retry_enemy, retry_data.level, retry_data.title)
-	elif bout < 3:
-		bout += 1
-		var fighter_data: Dictionary = BOUTS[bout]
-		var enemy_id: String = fighter_data.id
-		if enemy_id == selecting:
-			enemy_id = _next_rival_id(selecting)
-		_setup_bout(selecting, enemy_id, fighter_data.level, fighter_data.title)
-	else:
+	if campaign_index >= campaign_ladder.size():
 		campaign_mode = false
 		_show_menu()
-
-
+		return
+	# Win: the ladder advanced in _show_result. Loss: retry the same rival.
+	_show_campaign_progress()
 func _rematch() -> void:
+	_track("rematch")
 	# REMATCH / TRY AGAIN replays the same rival on the same stage.
 	if current_rival_id.is_empty() or current_rival_id == selecting:
 		_start_quick_fight()

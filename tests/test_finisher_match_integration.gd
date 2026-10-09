@@ -63,6 +63,9 @@ func _run() -> void:
 	var clock: float = main.round_clock
 	main._process(0.2)
 	assert(main.round_clock == clock, "round clock ran during the finisher")
+	var card = main._finisher_director.find_child("SuperMoveCard", true, false)
+	assert(card != null and card.find_child("MoveName", true, false) != null, "finisher must open with the full-screen super-move card")
+	assert(main._fight_camera.fov == 30.0, "finisher must not zoom the camera")
 	main._toggle_pause()
 	var elapsed: float = main._finisher_director.timeline.elapsed()
 	main._process(1.0)
@@ -76,6 +79,7 @@ func _run() -> void:
 	assert(not main.result_root.visible, "survived finisher opened the result screen")
 	assert(main.enemy.knockdown_time > 0.0 and main.enemy.getup_pending, "survivor must get up from the heavy blow")
 	assert(main.player.meter == 0.0, "finisher must spend the full bar")
+	assert(main._finisher_director.find_child("SuperMoveCard", true, false) == null, "super-move card was not cleaned up")
 
 	# 2. A lethal finisher in round one ends only that round.
 	_arm(main, 10.0)
@@ -122,7 +126,7 @@ func _run() -> void:
 
 	# 4. REMATCH keeps the same rival; NEW OPPONENT is offered separately.
 	var rival: String = main.enemy.character_id
-	assert(main.result_root.get_node("NewOpponentButton").visible, "quick fight result has no NEW OPPONENT choice")
+	assert(main.result_root.find_child("NewOpponentButton", true, false).visible, "quick fight result has no NEW OPPONENT choice")
 	main._continue_from_result()
 	await process_frame
 	assert(main.enemy.character_id == rival, "REMATCH changed the rival")

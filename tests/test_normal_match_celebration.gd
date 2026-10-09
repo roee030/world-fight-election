@@ -23,7 +23,6 @@ func _run() -> void:
 	main._show_result_with_celebration(true)
 	assert(not main.result_root.visible, "result UI must stay hidden during the clear celebration interval")
 	assert(main.match_state == main.MatchState.Value.CELEBRATION)
-	assert(not main.result_winner_art.visible, "static winner art must not cover the live celebration")
 	assert(main._finisher_director.active, "ordinary match victory must run the winner celebration")
 	assert(main._finisher_director._attacker == main.player)
 	assert(main.enemy._visual.sprite.animation == "knockdown", "loser must stay fallen during the winner celebration")

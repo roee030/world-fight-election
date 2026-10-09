@@ -41,6 +41,12 @@ func _run() -> void:
 		return _fail("main menu action panel is missing")
 	if action_panel.find_children("*", "Button", true, false).size() != 3:
 		return _fail("main menu must expose exactly three actions")
+	for button in action_panel.find_children("*", "Button", true, false):
+		if (button as Button).text == "FIGHTER LAB":
+			return _fail("Fighter Lab must not be a player-facing menu action")
+	var contact := action_panel.find_child("ContactCreatorButton", true, false) as Button
+	if contact == null or contact.visible != not str(main.site_config().get("linkedin_url", "")).is_empty():
+		return _fail("CONTACT THE CREATOR must exist and only show when a LinkedIn URL is configured")
 	if main.menu_root.get_node_or_null("FullscreenButton") == null:
 		return _fail("main menu has no fullscreen control for phone browsers")
 	if not main.menu_root.find_children("*", "ScrollContainer", true, false).is_empty():
@@ -107,31 +113,25 @@ func _run() -> void:
 	if main.player_meter_percent.text != "SP READY":
 		return _fail("full Special Energy does not announce SP")
 
-	var result_art := main.result_root.get_node_or_null("ResultWinnerArt") as TextureRect
-	if result_art == null:
-		return _fail("result screen has no winner artwork")
-	if main.result_root.get_node_or_null("ResultMenuButton") == null:
-		return _fail("result screen has no menu action")
-	var darken := main.result_root.get_node_or_null("ResultDarken") as Panel
-	if darken == null or (darken.get_theme_stylebox("panel") as StyleBoxFlat).bg_color.a > 0.38:
-		return _fail("result presentation hides the arena")
-	if main.result_root.get_node("ResultContent/ResultTitle").get_theme_font_size("font_size") > 90:
-		return _fail("result title covers too much of the winner celebration")
-	var result_content: Control = main.result_root.get_node("ResultContent") as Control
-	if result_content.position.x > 80.0 or result_content.size.x > 480.0:
-		return _fail("result text still occupies the center of the winner celebration")
+	# Result screen (owner concepts): the live arena stays visible behind a
+	# framed card; no static winner art covers the celebration.
+	if main.result_root.find_child("ResultWinnerArt", true, false) != null:
+		return _fail("static winner art must not cover the arena")
+	for node_name in ["ResultMenuButton", "ContinueButton", "NewOpponentButton", "ResultDarken", "ResultCornerCard", "ResultFx"]:
+		if main.result_root.find_child(node_name, true, false) == null:
+			return _fail("result screen is missing %s" % node_name)
 	var corner_card: Panel = main.result_root.get_node_or_null("ResultCornerCard") as Panel
-	if corner_card == null or corner_card.position.x > 80.0 or corner_card.size.x > 500.0:
-		return _fail("result screen has no compact corner card")
+	if corner_card == null or corner_card.position.x > 80.0 or corner_card.size.x > 560.0:
+		return _fail("result card must stay on the left, clear of the winner")
 	main._show_result(true)
-	if result_art.texture == null:
-		return _fail("victory result does not populate winner artwork")
 	if main.result_root.get_node("ResultContent/ResultTitle").text != "YOU WIN":
 		return _fail("victory result title is incorrect")
+	if main.result_fx.mode != "win" or (main.result_root.find_child("ContinueButton", true, false) as Button).text != "REMATCH":
+		return _fail("victory result must celebrate and offer REMATCH")
 	main._show_result(false)
-	if main.result_root.get_node("ResultContent/ResultTitle").text != "YOU LOSE":
-		return _fail("defeat result title is incorrect")
-	if not main.result_root.get_node("ContinueButton").visible or not main.result_root.get_node("ResultMenuButton").visible:
+	if main.result_root.get_node("ResultContent/ResultTitle").text != "YOU LOSE" or main.result_fx.mode != "loss":
+		return _fail("defeat result title or effects are incorrect")
+	if not (main.result_root.find_child("ContinueButton", true, false) as Button).visible or not (main.result_root.find_child("ResultMenuButton", true, false) as Button).visible:
 		return _fail("defeat result actions are not visible")
 
 	main.free()

@@ -27,12 +27,12 @@ func _run() -> void:
 	director.catalog = {"victory": {"duration": 2.0, "events": [{"at": 2.0, "type": "result_marker"}]}}
 	var definition := {"implemented": true, "duration": 1.0, "camera_preset": "close_side", "celebration_id": "victory", "events": [{"at": 0.0, "type": "fighter_clip", "asset": "res://assets/characters/sprites/bennet-0.png", "region": [0, 0, 512, 512], "figure_height_px": 468, "foot_baseline": 490}]}
 	assert(director.begin(attacker, defender, definition))
-	assert(camera.fov < 30.0, "perspective preset must change perspective framing")
+	assert(camera.fov == 30.0 and camera.position == Vector3(0, 3.6, 9.7), "presets must keep the fight framing (no zoom jump)")
 	director.advance(0.0)
 	assert(attacker._visual.sprite.sprite_frames != original, "authored celebration texture is used")
 	director.cancel()
 	assert(camera.fov == 30.0)
 	assert(attacker._visual.sprite.sprite_frames == original, "normal fighter frames restored")
 	arena.free()
-	print("PASS: perspective presets, authored art geometry and cleanup")
+	print("PASS: presets keep fight framing, authored art geometry and cleanup")
 	quit(0)

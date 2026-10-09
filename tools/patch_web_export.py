@@ -10,12 +10,24 @@ each run, so patching an already patched (or older) shell is idempotent.
 """
 
 from pathlib import Path
+import json
 import re
 from shutil import copyfile
 from typing import Mapping
 
 
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
+SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
+DISCLAIMER_VERSION = "wf-disclaimer-v1"
+
+
+def load_site_config(path: Path = SITE_CONFIG) -> dict:
+    """Owner settings: analytics code and LinkedIn URL (empty = disabled)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = {}
+    return {"goatcounter_code": str(data.get("goatcounter_code", "")).strip(), "linkedin_url": str(data.get("linkedin_url", "")).strip()}
 
 
 def fit_viewport(width: float, height: float, insets: Mapping[str, float] | None = None) -> dict[str, float | bool]:
@@ -253,6 +265,98 @@ self.addEventListener('activate', (event) => {
 });
 """
 
+LEGAL_STYLE = """<style id="world-fight-legal-style">
+#worldFightDisclaimer{display:none;position:fixed;inset:0;z-index:10050;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;background:rgba(2,6,12,.94);font-family:Arial,Helvetica,sans-serif;color:#eef4f5}
+.wf-legal-open #worldFightDisclaimer{display:flex}
+.wf-legal-open #worldFightFullscreenGate{display:none!important}
+#worldFightDisclaimer .wf-legal-card{width:min(640px,100%);max-height:calc(100dvh - 24px);overflow:auto;border:1px solid rgba(232,185,79,.75);background:linear-gradient(180deg,#0b1620,#070d14);box-shadow:0 0 40px rgba(70,220,216,.18);padding:18px 20px;box-sizing:border-box}
+#worldFightDisclaimer h2{margin:0 0 4px;font-size:clamp(18px,4vmin,24px);color:#f2c35a;letter-spacing:.04em}
+#worldFightDisclaimer .wf-legal-sub{margin:0 0 10px;color:#7fe3df;font-size:12px;letter-spacing:.2em}
+#worldFightDisclaimer ul{margin:0 0 10px;padding-inline-start:18px;line-height:1.5;font-size:clamp(12px,2.6vmin,15px)}
+#worldFightDisclaimer li{margin-bottom:4px}
+#worldFightDisclaimer .wf-legal-en{direction:ltr;text-align:left;color:#9fb2b8;font-size:11px;line-height:1.45;margin:8px 0 10px}
+#worldFightDisclaimer label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:clamp(13px,2.7vmin,15px);font-weight:700;margin:8px 0 12px}
+#worldFightDisclaimer input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;accent-color:#e8b94f;margin-top:1px}
+#worldFightDisclaimer button{width:100%;min-height:48px;border:1px solid #e9bd62;background:linear-gradient(180deg,#f6d57a,#b67d24);color:#2a1a06;font-weight:900;font-size:16px;letter-spacing:.08em;cursor:pointer}
+#worldFightDisclaimer button:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}
+@media (max-height:440px){#worldFightDisclaimer .wf-legal-card{padding:10px 14px}#worldFightDisclaimer h2{font-size:17px}#worldFightDisclaimer .wf-legal-sub{margin-bottom:4px}#worldFightDisclaimer ul{font-size:12px;line-height:1.35}#worldFightDisclaimer li{margin-bottom:2px}#worldFightDisclaimer .wf-legal-en{font-size:10px;margin:4px 0 6px}#worldFightDisclaimer label{margin:4px 0 8px}#worldFightDisclaimer button{min-height:42px}}
+</style>
+"""
+
+LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true" aria-labelledby="wfLegalTitle"><div class="wf-legal-card" dir="rtl" lang="he">
+<h2 id="wfLegalTitle">לפני שמתחילים – הבהרה חשובה</h2>
+<p class="wf-legal-sub">SATIRE · PARODY · FREE</p>
+<ul>
+<li>World Fight הוא משחק סאטירי והומוריסטי בלבד. הדמויות הן קריקטורות פרודיות של אישי ציבור, ואין לראות במשחק תיאור של המציאות או של עמדות, מעשים או אמירות של מישהו.</li>
+<li>המשחק אינו קשור, ממומן או מאושר על ידי אף אדם, מפלגה או גוף המופיעים בו. כל דמיון למציאות הוא פרודי ומקרי.</li>
+<li>המשחק אינו מעודד, תומך או קורא לאלימות מכל סוג כלפי אדם כלשהו בעולם האמיתי. הקרבות הם אנימציה מצוירת ומוגזמת בלבד.</li>
+<li>המשחק מופץ בחינם, ללא פרסומות, ללא רכישות וללא מטרת רווח.</li>
+<li>נאספים נתוני שימוש אנונימיים בלבד (ללא עוגיות וללא פרטים מזהים) לצורך שיפור המשחק.</li>
+</ul>
+<p class="wf-legal-en">World Fight is satire and parody only. Characters are caricatures of public figures; nothing depicts real events, views or conduct. It is not affiliated with, sponsored or endorsed by any person, party or organisation shown. It does not encourage or call for violence of any kind against anyone in the real world. It is free and non-commercial. Anonymous, cookie-free usage statistics are collected to improve the game.</p>
+<label><input id="worldFightDisclaimerCheck" type="checkbox"><span>קראתי והבנתי: זהו משחק סאטירי בלבד, ואני מסכים/ה לתנאים. · I have read and agree.</span></label>
+<button id="worldFightDisclaimerAccept" type="button" disabled>כניסה למשחק · ENTER</button>
+</div></div>
+<script>(() => {
+  const key = '__VERSION__';
+  let accepted = false;
+  try { accepted = localStorage.getItem(key) === 'accepted'; } catch (error) { accepted = false; }
+  if (!accepted) document.documentElement.classList.add('wf-legal-open');
+  const check = document.getElementById('worldFightDisclaimerCheck');
+  const accept = document.getElementById('worldFightDisclaimerAccept');
+  check.addEventListener('change', () => { accept.disabled = !check.checked; });
+  const enter = (event) => {
+    if (!check.checked) return;
+    event.preventDefault();
+    try { localStorage.setItem(key, 'accepted'); } catch (error) {}
+    document.documentElement.classList.remove('wf-legal-open');
+    window.worldFightTrack?.('disclaimer_accepted');
+    // The accept tap is a user gesture: use it to enter fullscreen on phones.
+    if (innerWidth > innerHeight && (navigator.maxTouchPoints || 0) > 0) window.requestWorldFightFullscreen?.();
+    window.layoutWorldFightViewport?.();
+  };
+  accept.addEventListener('click', enter);
+  accept.addEventListener('pointerup', enter);
+})();</script>"""
+
+ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
+(() => {
+  // Named game events. With a GoatCounter code they are counted as
+  // "event-<name>" paths (cookie-free); without one they stay in a ring
+  // buffer shown by ?diag=1.
+  const code = '__CODE__';
+  window.worldFightEvents = [];
+  window.worldFightTrack = (name, props = {}) => {
+    const entry = { name: String(name), props, at: Date.now() };
+    window.worldFightEvents.push(entry);
+    if (window.worldFightEvents.length > 100) window.worldFightEvents.shift();
+    if (code && window.goatcounter && window.goatcounter.count) {
+      const detail = Object.entries(props || {}).map(([k, v]) => k + '=' + v).join(' ');
+      window.goatcounter.count({ path: 'event-' + entry.name, title: detail || entry.name, event: true });
+    }
+  };
+  if (code) {
+    const tag = document.createElement('script');
+    tag.async = true;
+    tag.src = 'https://gc.zgo.at/count.js';
+    tag.dataset.goatcounter = 'https://' + code + '.goatcounter.com/count';
+    document.head.appendChild(tag);
+  }
+  window.worldFightTrack('session_start', { touch: (navigator.maxTouchPoints || 0) > 0, w: innerWidth, h: innerHeight, lang: navigator.language });
+})();
+</script>
+"""
+
+
+def legal_markup(version: str = DISCLAIMER_VERSION) -> str:
+    return LEGAL_MARKUP.replace("__VERSION__", version)
+
+
+def analytics_script(code: str) -> str:
+    safe = re.sub(r"[^a-z0-9-]", "", code.lower())
+    return ANALYTICS_SCRIPT.replace("__CODE__", safe)
+
+
 # Blocks written by older patcher versions without markers.
 LEGACY_PATTERNS = (
     re.compile(r'<script id="world-fight-cache-retirement">.*?</script>\s*', re.S),
@@ -269,10 +373,11 @@ def _strip(html: str) -> str:
     return html
 
 
-def patch(path: Path) -> None:
+def patch(path: Path, config: dict | None = None) -> None:
+    config = load_site_config() if config is None else config
     html = _strip(path.read_text(encoding="utf-8"))
-    head = "<!--wf:head-->" + CACHE_RETIREMENT + HEAD_SHELL + "<!--/wf:head-->"
-    body = "<!--wf:body-->" + BODY_SHELL + "<!--/wf:body-->"
+    head = "<!--wf:head-->" + CACHE_RETIREMENT + analytics_script(config.get("goatcounter_code", "")) + HEAD_SHELL + LEGAL_STYLE + "<!--/wf:head-->"
+    body = "<!--wf:body-->" + legal_markup() + BODY_SHELL + "<!--/wf:body-->"
     html = html.replace("</head>", head + "</head>", 1)
     html = re.sub(r"<body([^>]*)>", lambda match: "<body" + match.group(1) + ">" + body, html, count=1)
     path.write_text(html, encoding="utf-8")
