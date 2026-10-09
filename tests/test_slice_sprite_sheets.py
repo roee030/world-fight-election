@@ -34,6 +34,24 @@ class SpriteSheetGeometryTests(unittest.TestCase):
                 f"{fighter_id} cross is still visually indistinguishable from the jab (IoU={overlap:.3f})",
             )
 
+    def test_cross_keeps_the_same_visible_fighter_scale_as_jab(self) -> None:
+        """Changing attacks must not make the fighter visibly shrink."""
+        root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
+        fighter_ids = (
+            "bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid",
+            "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich",
+            "gadi_eisenkot", "trump", "joint_list",
+        )
+        for fighter_id in fighter_ids:
+            jab = np.asarray(Image.open(root / f"{fighter_id}-4.png").getchannel("A")) > 12
+            cross = np.asarray(Image.open(root / f"{fighter_id}-5.png").getchannel("A")) > 12
+            visible_area_ratio = int(cross.sum()) / int(jab.sum())
+            self.assertGreaterEqual(
+                visible_area_ratio,
+                0.95,
+                f"{fighter_id} visibly shrinks during CROSS (area ratio={visible_area_ratio:.3f})",
+            )
+
     def test_repaired_bibi_and_mansour_frames_have_no_remote_pose_fragments(self) -> None:
         root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
         for fighter_id in ("bibi", "mansour_abbas"):
