@@ -3,6 +3,9 @@ name: Export and deploy World Fight
 on:
   push:
     branches: [main]
+  schedule:
+    # Refresh the analytics dashboard (the game is re-exported with it).
+    - cron: "7 */4 * * *"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +60,19 @@ jobs:
           test -s export/web/index.wasm
           test -s export/web/index.pck
           test -s export/web/finishers.pck
+
+      - name: Build analytics dashboard
+        # Needs the repository secret GOATCOUNTER_TOKEN (read-only API token).
+        # Without it, or if GoatCounter is unreachable, the game still deploys.
+        continue-on-error: true
+        env:
+          GOATCOUNTER_TOKEN: ${{ secrets.GOATCOUNTER_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$GOATCOUNTER_TOKEN" ]; then echo "No GOATCOUNTER_TOKEN secret; skipping dashboard"; exit 0; fi
+          pip install --quiet pillow
+          python tools/build_dashboard.py --days 30 --out export/web/stats-510485b633/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

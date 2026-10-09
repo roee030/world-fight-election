@@ -603,6 +603,10 @@ func analytics_path(event_name: String, props: Dictionary = {}) -> String:
 		"combo": return "combo/%s" % str(props.get("name", "unknown")).to_lower().replace(" ", "-")
 		"combo_hits": return "combo/hits-%d" % int(props.get("hits", 0))
 		"combo_break": return "combo/break-%s" % props.get("by", "unknown")
+		"rival_face": return "rival/%s" % props.get("rival", "unknown")
+		"stage_pick": return "stage/%s" % props.get("stage", "unknown")
+		"level_pick": return "level/%s/%d" % [mode, int(props.get("level", 0))]
+		"player_outcome": return "outcome/%s/%s" % [props.get("player", "unknown"), props.get("result", "unknown")]
 		"tutorial_start": return "tutorial/start"
 		"tutorial_step": return "tutorial/step-%s" % props.get("step", "unknown")
 		"tutorial_complete": return "tutorial/complete"
@@ -2865,7 +2869,11 @@ func _setup_bout(player_id: String, rival_id: String, level: int, stage_title: S
 	if is_instance_valid(campaign_root): campaign_root.visible = false
 	current_rival_id = rival_id
 	current_level = level
-	_track("fight_start", {"player": player_id, "rival": rival_id, "stage": selected_stage_id, "mode": "campaign" if campaign_mode else "quick", "level": level})
+	var fight_mode := "campaign" if campaign_mode else "quick"
+	_track("rival_face", {"rival": rival_id})
+	_track("stage_pick", {"stage": selected_stage_id})
+	_track("level_pick", {"mode": fight_mode, "level": level})
+	_track("fight_start", {"player": player_id, "rival": rival_id, "stage": selected_stage_id, "mode": fight_mode, "level": level})
 	_set_3d_visible(true)
 	_tutorial_pending = tutorial_auto_enabled()
 	_build_stage(selected_stage_id)
@@ -3140,6 +3148,7 @@ func _update_scores() -> void:
 
 func _show_result(won: bool) -> void:
 	_track("match_end", {"result": "win" if won else "loss", "score": "%d-%d" % [player_rounds, enemy_rounds], "mode": "campaign" if campaign_mode else "quick"})
+	_track("player_outcome", {"player": selecting, "result": "win" if won else "loss"})
 	match_state = MatchState.Value.RESULT
 	fight_live = false
 	hud_root.visible = false

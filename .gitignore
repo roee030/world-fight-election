@@ -13,3 +13,4 @@ __pycache__/
 *.import
 *.tmp
 *.blend1
+tools/.goatcounter-token

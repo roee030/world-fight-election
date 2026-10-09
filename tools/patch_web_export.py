@@ -428,6 +428,7 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
     visibleSeconds += 5;
     if (milestones.length && visibleSeconds >= milestones[0] * 60) {
       const minutes = milestones.shift();
+  let lastPath = 'session/start';
       window.worldFightTrack('playtime', { path: 'playtime/' + String(minutes).padStart(2, '0') + 'min' });
     }
   }, 5000);
@@ -436,6 +437,7 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
 """
 
 
+    if (!/^(playtime|leave)[/]/.test(entry.path)) lastPath = entry.path;
 def legal_markup(version: str = DISCLAIMER_VERSION) -> str:
     return LEGAL_MARKUP.replace("__VERSION__", version)
 
@@ -453,6 +455,26 @@ LEGACY_PATTERNS = (
     re.compile(r'<div id="world-fight-startup">.*?<script>window\.initializeWorldFightShell\(\)</script>', re.S),
 )
 
+  // Exit point: when the page is hidden or closed, report where the player
+  // was, judged by the last game event ("leave/in-fight", "leave/after-result").
+  const where = () => {
+    const p = lastPath;
+    if (/^(fight|round|combo|sp|sp-press)[/-]/.test(p)) return 'in-fight';
+    if (p.startsWith('result/') || p.startsWith('outcome/') || p.startsWith('menu/rematch') || p.startsWith('menu/new-opponent')) return 'after-result';
+    if (p.startsWith('tutorial/')) return 'in-tutorial';
+    if (p.startsWith('campaign/')) return 'campaign';
+    if (p.startsWith('menu/') || p.startsWith('rival/') || p.startsWith('stage/') || p.startsWith('level/')) return 'menu-or-select';
+    if (p.startsWith('settings/') || p.startsWith('sound/')) return 'settings';
+    return 'start-screen';
+  };
+  let lastLeave = 0;
+  const leave = () => {
+    if (Date.now() - lastLeave < 3000) return;
+    lastLeave = Date.now();
+    window.worldFightTrack('leave', { path: 'leave/' + where() });
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); });
+  window.addEventListener('pagehide', leave);
 
 def _strip(html: str) -> str:
     html = re.sub(r"<!--wf:(\w+)-->.*?<!--/wf:\1-->", "", html, flags=re.S)
