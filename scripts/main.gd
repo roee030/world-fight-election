@@ -144,6 +144,10 @@ var _fight_camera: Camera3D
 var camera_shake := 0.0
 var camera_home := Vector3(0, 3.6, 9.7)
 var audio_manager: AudioManagerScript
+var settings_root: Control
+var _settings_origin: StringName = &"menu"
+var _settings_dragging := {}
+const SETTINGS_ROWS := [["master", "MASTER"], ["music", "MUSIC"], ["sfx", "EFFECTS"], ["voice", "ANNOUNCER"]]
 const LOW_HEALTH_MUSIC_RATIO := 0.25
 const HIT_CUES := {"light": &"jab_hit", "heavy": &"cross_hit", "kick": &"kick_hit", "special": &"special"}
 var _special_ready_cued := false
@@ -281,7 +285,9 @@ func _process(delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_ESCAPE and fight_live:
+		if event.keycode == KEY_ESCAPE and is_instance_valid(settings_root) and settings_root.visible:
+			_close_settings()
+		elif event.keycode == KEY_ESCAPE and fight_live:
 			_toggle_pause()
 		elif event.keycode == KEY_ESCAPE and select_root.visible:
 			_show_menu()
@@ -1006,6 +1012,7 @@ func _build_ui() -> void:
 	_build_pause()
 	_build_result()
 	_build_campaign()
+	_build_settings()
 
 
 func _build_hud() -> void:
@@ -1325,6 +1332,9 @@ func _build_menu() -> void:
 	var campaign := _menu_text_button(action_panel, "CAMPAIGN", Rect2(0, 214, 330, 52), 18)
 	campaign.name = "CampaignButton"
 	campaign.pressed.connect(func(): _track("menu_campaign"); _open_select("campaign"))
+	var settings := _menu_text_button(action_panel, "SETTINGS", Rect2(0, 276, 330, 52), 18)
+	settings.name = "SettingsButton"
+	settings.pressed.connect(_show_settings.bind(&"menu"))
 	# Fighter Lab stays available to developers (scenes/character_debug.tscn)
 	# but is not a player-facing menu action. The creator card below the menu
 	# links to the creator's LinkedIn profile.
@@ -1769,8 +1779,131 @@ func _build_pause() -> void:
 	var how_to := _menu_text_button(box, "HOW TO PLAY", Rect2(0, 286, 300, 54), 17)
 	how_to.name = "HowToPlayButton"
 	how_to.pressed.connect(_replay_tutorial)
-	_label(box, "ESC  /  RESUME", Rect2(0, 342, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
+	var settings := _menu_text_button(box, "SETTINGS", Rect2(0, 350, 300, 54), 17)
+	settings.name = "SettingsButton"
+	settings.pressed.connect(_show_settings.bind(&"pause"))
+	_label(box, "ESC  /  RESUME", Rect2(0, 406, 300, 22), 9, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
 	pause_root.visible = false
+
+
+func _build_settings() -> void:
+	# One shared audio screen for the main menu and the pause menu.
+	settings_root = Control.new()
+	settings_root.name = "SettingsScreen"
+	settings_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_root.layout_direction = Control.LAYOUT_DIRECTION_LTR
+	ui.add_child(settings_root)
+	_split_background(settings_root)
+	var design := _design_frame(settings_root, "SettingsDesign")
+	_screen_title(design, "AUDIO ", "SETTINGS", 40)
+	var grabber := _settings_grabber_texture()
+	for i in SETTINGS_ROWS.size():
+		var category: String = SETTINGS_ROWS[i][0]
+		var top := 150.0 + i * 78.0
+		_panel(design, Rect2(290, top, 700, 62), Color(0.02, 0.06, 0.09, 0.72))
+		_panel(design, Rect2(290, top, 4, 62), Color(ACCENT_CYAN, 0.75))
+		var title := _label(design, SETTINGS_ROWS[i][1], Rect2(318, top + 16, 190, 30), 18, Color("#edf2f1"), HORIZONTAL_ALIGNMENT_LEFT)
+		title.add_theme_font_override("font", _bold_font())
+		var slider := HSlider.new()
+		slider.name = "Slider_" + category
+		slider.min_value = 0
+		slider.max_value = 100
+		slider.step = 1
+		slider.position = Vector2(510, top + 9)
+		slider.size = Vector2(360, 44)
+		slider.add_theme_icon_override("grabber", grabber)
+		slider.add_theme_icon_override("grabber_highlight", grabber)
+		var track := StyleBoxFlat.new()
+		track.bg_color = Color("#263943")
+		track.content_margin_top = 4
+		track.content_margin_bottom = 4
+		track.set_corner_radius_all(3)
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = ACCENT_GOLD
+		fill.set_corner_radius_all(3)
+		slider.add_theme_stylebox_override("slider", track)
+		slider.add_theme_stylebox_override("grabber_area", fill)
+		slider.add_theme_stylebox_override("grabber_area_highlight", fill)
+		design.add_child(slider)
+		var percent := _label(design, "", Rect2(890, top + 14, 80, 32), 18, ACCENT_GOLD, HORIZONTAL_ALIGNMENT_RIGHT)
+		percent.name = "Percent_" + category
+		percent.add_theme_font_override("font", _bold_font())
+		slider.value_changed.connect(_on_settings_slider_changed.bind(category))
+		slider.drag_started.connect(func() -> void: _settings_dragging[category] = true)
+		slider.drag_ended.connect(_on_settings_slider_committed.bind(category))
+	var mute := _secondary_button(design, "MUTE ALL", Rect2(380, 476, 240, 54))
+	mute.name = "MuteButton"
+	mute.pressed.connect(func() -> void:
+		if audio_manager: audio_manager.set_muted(not audio_manager.is_muted())
+		_sync_settings_controls())
+	var reset := _secondary_button(design, "RESET TO DEFAULTS", Rect2(660, 476, 260, 54))
+	reset.name = "ResetButton"
+	reset.pressed.connect(func() -> void:
+		if audio_manager: audio_manager.reset_defaults()
+		_sync_settings_controls())
+	var bar := _bottom_bar(settings_root)
+	var back := _primary_button(bar, "BACK", Rect2(-244, 14, 220, 52))
+	back.name = "BackButton"
+	back.pressed.connect(_close_settings)
+	_label(bar, "ESC  /  BACK", Rect2(24, 28, 300, 24), 11, Color("#72858e"), HORIZONTAL_ALIGNMENT_LEFT)
+	settings_root.visible = false
+	_sync_settings_controls()
+
+
+func _settings_grabber_texture() -> Texture2D:
+	var size := 30
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center := Vector2(size, size) * 0.5
+	for y in size:
+		for x in size:
+			var d := Vector2(x + 0.5, y + 0.5).distance_to(center)
+			if d <= 14.0:
+				image.set_pixel(x, y, Color("#fff1c4") if d <= 10.5 else Color("#b67d24"))
+	return ImageTexture.create_from_image(image)
+
+
+func _show_settings(origin: StringName) -> void:
+	_settings_origin = origin
+	_sync_settings_controls()
+	menu_root.visible = false
+	pause_root.visible = false
+	settings_root.visible = true
+	var first := settings_root.find_child("Slider_master", true, false) as Control
+	if first: first.grab_focus()
+
+
+func _close_settings() -> void:
+	settings_root.visible = false
+	if _settings_origin == &"pause":
+		# The fight stays frozen: only the pause screen comes back.
+		pause_root.visible = true
+	else:
+		menu_root.visible = true
+
+
+func _sync_settings_controls() -> void:
+	if not is_instance_valid(settings_root) or audio_manager == null: return
+	for row in SETTINGS_ROWS:
+		var category: String = row[0]
+		var value := audio_manager.get_volume(StringName(category))
+		(settings_root.find_child("Slider_" + category, true, false) as HSlider).set_value_no_signal(value)
+		(settings_root.find_child("Percent_" + category, true, false) as Label).text = "%d%%" % roundi(value)
+	(settings_root.find_child("MuteButton", true, false) as Button).text = "UNMUTE ALL" if audio_manager.is_muted() else "MUTE ALL"
+
+
+func _on_settings_slider_changed(value: float, category: String) -> void:
+	if audio_manager == null: return
+	var dragging: bool = _settings_dragging.get(category, false)
+	# Dragging applies at once but saves on release; keyboard steps save immediately.
+	audio_manager.set_volume(StringName(category), value, not dragging)
+	(settings_root.find_child("Percent_" + category, true, false) as Label).text = "%d%%" % roundi(value)
+	if category in ["sfx", "voice"]:
+		audio_manager.preview(StringName(category))
+
+
+func _on_settings_slider_committed(_changed: bool, category: String) -> void:
+	_settings_dragging[category] = false
+	if audio_manager: audio_manager.save_settings()
 
 
 func _build_campaign() -> void:
@@ -2289,6 +2422,7 @@ func _menu_text_button(parent: Control, title: String, rect: Rect2, font_size: i
 			style.border_color = Color("#ffd18a")
 		button.add_theme_stylebox_override(state, style)
 	parent.add_child(button)
+	button.pressed.connect(_play_sfx.bind(&"ui_press"))
 	return button
 
 
