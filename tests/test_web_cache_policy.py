@@ -91,7 +91,7 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("#status{display:none!important}", patched)
             self.assertIn("status-progress", patched)
             self.assertIn("wf-retry", patched)
-            self.assertIn("SLOW CONNECTION", patched)
+            self.assertIn("חיבור איטי", patched)
             self.assertIn("params.has('diag')", patched)
             self.assertIn("worldFightSafeArea", patched)
             self.assertIn("safe-area-inset-left", patched)

@@ -16,6 +16,7 @@ from shutil import copyfile
 from typing import Mapping
 
 
+LOADING_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "main-hero-b-edited.jpg"
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
 DISCLAIMER_VERSION = "wf-disclaimer-v2"
@@ -40,6 +41,9 @@ WEB_APP_MANIFEST = {
 WEB_APP_LINKS = """<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png">
 <meta name="theme-color" content="#050810">
+<link rel="preload" href="loading-hero.jpg" as="image">
+<link rel="preload" href="index.wasm" as="fetch" crossorigin>
+<link rel="preload" href="index.pck" as="fetch" crossorigin>
 """
 
 
@@ -85,15 +89,15 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 #status{display:none!important}
 .wf-portrait #canvas{visibility:hidden!important}
 .wf-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;color:#f7f2e8;font-family:Arial,Helvetica,sans-serif;text-align:center}
-#world-fight-startup{z-index:9998;background:radial-gradient(ellipse at 50% 35%,#13293a 0%,#050810 70%)}
+#world-fight-startup{z-index:9998;background:#0a121d}
 #world-fight-startup[hidden]{display:none}
-#world-fight-startup .wf-title{font-size:clamp(28px,7vmin,54px);font-weight:900;letter-spacing:.06em}
-#world-fight-startup .wf-sub{margin:6px 0 22px;color:#d9b566;font-size:clamp(11px,2.4vmin,15px);letter-spacing:.3em}
-#world-fight-startup .wf-track{width:min(420px,70vw);height:10px;border:1px solid rgba(102,217,212,.6);background:rgba(4,12,20,.9);transform:skewX(-18deg)}
+#world-fight-startup .wf-stage{position:relative;width:min(100vw,calc(100vh * 1.7703));aspect-ratio:2096/1184;background:url('loading-hero.jpg') center/100% 100% no-repeat}
+#world-fight-startup .wf-panel{position:absolute;left:24%;right:24%;top:80%;height:15%;display:flex;flex-direction:column;align-items:center;justify-content:center;direction:rtl}
+#world-fight-startup .wf-track{width:100%;height:clamp(6px,1.4vmin,12px);border:1px solid rgba(102,217,212,.75);background:rgba(4,12,20,.9);transform:skewX(-18deg);box-shadow:0 0 12px rgba(60,220,255,.45)}
 #world-fight-startup .wf-fill{height:100%;width:0;background:linear-gradient(90deg,#2ab8b3,#7ff4ee);transition:width .2s}
-#world-fight-startup .wf-loading{margin-top:12px;color:#a9c3cb;font-size:13px;letter-spacing:.08em;min-height:18px}
-#world-fight-startup .wf-error{display:none;max-width:420px;margin-top:14px;color:#ffb3b8;font-size:13px;line-height:1.5}
-#world-fight-startup button{margin-top:16px;min-height:48px;padding:0 28px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:15px;letter-spacing:.1em}
+#world-fight-startup .wf-loading{margin-top:clamp(4px,1.2vmin,12px);color:#fff;font-family:Heebo,"Segoe UI",Arial,Helvetica,sans-serif;font-weight:900;font-size:clamp(13px,3.2vmin,30px);letter-spacing:.02em;min-height:1.3em;text-shadow:0 0 6px rgba(80,230,255,.95),0 0 18px rgba(40,200,255,.75)}
+#world-fight-startup .wf-error{display:none;max-width:420px;margin-top:6px;color:#ffb3b8;font-size:13px;line-height:1.4}
+#world-fight-startup button{margin-top:8px;min-height:44px;padding:0 28px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:15px;letter-spacing:.1em}
 #world-fight-startup .wf-retry{display:none}
 #worldFightRotateGate{display:none;z-index:10000;justify-content:flex-end;padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(30px + env(safe-area-inset-bottom,0px));background-color:#050810;background-image:linear-gradient(180deg,rgba(2,6,13,0) 42%,#050810 78%),url('rotate-device-ensemble.webp');background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat}
 .wf-portrait #worldFightRotateGate{display:flex}
@@ -245,7 +249,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
         error.textContent = notice.textContent.trim();
         error.style.display = 'block';
         retry.style.display = 'inline-block';
-        label.textContent = 'THE GAME COULD NOT START';
+        label.textContent = 'לא הצלחנו להפעיל את המשחק';
         recordError(error.textContent);
         clearInterval(timer);
         return;
@@ -256,11 +260,11 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
         if (Date.now() - engineStartedAt > 10000) { window.worldFightSetReady(true); return; }
         state.stage = 'starting engine';
         fill.style.width = '100%';
-        label.textContent = 'STARTING THE ARENA…';
+        label.textContent = 'מכינים את הזירה…';
       } else if (progress && progress.max > 0) {
         const ratio = Math.min(1, progress.value / progress.max);
         fill.style.width = `${Math.round(ratio * 100)}%`;
-        label.textContent = `LOADING ${Math.round(ratio * 100)}%  ·  ${(progress.value / 1048576).toFixed(1)} / ${(progress.max / 1048576).toFixed(1)} MB` + ((Date.now() - started > 12000 && ratio < 0.6) ? '  ·  SLOW CONNECTION' : '');
+        label.textContent = `טוען ${Math.round(ratio * 100)}%  ·  ${(progress.value / 1048576).toFixed(1)} / ${(progress.max / 1048576).toFixed(1)} MB` + ((Date.now() - started > 12000 && ratio < 0.6) ? '  ·  חיבור איטי' : '');
       }
       renderDiagnostics();
     }, 200);
@@ -311,7 +315,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 </script>
 """
 
-BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-title">WORLD FIGHT</div><div class="wf-sub">ELECTION EDITION</div><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">LOADING GAME…</div><div class="wf-error"></div><button class="wf-retry" type="button">RETRY</button></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightIosGate" class="wf-overlay"><div class="wf-ios-card" dir="rtl" lang="he"><strong>למסך מלא באייפון</strong><ol><li>לחצו על כפתור השיתוף של Safari (או על ⋯ ואז שיתוף).</li><li>בחרו <b>הוספה למסך הבית</b> (Add to Home Screen) ואשרו.</li><li>פתחו את המשחק מהאייקון החדש – הוא ייפתח במסך מלא לרוחב.</li></ol><p class="wf-ios-en">Safari on iPhone cannot hide its bars for a web page. Share &gt; Add to Home Screen, then open World Fight from its icon for true full screen.</p><button id="worldFightIosPlayButton" type="button" dir="ltr">PLAY HERE · שחקו כאן</button></div></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><div id="worldFightIosInstallHint" dir="rtl">למסך מלא בלי הטאבים של Safari: לחצו על שיתוף, בחרו Add to Home Screen ופתחו את המשחק מהאייקון. אם המסך לא מסתובב, בטלו נעילת סיבוב במרכז הבקרה.</div><button id="worldFightFullscreenButton" type="button">FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
+BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-stage"><div class="wf-panel"><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">טוען את המשחק…</div><div class="wf-error"></div><button class="wf-retry" type="button">נסו שוב</button></div></div></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightIosGate" class="wf-overlay"><div class="wf-ios-card" dir="rtl" lang="he"><strong>למסך מלא באייפון</strong><ol><li>לחצו על כפתור השיתוף של Safari (או על ⋯ ואז שיתוף).</li><li>בחרו <b>הוספה למסך הבית</b> (Add to Home Screen) ואשרו.</li><li>פתחו את המשחק מהאייקון החדש – הוא ייפתח במסך מלא לרוחב.</li></ol><p class="wf-ios-en">Safari on iPhone cannot hide its bars for a web page. Share &gt; Add to Home Screen, then open World Fight from its icon for true full screen.</p><button id="worldFightIosPlayButton" type="button" dir="ltr">PLAY HERE · שחקו כאן</button></div></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><div id="worldFightIosInstallHint" dir="rtl">למסך מלא בלי הטאבים של Safari: לחצו על שיתוף, בחרו Add to Home Screen ופתחו את המשחק מהאייקון. אם המסך לא מסתובב, בטלו נעילת סיבוב במרכז הבקרה.</div><button id="worldFightFullscreenButton" type="button">FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests.
    It never navigates open pages: a forced reload would download the game twice. */
@@ -381,7 +385,9 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
     const canvas = document.getElementById('canvas');
     if (canvas) { if (accepted) canvas.removeAttribute('inert'); else canvas.setAttribute('inert', ''); }
     if (!accepted) {
-      root.classList.add('wf-legal-open');
+      // add() on an existing class still queues a mutation record, which would
+      // re-trigger the observer below in an endless loop that freezes the page.
+      if (!root.classList.contains('wf-legal-open')) root.classList.add('wf-legal-open');
       if (box && box.style.display) box.style.removeProperty('display');
       if (check.checked && accept.disabled) accept.disabled = false;
       if (!check.checked && !accept.disabled) accept.disabled = true;
@@ -534,6 +540,8 @@ def patch(path: Path, config: dict | None = None) -> None:
         json.dumps(WEB_APP_MANIFEST, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    if LOADING_ART.is_file():
+        copyfile(LOADING_ART, path.with_name("loading-hero.jpg"))
     if ROTATE_ART.is_file():
         copyfile(ROTATE_ART, path.with_name("rotate-device-ensemble.webp"))
     path.with_name("index.service.worker.js").write_text(RETIRE_WORKER, encoding="utf-8")

@@ -35,6 +35,7 @@ class LegalGateTests(unittest.TestCase):
         self.assertIn("not affiliated", page)
         self.assertIn("purely coincidental", page)
         self.assertIn(".wf-legal-open #worldFightFullscreenGate{display:none!important}", page)
+        self.assertIn("if (!root.classList.contains('wf-legal-open')) root.classList.add('wf-legal-open');", page)
         # Settings > LEGAL reopens the notice with the box unticked again.
         self.assertIn("window.worldFightShowDisclaimer = open;", page)
         self.assertIn("window.addEventListener(name, guard, { capture: true, passive: false })", page)
