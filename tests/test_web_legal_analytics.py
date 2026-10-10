@@ -40,6 +40,9 @@ class LegalGateTests(unittest.TestCase):
         self.assertIn("window.worldFightShowDisclaimer = open;", page)
         self.assertIn("window.addEventListener(name, guard, { capture: true, passive: false })", page)
         self.assertIn("canvas.setAttribute('inert', '')", page)
+        # Keyboard users can Tab into the notice, with a visible focus ring.
+        self.assertIn("event.key === 'Tab'", page)
+        self.assertIn("#worldFightDisclaimer :focus-visible{outline:3px solid #f2c35a", page)
         self.assertIn("setInterval(lock, 300)", page)
         self.assertIn("check.checked = false;", page)
         # The in-game FULL button reopens the iPhone Home Screen guide.

@@ -354,6 +354,7 @@ LEGAL_STYLE = """<style id="world-fight-legal-style">
 #worldFightDisclaimer ul{margin:0 0 10px;padding-inline-start:18px;line-height:1.5;font-size:clamp(12px,2.6vmin,15px)}
 #worldFightDisclaimer li{margin-bottom:4px}
 #worldFightDisclaimer .wf-legal-en{direction:ltr;text-align:left;color:#9fb2b8;font-size:11px;line-height:1.45;margin:8px 0 10px}
+#worldFightDisclaimer :focus-visible{outline:3px solid #f2c35a;outline-offset:2px}
 #worldFightDisclaimer .wf-legal-links{margin:6px 0 0;font-size:12px;text-align:center}#worldFightDisclaimer .wf-legal-links a{color:#7fe3df}
 #worldFightDisclaimer label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:clamp(13px,2.7vmin,15px);font-weight:700;margin:8px 0 12px}
 #worldFightDisclaimer input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;accent-color:#e8b94f;margin-top:1px}
@@ -394,6 +395,8 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
   const blocked = ['keydown', 'keyup', 'keypress', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend', 'wheel', 'contextmenu'];
   const guard = (event) => {
     if (accepted || (box && box.contains(event.target))) return;
+    // Keyboard users: Tab moves into the notice instead of being swallowed.
+    if (event.type === 'keydown' && event.key === 'Tab') { try { check.focus({ preventScroll: true }); } catch (error) {} }
     event.stopImmediatePropagation();
     event.preventDefault();
   };
