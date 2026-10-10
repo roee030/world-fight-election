@@ -65,7 +65,7 @@ class SeoShellTests(unittest.TestCase):
         self.assertEqual(again.count('id="wf-seo"'), 1)
 
     def test_static_site_files_are_published(self):
-        for name in ("robots.txt", "sitemap.xml", "CNAME", "404.html", "favicon.ico", "icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png", "og-image.jpg", "about/index.html", "en/index.html"):
+        for name in ("robots.txt", "sitemap.xml", "CNAME", "404.html", "favicon.ico", "icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png", "og-image.jpg", "about/index.html", "en/index.html", "google5ee28a7b3ea4abc3.html"):
             self.assertTrue((self.out / name).is_file(), name)
         self.assertEqual((self.out / "CNAME").read_text(encoding="utf-8").strip(), "israel-election-fight.online")
         sitemap = (self.out / "sitemap.xml").read_text(encoding="utf-8")
