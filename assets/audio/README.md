@@ -31,6 +31,17 @@ Most files in this directory are distributed under the **Creative Commons CC0 1.
 - Page: https://kenney.nl/assets/impact-sounds
 - Selected files: generic, soft and metal impacts plus one concrete landing.
 
+## Selected impact replacements
+
+The four cues below are trimmed to remove their leading silence and long tails;
+the game plays them exactly at the existing strike or super-move-card event.
+They are distributed under the Pixabay Content License.
+
+- `jab_hit.ogg`: **Punch 04** by Universfield — https://pixabay.com/sound-effects/film-special-effects-punch-04-383965/
+- `cross_hit.ogg`: **Power Punch** by Universfield — https://pixabay.com/sound-effects/film-special-effects-power-punch-192118/
+- `kick_hit.ogg`: **Kick Bright Medium** by Khoamthanh — https://pixabay.com/sound-effects/musical-kick-bright-medium-504170/
+- `finisher.ogg`: **Large Monster Attack** by DavidDumaisAudio — https://pixabay.com/sound-effects/film-special-effects-large-monster-attack-195713/
+
 ## Interface and supporting effects
 
 - Source: **Kenney Interface Sounds**
