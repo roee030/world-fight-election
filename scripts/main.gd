@@ -3001,6 +3001,12 @@ func _start_round() -> void:
 	_update_scores()
 	message_label.text = "ROUND %d" % round_num
 	message_label.visible = true
+	# Let the arena and fighters present a frame or two before the announcer
+	# starts; otherwise the stage build stalls the render while audio is already playing.
+	if is_inside_tree() and not DisplayServer.get_name() == "headless":
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if not fight_live: return
 	_set_music(&"fight")
 	var round_cue := round_voice_cue(round_num)
 	_play_voice(round_cue)
