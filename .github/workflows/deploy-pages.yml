@@ -68,7 +68,7 @@ jobs:
           set -euo pipefail
           if [ -z "$GOATCOUNTER_TOKEN" ]; then echo "No GOATCOUNTER_TOKEN secret; skipping dashboard"; exit 0; fi
           pip install --quiet pillow
-          python tools/build_dashboard.py --days 30 --out export/web/stats-510485b633/index.html
+          python tools/build_dashboard.py --days 30 --out export/web/analytics/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
