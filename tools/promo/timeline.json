@@ -1,127 +1,400 @@
 {
+ "bpm": 144.0,
+ "total": 22.4998,
  "segments": [
   {
+   "name": "hook",
    "clip": "fin_trump",
-   "ss": 3.75,
-   "dur": 2.3333,
+   "ss": 3.9,
+   "beats": 5,
    "punch": 0.0,
-   "vcx": 960
+   "vcx": 960,
+   "dur": 2.0833,
+   "tr": {
+    "type": "fadewhite",
+    "d": 0.22,
+    "blur": 0,
+    "flash": false
+   }
   },
   {
+   "name": "title",
    "clip": "ch_eisenkot",
    "ss": 6.4,
-   "dur": 1.3333,
+   "beats": 3,
    "dim": 0.08,
    "vcx": 500,
-   "vy": 140
+   "vy": 140,
+   "dur": 1.25,
+   "tr": {
+    "type": "slideleft",
+    "d": 0.18,
+    "blur": 70,
+    "flash": true
+   }
   },
   {
+   "name": "menu",
+   "clip": "scr_menu",
+   "ss": 1.0,
+   "beats": 3,
+   "crop": "1700:956:0:0",
+   "punch": 0.0,
+   "vmode": "full",
+   "dur": 1.25,
+   "tr": {
+    "type": "smoothleft",
+    "d": 0.2,
+    "blur": 60,
+    "flash": false
+   }
+  },
+  {
+   "name": "select",
+   "clip": "scr_select",
+   "ss": 0.75,
+   "beats": 3,
+   "crop": "1480:832:220:100",
+   "punch": 0.0,
+   "vmode": "full",
+   "detect": {
+    "kind": "hit_light",
+    "thr": 0.03,
+    "gain": 0.5
+   },
+   "dur": 1.25,
+   "tr": {
+    "type": "hblur",
+    "d": 0.14,
+    "blur": 0,
+    "flash": false
+   }
+  },
+  {
+   "name": "reveal",
+   "clip": "scr_select",
+   "ss": 3.55,
+   "beats": 3,
+   "crop": "1480:832:220:100",
+   "punch": 0.0,
+   "vmode": "full",
+   "detect": {
+    "kind": "hit_light",
+    "thr": 0.03,
+    "gain": 0.55
+   },
+   "dur": 1.25,
+   "tr": {
+    "type": "slideleft",
+    "d": 0.16,
+    "blur": 70,
+    "flash": false
+   }
+  },
+  {
+   "name": "arena",
+   "clip": "scr_select",
+   "ss": 5.85,
+   "beats": 2,
+   "crop": "1480:832:220:100",
+   "punch": 0.0,
+   "vmode": "full",
+   "dur": 0.8333,
+   "tr": {
+    "type": "zoomin",
+    "d": 0.22,
+    "blur": 0,
+    "flash": true
+   }
+  },
+  {
+   "name": "f1",
    "clip": "ch_gvir",
    "ss": 5.85,
-   "dur": 1.0,
+   "beats": 2,
    "vcx": 1470,
-   "vy": 140
+   "vy": 140,
+   "detect": {
+    "kind": "hit",
+    "thr": 0.06,
+    "gain": 0.9
+   },
+   "dur": 0.8333,
+   "tr": {
+    "type": "slideright",
+    "d": 0.14,
+    "blur": 80,
+    "flash": true
+   }
   },
   {
+   "name": "f2",
    "clip": "ch_avigdor",
    "ss": 3.7,
-   "dur": 1.0,
+   "beats": 2,
    "vcx": 960,
-   "vy": 140
+   "vy": 140,
+   "detect": {
+    "kind": "hit",
+    "thr": 0.06,
+    "gain": 0.9
+   },
+   "dur": 0.8333,
+   "tr": {
+    "type": "slideleft",
+    "d": 0.14,
+    "blur": 80,
+    "flash": true
+   }
   },
   {
+   "name": "f3",
    "clip": "ch_gantz",
    "ss": 5.5,
-   "dur": 1.0,
+   "beats": 2,
    "vcx": 1000,
-   "vy": 140
+   "vy": 140,
+   "detect": {
+    "kind": "hit",
+    "thr": 0.06,
+    "gain": 0.9
+   },
+   "dur": 0.8333,
+   "tr": {
+    "type": "slideright",
+    "d": 0.14,
+    "blur": 80,
+    "flash": true
+   }
   },
   {
+   "name": "f4",
    "clip": "ch_trump2",
    "ss": 5.1,
-   "dur": 1.0,
+   "beats": 2,
    "vcx": 870,
-   "vy": 140
+   "vy": 140,
+   "detect": {
+    "kind": "hit",
+    "thr": 0.06,
+    "gain": 0.9
+   },
+   "dur": 0.8333,
+   "tr": {
+    "type": "slideleft",
+    "d": 0.14,
+    "blur": 80,
+    "flash": true
+   }
   },
   {
+   "name": "f5",
+   "clip": "ch_golan",
+   "ss": 4.2,
+   "beats": 2,
+   "vcx": 960,
+   "vy": 140,
+   "detect": {
+    "kind": "hit",
+    "thr": 0.06,
+    "gain": 0.9
+   },
+   "dur": 0.8333,
+   "tr": {
+    "type": "circleopen",
+    "d": 0.24,
+    "blur": 0,
+    "flash": true
+   }
+  },
+  {
+   "name": "campaign",
    "clip": "campaign",
-   "ss": 2.65,
-   "dur": 2.3333,
-   "punch": 0.0,
+   "ss": 3.3,
+   "beats": 4,
    "crop": "1536:864:192:30",
-   "vmode": "full"
+   "punch": 0.0,
+   "vmode": "full",
+   "dur": 1.6667,
+   "tr": {
+    "type": "fadewhite",
+    "d": 0.18,
+    "blur": 0,
+    "flash": false
+   }
   },
   {
+   "name": "golan",
+   "clip": "fin_golan",
+   "ss": 3.85,
+   "beats": 5,
+   "punch": 0.0,
+   "vcx": 960,
+   "crop": "1564:880:178:0",
+   "dur": 2.0833,
+   "tr": {
+    "type": "slideleft",
+    "d": 0.16,
+    "blur": 70,
+    "flash": true
+   }
+  },
+  {
+   "name": "eisenkot",
+   "clip": "fin_eisenkot",
+   "ss": 4.0,
+   "beats": 4,
+   "punch": 0.0,
+   "vcx": 960,
+   "dur": 1.6667,
+   "tr": {
+    "type": "fadewhite",
+    "d": 0.18,
+    "blur": 0,
+    "flash": false
+   }
+  },
+  {
+   "name": "boss",
    "clip": "boss_gantz",
    "ss": 3.95,
-   "dur": 2.6667,
+   "beats": 6,
    "punch": 0.0,
-   "vcx": 960
+   "vcx": 960,
+   "dur": 2.5,
+   "tr": {
+    "type": "fade",
+    "d": 0.3,
+    "blur": 0,
+    "flash": false
+   }
   },
   {
+   "name": "cta",
    "clip": "boss_gantz",
    "ss": 5.9,
-   "dur": 2.3333,
+   "beats": 6,
    "punch": 0.0,
    "dim": 0.55,
    "mute": true,
-   "vcx": 960
+   "vcx": 960,
+   "dur": 2.5,
+   "tr": null
   }
  ],
  "overlays": [
   {
    "type": "flash",
-   "at": 1.45,
+   "at": 1.295,
    "dur": 0.15
   },
   {
    "type": "title",
-   "at": 2.3333,
-   "dur": 1.3333
+   "at": 2.0833,
+   "dur": 1.25,
+   "sub": "מהדורת הבחירות",
+   "main": "וורלד פייט"
   },
   {
    "type": "kicker",
-   "at": 3.7,
-   "dur": 3.9,
-   "text": "13 FIGHTERS  \u00b7  13 FINISHERS"
-  },
-  {
-   "type": "tag",
-   "at": 3.6667,
-   "dur": 0.95,
-   "left": "ITAMAR BEN-GVIR",
-   "right": "YAIR LAPID"
-  },
-  {
-   "type": "tag",
-   "at": 4.6667,
-   "dur": 0.95,
-   "left": "AVIGDOR",
-   "right": "ARYEH DERI"
-  },
-  {
-   "type": "tag",
-   "at": 5.6667,
-   "dur": 0.95,
-   "left": "BENNY GANTZ",
-   "right": "SMOTRICH"
-  },
-  {
-   "type": "tag",
-   "at": 6.6667,
-   "dur": 0.95,
-   "left": "TRUMP",
-   "right": "BENNET"
-  },
-  {
-   "type": "kicker",
-   "at": 7.8,
-   "dur": 2.1,
-   "text": "CAMPAIGN MODE",
+   "at": 3.4333,
+   "dur": 1.15,
+   "text": "מי יהיה ראש הממשלה הבא?",
    "anchor": {
     "h": [
-     0.17,
-     0.11
+     0.5,
+     0.9
+    ],
+    "v": [
+     0.5,
+     0.76
+    ]
+   },
+   "size": 88
+  },
+  {
+   "type": "kicker",
+   "at": 4.6333,
+   "dur": 3.283,
+   "text": "בחרו לוחם · יריב אקראי",
+   "anchor": {
+    "h": [
+     0.5,
+     0.9
+    ],
+    "v": [
+     0.5,
+     0.76
+    ]
+   },
+   "size": 80
+  },
+  {
+   "type": "kicker",
+   "at": 7.9666999999999994,
+   "dur": 4.117,
+   "text": "הקרב על התואר",
+   "anchor": {
+    "h": [
+     0.5,
+     0.17
+    ],
+    "v": [
+     0.5,
+     0.2
+    ]
+   },
+   "size": 104
+  },
+  {
+   "type": "tag",
+   "at": 7.9666999999999994,
+   "dur": 0.733,
+   "left": "איתמר בן גביר",
+   "right": "יאיר לפיד",
+   "versus": "נגד"
+  },
+  {
+   "type": "tag",
+   "at": 8.8,
+   "dur": 0.733,
+   "left": "ליברמן",
+   "right": "אריה דרעי",
+   "versus": "נגד"
+  },
+  {
+   "type": "tag",
+   "at": 9.6333,
+   "dur": 0.733,
+   "left": "בני גנץ",
+   "right": "בצלאל סמוטריץ'",
+   "versus": "נגד"
+  },
+  {
+   "type": "tag",
+   "at": 10.466700000000001,
+   "dur": 0.733,
+   "left": "טראמפ",
+   "right": "בנט",
+   "versus": "נגד"
+  },
+  {
+   "type": "tag",
+   "at": 11.3,
+   "dur": 0.733,
+   "left": "יאיר גולן",
+   "right": "הרשימה המשותפת",
+   "versus": "נגד"
+  },
+  {
+   "type": "kicker",
+   "at": 12.1333,
+   "dur": 1.567,
+   "text": "הלחמו בכל ראשי המפלגות לכנסת ה-26",
+   "anchor": {
+    "h": [
+     0.5,
+     0.115
     ],
     "v": [
      0.5,
@@ -131,36 +404,250 @@
    "size": 64
   },
   {
+   "type": "kicker",
+   "at": 14.25,
+   "dur": 4.917,
+   "text": "13 לוחמים · 13 פינישרים",
+   "anchor": {
+    "h": [
+     0.5,
+     0.17
+    ],
+    "v": [
+     0.5,
+     0.2
+    ]
+   },
+   "size": 88
+  },
+  {
    "type": "flash",
-   "at": 10.55,
+   "at": 18.02,
    "dur": 0.15
   },
   {
-   "type": "kicker",
-   "at": 10.1,
-   "dur": 1.5,
-   "text": "FACE THE BOSS"
-  },
-  {
    "type": "cta",
-   "at": 12.6667,
-   "dur": 2.3333
+   "at": 20.0,
+   "dur": 2.5,
+   "line1": "שחקו עכשיו בחינם",
+   "line2": "ישר בדפדפן"
   },
   {
    "type": "disclaimer",
-   "at": 12.9,
-   "dur": 2.1
+   "at": 20.3,
+   "dur": 2.2,
+   "lines": [
+    "סאטירה · קריקטורות בדיוניות · ללא קשר לאף מפלגה או מועמד",
+    "הדמויות והאירועים בדויים ונועדו לבידור"
+   ]
   }
  ],
+ "sfx": [
+  {
+   "t": 0.0,
+   "kind": "hit_big",
+   "gain": 1.0
+  },
+  {
+   "t": 0.0,
+   "kind": "whoosh_down",
+   "gain": 0.9
+  },
+  {
+   "t": 1.325,
+   "kind": "boom",
+   "gain": 1.0
+  },
+  {
+   "t": 1.325,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 1.4,
+   "kind": "crowd_big",
+   "gain": 1.0
+  },
+  {
+   "t": 2.0833,
+   "kind": "bell",
+   "gain": 1.0
+  },
+  {
+   "t": 2.0833,
+   "kind": "boom_long",
+   "gain": 0.9
+  },
+  {
+   "t": 2.0833,
+   "kind": "crash",
+   "gain": 0.8
+  },
+  {
+   "t": 3.3333,
+   "kind": "cheer",
+   "gain": 0.8
+  },
+  {
+   "t": 7.0833,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 7.0833,
+   "kind": "whoosh",
+   "gain": 0.6
+  },
+  {
+   "t": 12.0833,
+   "kind": "riser",
+   "gain": 0.9
+  },
+  {
+   "t": 13.75,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 14.1,
+   "kind": "hit_light",
+   "gain": 0.8
+  },
+  {
+   "t": 14.2,
+   "kind": "hit_light",
+   "gain": 0.8
+  },
+  {
+   "t": 14.3,
+   "kind": "hit_light",
+   "gain": 0.8
+  },
+  {
+   "t": 14.4,
+   "kind": "hit_light",
+   "gain": 0.8
+  },
+  {
+   "t": 14.5,
+   "kind": "hit_light",
+   "gain": 0.8
+  },
+  {
+   "t": 14.7,
+   "kind": "boom",
+   "gain": 0.9
+  },
+  {
+   "t": 15.5,
+   "kind": "cheer",
+   "gain": 0.9
+  },
+  {
+   "t": 15.8333,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 16.4833,
+   "kind": "boom",
+   "gain": 1.0
+  },
+  {
+   "t": 16.4833,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 17.5,
+   "kind": "hit_big",
+   "gain": 0.9
+  },
+  {
+   "t": 18.05,
+   "kind": "hit_big",
+   "gain": 1.0
+  },
+  {
+   "t": 18.15,
+   "kind": "boom",
+   "gain": 1.0
+  },
+  {
+   "t": 19.25,
+   "kind": "cheer",
+   "gain": 1.0
+  },
+  {
+   "t": 20.0,
+   "kind": "bell",
+   "gain": 1.0
+  },
+  {
+   "t": 20.0,
+   "kind": "crowd_big",
+   "gain": 1.0
+  },
+  {
+   "t": 20.0,
+   "kind": "crash",
+   "gain": 0.8
+  }
+ ],
+ "sections": [
+  {
+   "from": 0.0,
+   "to": 2.0833,
+   "guitar": 0.0,
+   "bass": 0.0,
+   "drums": 1.0
+  },
+  {
+   "from": 2.0833,
+   "to": 7.9167,
+   "guitar": 0.7,
+   "bass": 1.0,
+   "drums": 1.0,
+   "hats": true
+  },
+  {
+   "from": 7.9167,
+   "to": 12.0833,
+   "guitar": 1.0,
+   "bass": 1.0,
+   "drums": 1.0,
+   "hats": true
+  },
+  {
+   "from": 12.0833,
+   "to": 13.75,
+   "guitar": 0.0,
+   "bass": 1.0,
+   "drums": 1.0,
+   "hats": true
+  },
+  {
+   "from": 13.75,
+   "to": 27.4998,
+   "guitar": 1.0,
+   "bass": 1.0,
+   "drums": 1.0,
+   "hats": true
+  }
+ ],
+ "music_gain": 0.6,
  "gradient_spans": [
   [
-   2.3333,
-   7.6667
+   2.0833,
+   3.3333
   ],
   [
-   10.0,
-   15.0
+   7.9167,
+   12.0833
+  ],
+  [
+   13.75,
+   22.4998
   ]
- ],
- "music_gain": 0.5
+ ]
 }

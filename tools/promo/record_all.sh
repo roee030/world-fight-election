@@ -31,4 +31,16 @@ rec ch_trump2     9 --player=trump           --rival=bennet          --stage=fri
 rec campaign      5 --mode=campaign --player=bennet
 # boss payoff: the ladder ends with Bibi
 rec boss_gantz   16 --player=benny_gantz      --rival=bibi            --stage=knesset_chamber --level=2 --meter=100 --meter_at=2.5 --rival_hp=25 --rounds=1
+# screens (menu, player select + random rival reveal, arena select)
+recs() { # name seconds args...
+  local name=$1 secs=$2; shift 2
+  [ -f "$OUT/$name.avi" ] && { echo "skip $name"; return; }
+  echo "== $name"
+  timeout 400 "$GODOT" --path . --write-movie "$OUT/$name.avi" --fixed-fps 60 --quit-after $((secs*60+240))     --script tools/promo/record_screens.gd -- --seconds=$secs "$@" > "$OUT/$name.log" 2>&1
+}
+recs scr_menu     5 --mode=menu
+recs scr_select  11 --mode=select --player=yair_golan
+# extra finishers for the 23 s cut
+rec fin_golan    16 --player=yair_golan       --rival=avigdor         --stage=knesset_exterior --level=1 --meter=100 --meter_at=2.5 --rival_hp=25 --rounds=1
+rec fin_eisenkot 16 --player=gadi_eisenkot    --rival=yair_lapid      --stage=hatzinor_studio  --level=1 --meter=100 --meter_at=2.5 --rival_hp=25 --rounds=1
 echo ALL_DONE

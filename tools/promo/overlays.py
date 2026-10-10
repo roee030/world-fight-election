@@ -19,7 +19,23 @@ RED = (240, 86, 107)
 CANVAS = {"h": (1920, 1080), "v": (1080, 1920)}
 
 
-def font(path: str, size: int) -> ImageFont.FreeTypeFont:
+import re
+
+ARIAL_BD = "C:/Windows/Fonts/arialbd.ttf"
+HEB = re.compile(r"[֐-׿]")
+_TOK = re.compile(r"[֐-׿']+|[A-Za-z0-9]+|\s+|[^\w\s]", re.U)
+
+
+def visual(text: str) -> str:
+    """Hebrew has no raqm here, so reorder to visual (left-to-right) order ourselves."""
+    if not HEB.search(text):
+        return text
+    return "".join(t[::-1] if HEB.search(t) else t for t in reversed(_TOK.findall(text)))
+
+
+def font(path: str, size: int, text: str = "") -> ImageFont.FreeTypeFont:
+    if text and HEB.search(text):
+        return ImageFont.truetype(ARIAL_BD, int(size * 1.08))
     return ImageFont.truetype(path, size)
 
 
@@ -34,6 +50,7 @@ def ease_out(t: float) -> float:
 
 def text_layer(text: str, fnt: ImageFont.FreeTypeFont, fill, stroke=8, tracking=0, gradient=None, glow=None) -> Image.Image:
     """Render one line of text on a transparent, padded layer."""
+    text = visual(text)
     pad = stroke + 40
     widths = [fnt.getlength(c) + tracking for c in text]
     w = int(sum(widths)) + pad * 2
@@ -112,63 +129,56 @@ def render_sequence(art: Image.Image, canvas: str, anchor: tuple[float, float], 
     return frames
 
 
-def title(canvas: str, outdir: str, dur: float = 1.5) -> int:
-    big = 250 if canvas == "h" else 250
-    art1 = text_layer("WORLD FIGHT", font(IMPACT, big), None, stroke=10, gradient=(GOLD_TOP, GOLD_BOTTOM), glow=(255, 170, 40))
-    art2 = text_layer("ELECTION EDITION", font(IMPACT, big // 4), (240, 244, 246), stroke=4, tracking=int(big * 0.07))
-    art = stack([art1, art2], 14)
-    if canvas == "v" and art.width > 1000:
-        art = art.resize((1000, int(art.height * 1000 / art.width)), Image.LANCZOS)
-    return render_sequence(art, canvas, (0.5, 0.40 if canvas == "h" else 0.40), dur, outdir, shake=14)
+def fit_width(art: Image.Image, max_w: int) -> Image.Image:
+    if art.width > max_w:
+        return art.resize((max_w, int(art.height * max_w / art.width)), Image.LANCZOS)
+    return art
+
+
+def title(canvas: str, outdir: str, dur: float = 1.5, sub: str = "ELECTION EDITION", main: str = "WORLD FIGHT") -> int:
+    big = 250
+    art1 = text_layer(main, font(IMPACT, big, main), None, stroke=10, gradient=(GOLD_TOP, GOLD_BOTTOM), glow=(255, 170, 40))
+    art2 = text_layer(sub, font(IMPACT, big // 4, sub), (240, 244, 246), stroke=5, tracking=int(big * 0.05) if not HEB.search(sub) else 4)
+    art = fit_width(stack([art1, art2], 14), 1500 if canvas == "h" else 1000)
+    return render_sequence(art, canvas, (0.5, 0.40), dur, outdir, shake=14)
 
 
 def kicker(canvas: str, outdir: str, text: str, dur: float, anchor=None, color=CYAN, size=None) -> int:
     size = size or (96 if canvas == "h" else 104)
-    art = text_layer(text, font(IMPACT, size), (245, 248, 250), stroke=6, tracking=4, glow=color)
-    max_w = 1700 if canvas == "h" else 1000
-    if art.width > max_w:
-        art = art.resize((max_w, int(art.height * max_w / art.width)), Image.LANCZOS)
+    art = text_layer(text, font(IMPACT, size, text), (245, 248, 250), stroke=6, tracking=4 if not HEB.search(text) else 1, glow=color)
+    art = fit_width(art, 1750 if canvas == "h" else 1000)
     anchor = anchor or ((0.5, 0.17) if canvas == "h" else (0.5, 0.2))
     return render_sequence(art, canvas, anchor, dur, outdir, pop=0.12, start_scale=1.35, overshoot=False)
 
 
-def nametag(canvas: str, outdir: str, left: str, right: str, dur: float) -> int:
-    """`LEFT  VS  RIGHT` lower-third in the fighter HUD colours."""
+def nametag(canvas: str, outdir: str, left: str, right: str, dur: float, versus: str = "VS") -> int:
+    """`LEFT  VS  RIGHT` lower-third in the fighter HUD colours (player left, CPU right like the HUD)."""
     size = 70 if canvas == "h" else 66
-    a = text_layer(left, font(IMPACT, size), CYAN, stroke=5, tracking=3)
-    v = text_layer("VS", font(IMPACT, int(size * 0.62)), GOLD_TOP, stroke=4, tracking=2)
-    b = text_layer(right, font(IMPACT, size), RED, stroke=5, tracking=3)
+    a = text_layer(left, font(IMPACT, size, left), CYAN, stroke=5, tracking=3 if not HEB.search(left) else 0)
+    v = text_layer(versus, font(IMPACT, int(size * 0.62), versus), GOLD_TOP, stroke=4, tracking=2)
+    b = text_layer(right, font(IMPACT, size, right), RED, stroke=5, tracking=3 if not HEB.search(right) else 0)
     gap = 36
     row = Image.new("RGBA", (a.width + v.width + b.width + gap * 2, max(a.height, b.height)), (0, 0, 0, 0))
     row.alpha_composite(a, (0, (row.height - a.height) // 2))
     row.alpha_composite(v, (a.width + gap, (row.height - v.height) // 2))
     row.alpha_composite(b, (a.width + v.width + gap * 2, (row.height - b.height) // 2))
-    max_w = 1500 if canvas == "h" else 1000
-    if row.width > max_w:
-        row = row.resize((max_w, int(row.height * max_w / row.width)), Image.LANCZOS)
+    row = fit_width(row, 1500 if canvas == "h" else 1000)
     anchor = (0.5, 0.86) if canvas == "h" else (0.5, 0.78)
     return render_sequence(row, canvas, anchor, dur, outdir, pop=0.1, start_scale=1.25, overshoot=False)
 
 
-def cta(canvas: str, outdir: str, dur: float, url: str) -> int:
+def cta(canvas: str, outdir: str, dur: float, url: str, line1: str = "PLAY FREE", line2: str = "IN YOUR BROWSER") -> int:
     f1 = 150 if canvas == "h" else 140
-    l1 = text_layer("PLAY FREE", font(IMPACT, f1), None, stroke=9, gradient=(GOLD_TOP, GOLD_BOTTOM), glow=(255, 170, 40))
-    l2 = text_layer("IN YOUR BROWSER", font(IMPACT, int(f1 * 0.5)), (240, 244, 246), stroke=5, tracking=6)
+    l1 = text_layer(line1, font(IMPACT, f1, line1), None, stroke=9, gradient=(GOLD_TOP, GOLD_BOTTOM), glow=(255, 170, 40))
+    l2 = text_layer(line2, font(IMPACT, int(f1 * 0.5), line2), (240, 244, 246), stroke=5, tracking=6 if not HEB.search(line2) else 1)
     l3 = text_layer(url, font(BAHN, 60 if canvas == "h" else 46), CYAN, stroke=3)
-    art = stack([l1, l2, l3], 22)
-    if art.width > (1500 if canvas == "h" else 1000):
-        w = 1500 if canvas == "h" else 1000
-        art = art.resize((w, int(art.height * w / art.width)), Image.LANCZOS)
-    n = render_sequence(art, canvas, (0.5, 0.46 if canvas == "h" else 0.42), dur, outdir + "_main", pop=0.2, tail=0.0)
-    return n
+    art = fit_width(stack([l1, l2, l3], 22), 1500 if canvas == "h" else 1000)
+    return render_sequence(art, canvas, (0.5, 0.46 if canvas == "h" else 0.42), dur, outdir + "_main", pop=0.2, tail=0.0)
 
 
-def disclaimer(canvas: str, outdir: str, dur: float) -> int:
-    lines = ["SATIRE  ·  FICTIONAL CARICATURES  ·  NOT AFFILIATED WITH ANY PARTY OR CANDIDATE", "CHARACTERS AND EVENTS ARE INVENTED FOR ENTERTAINMENT"]
+def disclaimer(canvas: str, outdir: str, dur: float, lines: list[str] | None = None) -> int:
+    lines = lines or ["SATIRE  ·  FICTIONAL CARICATURES  ·  NOT AFFILIATED WITH ANY PARTY OR CANDIDATE", "CHARACTERS AND EVENTS ARE INVENTED FOR ENTERTAINMENT"]
     size = 28 if canvas == "h" else 25
-    layers = [text_layer(t, font(BAHN, size), (225, 232, 236), stroke=2) for t in lines]
-    art = stack(layers, 8)
-    max_w = 1700 if canvas == "h" else 1000
-    if art.width > max_w:
-        art = art.resize((max_w, int(art.height * max_w / art.width)), Image.LANCZOS)
+    layers = [text_layer(t, font(BAHN, size, t), (225, 232, 236), stroke=2) for t in lines]
+    art = fit_width(stack(layers, 8), 1700 if canvas == "h" else 1000)
     return render_sequence(art, canvas, (0.5, 0.93 if canvas == "h" else 0.9), dur, outdir, pop=0.2, tail=0.0, overshoot=False, start_scale=1.0)
