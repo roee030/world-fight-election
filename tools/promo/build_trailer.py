@@ -20,6 +20,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
+import intro  # noqa: E402
 import overlays as ov  # noqa: E402
 import sound  # noqa: E402
 from PIL import Image  # noqa: E402
@@ -57,7 +58,10 @@ def layout() -> None:
 def make_segment(clips: Path, s: dict, out: Path) -> None:
     pre, post = s["pre"], s["post"]
     length = s["dur"] + pre + post
+    speed = float(s.get("speed", 1.0))
     vf = ["fps=60"]
+    if abs(speed - 1.0) > 1e-3:
+        vf.append(f"setpts=PTS/{speed:.5f}")
     if s.get("crop"):
         cw, ch, cx, cy = s["crop"].split(":")
         vf.append(f"crop={cw}:{ch}:{cx}:{cy}")
@@ -69,8 +73,9 @@ def make_segment(clips: Path, s: dict, out: Path) -> None:
         vf.append("crop=1920:1080")
     if s.get("dim"):
         vf.append(f"eq=brightness=-{s['dim']}:saturation=0.85")
-    cmd = [FFMPEG, "-v", "error", "-y", "-ss", f"{max(0.0, s['ss'] - pre):.3f}", "-t", f"{length:.3f}", "-i", str(clips / f"{s['clip']}.avi"),
-           "-vf", ",".join(vf), "-an", "-r", "60", "-c:v", "libx264", "-crf", "12", "-preset", "fast", "-pix_fmt", "yuv420p", str(out)]
+    vf.append("fps=60")
+    cmd = [FFMPEG, "-v", "error", "-y", "-ss", f"{max(0.0, s['ss'] - pre * speed):.3f}", "-t", f"{length * speed:.3f}", "-i", str(clips / f"{s['clip']}.avi"),
+           "-vf", ",".join(vf), "-t", f"{length:.3f}", "-an", "-r", "60", "-c:v", "libx264", "-crf", "12", "-preset", "fast", "-pix_fmt", "yuv420p", str(out)]
     run(cmd)
 
 
@@ -109,6 +114,19 @@ def xfade_chain(files: list[Path], out: Path) -> None:
          "-c:v", "libx264", "-crf", "12", "-preset", "fast", "-pix_fmt", "yuv420p", str(out)])
 
 
+def render_intro(s: dict, h_out: Path, v_out: Path, want_h: bool, want_v: bool) -> None:
+    """WWE countdown (3, 2, 1, FIGHT) as frames -> mp4 for each canvas."""
+    length = s["dur"] + s["post"]
+    for canvas, out, want in (("h", h_out, want_h), ("v", v_out, want_v)):
+        if not want:
+            continue
+        frames = OUT / "intro_frames" / canvas
+        shutil.rmtree(frames, ignore_errors=True)
+        intro.render(canvas, str(frames), length, TL["voice"]["cues"])
+        run([FFMPEG, "-v", "error", "-y", "-framerate", "60", "-i", str(frames / "%04d.png"), "-t", f"{length:.3f}", "-r", "60",
+             "-c:v", "libx264", "-crf", "12", "-preset", "fast", "-pix_fmt", "yuv420p", str(out)])
+
+
 def build_bases(clips: Path, want_h: bool, want_v: bool) -> tuple[Path, Path]:
     seg_dir = OUT / "segments"
     shutil.rmtree(seg_dir, ignore_errors=True)
@@ -116,11 +134,15 @@ def build_bases(clips: Path, want_h: bool, want_v: bool) -> tuple[Path, Path]:
     hs, vs = [], []
     for i, s in enumerate(TL["segments"]):
         h = seg_dir / f"{i:02d}_{s['name']}.mp4"
-        make_segment(clips, s, h)
+        v = seg_dir / f"v{i:02d}_{s['name']}.mp4"
+        if s["clip"] == "__intro__":
+            render_intro(s, h, v, want_h, want_v)
+        else:
+            make_segment(clips, s, h)
+            if want_v:
+                vertical_segment(h, s, v)
         hs.append(h)
         if want_v:
-            v = seg_dir / f"v{i:02d}_{s['name']}.mp4"
-            vertical_segment(h, s, v)
             vs.append(v)
     base_h, base_v = OUT / "base_h.mp4", OUT / "base_v.mp4"
     if want_h:
@@ -151,10 +173,10 @@ def sound_events(clips: Path) -> list[dict]:
     for s in TL["segments"]:
         det = s.get("detect")
         if det:
-            peaks = onsets(clips / f"{s['clip']}.avi", s["ss"], s["dur"], det["thr"])
+            peaks = onsets(clips / f"{s['clip']}.avi", s["ss"], s["src"], det["thr"])
             top = max((p[1] for p in peaks), default=1.0)
             for t, a in peaks:
-                events.append(dict(t=s["start"] + t, kind=det["kind"], gain=det["gain"] * (0.75 + 0.25 * a / top), pan=0.0))
+                events.append(dict(t=s["start"] + t / s["speed"], kind=det["kind"], gain=det["gain"] * (0.75 + 0.25 * a / top), pan=0.0))
             print(f"  {s['name']}: {len(peaks)} detected cues")
     for s in TL["segments"][:-1]:
         tr = s["tr"]
@@ -166,10 +188,28 @@ def sound_events(clips: Path) -> list[dict]:
     return events
 
 
-def make_sound(clips: Path) -> Path:
-    wav = OUT / "soundtrack.wav"
-    sound.render(sound_events(clips), TL["total"], str(wav), TL["bpm"], TL["sections"], TL.get("music_gain", 0.6))
-    return wav
+def make_sound(clips: Path) -> tuple[Path, Path]:
+    """Returns (main mix, music+voice-only mix). Real music and the countdown voice come from audio_in/."""
+    total = TL["total"]
+    fx = OUT / "fx.wav"
+    sound.render(sound_events(clips), total, str(fx), TL["bpm"], [], with_music=False)
+    m, v = TL["music"], TL["voice"]
+    music_path, voice_path = OUT / "audio_in" / m["file"], OUT / "audio_in" / v["file"]
+    fade = max(0.0, total - 1.8)
+    base = (f"[0:a]atrim=duration={total + 0.5},asetpts=PTS-STARTPTS,volume={m['gain']},afade=t=out:st={fade:.3f}:d=1.8[mus];"
+            f"[1:a]volume={v['gain']},apad[voc];")
+    ins = ["-ss", f"{m['start_in_track']}", "-t", f"{total + 1}", "-i", str(music_path), "-t", f"{v['keep']}", "-i", str(voice_path)]
+    outs = []
+    for name, with_fx in (("mix_main", True), ("mix_music_only", False)):
+        out = OUT / f"{name}.wav"
+        if with_fx:
+            fc = base + f"[2:a]volume={TL['fx_gain']}[fx];[mus][voc][fx]amix=inputs=3:normalize=0:duration=longest,alimiter=limit=0.9,atrim=duration={total}[o]"
+            run([FFMPEG, "-v", "error", "-y", *ins, "-i", str(fx), "-filter_complex", fc, "-map", "[o]", "-ar", "48000", str(out)])
+        else:
+            fc = base + f"[mus][voc]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.9,atrim=duration={total}[o]"
+            run([FFMPEG, "-v", "error", "-y", *ins, "-filter_complex", fc, "-map", "[o]", "-ar", "48000", str(out)])
+        outs.append(out)
+    return outs[0], outs[1]
 
 
 # ------------------------------------------------------------------ overlays / compose
@@ -264,15 +304,19 @@ def main() -> None:
     clips = Path(args.clips)
     final = OUT / "final"
     final.mkdir(parents=True, exist_ok=True)
-    wav = make_sound(clips)
+    wav, wav_alt = make_sound(clips)
     if args.no_video:
         return
     want_h, want_v = args.only != "v", args.only != "h"
     base_h, base_v = build_bases(clips, want_h, want_v)
-    if want_h:
-        compose(base_h, wav, "h", final / "trailer_16x9.mp4")
-    if want_v:
-        compose(base_v, wav, "v", final / "trailer_9x16.mp4")
+    for canvas, base, name, wanted in (("h", base_h, "trailer_16x9", want_h), ("v", base_v, "trailer_9x16", want_v)):
+        if not wanted:
+            continue
+        compose(base, wav, canvas, final / f"{name}.mp4")
+        total = float(TL["total"])
+        run([FFMPEG, "-v", "error", "-y", "-i", str(final / f"{name}.mp4"), "-i", str(wav_alt), "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+             "-af", f"loudnorm=I=-14:TP=-1.5:LRA=9,afade=t=out:st={total - 0.5:.3f}:d=0.5", "-c:a", "aac", "-b:a", "256k", "-shortest",
+             str(final / f"{name}_music_only.mp4")])
     print("total", TL["total"])
 
 

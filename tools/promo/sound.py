@@ -296,9 +296,9 @@ def music(total: float, bpm: float, sections: list[dict]) -> np.ndarray:
 
 
 # ------------------------------------------------------------------- the mixer
-def render(events: list[dict], total: float, out_wav: str, bpm: float, sections: list[dict], music_gain=0.55) -> None:
+def render(events: list[dict], total: float, out_wav: str, bpm: float, sections: list[dict], music_gain=0.55, with_music: bool = True) -> None:
     n = int((total + 2.5) * SR)
-    mus = music(total, bpm, sections)[:, :n]
+    mus = music(total, bpm, sections)[:, :n] if with_music else np.zeros((2, n))
     fx = np.zeros((2, n))
     base_gain = {"hit": 0.95, "hit_big": 1.0, "hit_light": 0.6, "boom": 0.9, "boom_long": 0.95, "whoosh": 0.4, "whoosh_down": 0.4,
                  "whoosh_long": 0.45, "bell": 0.6, "bell_single": 0.6, "crowd": 0.38, "crowd_big": 0.45, "cheer": 0.45, "riser": 0.4,
