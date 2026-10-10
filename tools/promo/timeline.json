@@ -1,0 +1,166 @@
+{
+ "segments": [
+  {
+   "clip": "fin_trump",
+   "ss": 3.75,
+   "dur": 2.3333,
+   "punch": 0.0,
+   "vcx": 960
+  },
+  {
+   "clip": "ch_eisenkot",
+   "ss": 6.4,
+   "dur": 1.3333,
+   "dim": 0.08,
+   "vcx": 500,
+   "vy": 140
+  },
+  {
+   "clip": "ch_gvir",
+   "ss": 5.85,
+   "dur": 1.0,
+   "vcx": 1470,
+   "vy": 140
+  },
+  {
+   "clip": "ch_avigdor",
+   "ss": 3.7,
+   "dur": 1.0,
+   "vcx": 960,
+   "vy": 140
+  },
+  {
+   "clip": "ch_gantz",
+   "ss": 5.5,
+   "dur": 1.0,
+   "vcx": 1000,
+   "vy": 140
+  },
+  {
+   "clip": "ch_trump2",
+   "ss": 5.1,
+   "dur": 1.0,
+   "vcx": 870,
+   "vy": 140
+  },
+  {
+   "clip": "campaign",
+   "ss": 2.65,
+   "dur": 2.3333,
+   "punch": 0.0,
+   "crop": "1536:864:192:30",
+   "vmode": "full"
+  },
+  {
+   "clip": "boss_gantz",
+   "ss": 3.95,
+   "dur": 2.6667,
+   "punch": 0.0,
+   "vcx": 960
+  },
+  {
+   "clip": "boss_gantz",
+   "ss": 5.9,
+   "dur": 2.3333,
+   "punch": 0.0,
+   "dim": 0.55,
+   "mute": true,
+   "vcx": 960
+  }
+ ],
+ "overlays": [
+  {
+   "type": "flash",
+   "at": 1.45,
+   "dur": 0.15
+  },
+  {
+   "type": "title",
+   "at": 2.3333,
+   "dur": 1.3333
+  },
+  {
+   "type": "kicker",
+   "at": 3.7,
+   "dur": 3.9,
+   "text": "13 FIGHTERS  \u00b7  13 FINISHERS"
+  },
+  {
+   "type": "tag",
+   "at": 3.6667,
+   "dur": 0.95,
+   "left": "ITAMAR BEN-GVIR",
+   "right": "YAIR LAPID"
+  },
+  {
+   "type": "tag",
+   "at": 4.6667,
+   "dur": 0.95,
+   "left": "AVIGDOR",
+   "right": "ARYEH DERI"
+  },
+  {
+   "type": "tag",
+   "at": 5.6667,
+   "dur": 0.95,
+   "left": "BENNY GANTZ",
+   "right": "SMOTRICH"
+  },
+  {
+   "type": "tag",
+   "at": 6.6667,
+   "dur": 0.95,
+   "left": "TRUMP",
+   "right": "BENNET"
+  },
+  {
+   "type": "kicker",
+   "at": 7.8,
+   "dur": 2.1,
+   "text": "CAMPAIGN MODE",
+   "anchor": {
+    "h": [
+     0.17,
+     0.11
+    ],
+    "v": [
+     0.5,
+     0.74
+    ]
+   },
+   "size": 64
+  },
+  {
+   "type": "flash",
+   "at": 10.55,
+   "dur": 0.15
+  },
+  {
+   "type": "kicker",
+   "at": 10.1,
+   "dur": 1.5,
+   "text": "FACE THE BOSS"
+  },
+  {
+   "type": "cta",
+   "at": 12.6667,
+   "dur": 2.3333
+  },
+  {
+   "type": "disclaimer",
+   "at": 12.9,
+   "dur": 2.1
+  }
+ ],
+ "gradient_spans": [
+  [
+   2.3333,
+   7.6667
+  ],
+  [
+   10.0,
+   15.0
+  ]
+ ],
+ "music_gain": 0.5
+}

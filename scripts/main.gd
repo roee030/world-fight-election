@@ -338,6 +338,9 @@ func _physics_process(_delta: float) -> void:
 		_special_was_held = Input.is_key_pressed(KEY_L) or Input.is_key_pressed(KEY_3) or _input_held.get("special", false)
 		_input_down["special"] = false
 		return
+	if promo_autopilot:
+		_promo_drive(_delta)
+		return
 	var axis := 0.0
 	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT): axis -= 1.0
 	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT): axis += 1.0
@@ -371,6 +374,27 @@ func _physics_process(_delta: float) -> void:
 	)
 	_input_down["jump"] = false
 	for action in ["light", "heavy", "kick", "special"]: _input_down[action] = false
+
+
+## Promo capture only: lets a CPU brain play the player side so trailer clips
+## show real, unscripted combat. Never enabled by menus or the Web build.
+var promo_autopilot := false
+var promo_autopilot_level := 4
+var promo_allow_finisher := true
+var _promo_brain: RefCounted
+
+
+func _promo_drive(delta: float) -> void:
+	if _promo_brain == null or _promo_brain.level != promo_autopilot_level:
+		_promo_brain = preload("res://scripts/cpu_brain.gd").new(promo_autopilot_level)
+	if promo_allow_finisher and player.meter >= 100.0 and player.position.distance_to(enemy.position) <= 1.3 and _finisher_eligible():
+		finisher_requested.emit(player, enemy, _current_finisher_definition())
+		if _finisher_director.active:
+			return
+	var controls: Dictionary = _promo_brain.decide(player, enemy, delta)
+	if player.stun > 0.0 or player.knockdown_time > 0.0 or player.recovery_time > 0.0:
+		controls.request = ""
+	player.set_controls(float(controls.axis), false, bool(controls.block), bool(controls.crouch), str(controls.request), float(controls.depth))
 
 
 func _consume(action: String, key: Key, alt_key: Key) -> bool:
