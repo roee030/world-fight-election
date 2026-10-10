@@ -9,22 +9,29 @@ Every injected block is wrapped in ``<!--wf:NAME-->`` markers and replaced on
 each run, so patching an already patched (or older) shell is idempotent.
 """
 
+from datetime import date
 from pathlib import Path
 import json
 import re
-from shutil import copyfile
+from shutil import copyfile, copytree
 from typing import Mapping
 
 
 LOADING_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "main-hero-b-edited.jpg"
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
+STATIC_DIR = Path(__file__).resolve().parents[1] / "web" / "static"
+DEFAULT_SITE_URL = "https://israel-election-fight.online"
 DISCLAIMER_VERSION = "wf-disclaimer-v2"
 
 WEB_APP_MANIFEST = {
     "id": "./",
     "name": "World Fight: Election Edition",
     "short_name": "World Fight",
+    "description": "משחק לחימה סאטירי חינמי בדפדפן. Free satirical fighting game.",
+    "lang": "he",
+    "dir": "rtl",
+    "categories": ["games", "entertainment"],
     "start_url": "./",
     "scope": "./",
     "display": "fullscreen",
@@ -34,7 +41,9 @@ WEB_APP_MANIFEST = {
     "theme_color": "#050810",
     "icons": [
         {"src": "index.apple-touch-icon.png", "sizes": "180x180", "type": "image/png"},
-        {"src": "index.icon.png", "sizes": "any", "type": "image/png"},
+        {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+        {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+        {"src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
     ],
 }
 
@@ -48,12 +57,13 @@ WEB_APP_LINKS = """<link rel="manifest" href="manifest.webmanifest">
 
 
 def load_site_config(path: Path = SITE_CONFIG) -> dict:
-    """Owner settings: analytics code and LinkedIn URL (empty = disabled)."""
+    """Owner settings: analytics code, LinkedIn URL (empty = disabled) and the canonical site URL."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         data = {}
-    return {"goatcounter_code": str(data.get("goatcounter_code", "")).strip(), "linkedin_url": str(data.get("linkedin_url", "")).strip()}
+    site_url = str(data.get("site_url", DEFAULT_SITE_URL)).strip().rstrip("/") or DEFAULT_SITE_URL
+    return {"goatcounter_code": str(data.get("goatcounter_code", "")).strip(), "linkedin_url": str(data.get("linkedin_url", "")).strip(), "site_url": site_url}
 
 
 def fit_viewport(width: float, height: float, insets: Mapping[str, float] | None = None) -> dict[str, float | bool]:
@@ -503,6 +513,110 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
 """
 
 
+SEO_TITLE = "World Fight: Election Edition – משחק לחימה סאטירי של הבחירות | בדפדפן, חינם"
+SEO_DESCRIPTION = "משחק לחימה סאטירי חינמי שרץ ישר בדפדפן, בטלפון ובמחשב: 13 לוחמים, קמפיין, קומבואים ומהלכי סיום. סאטירה בלבד. Free satirical browser fighting game."
+
+SEO_STYLE = """<style id="world-fight-seo-style">
+.wf-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}
+</style>
+"""
+
+# Crawlers and screen readers cannot read a WebGL canvas. This is the same
+# information a sighted player gets from the menus, kept visually hidden only
+# because the canvas already presents it graphically.
+SEO_BODY = """<main id="wf-seo" class="wf-sr" lang="he" dir="rtl">
+<h1>World Fight: Election Edition – משחק לחימה סאטירי של הבחירות</h1>
+<p>משחק לחימה סאטירי חינמי בסגנון קונסולה, שרץ ישירות בדפדפן בטלפון ובמחשב, בלי הורדה. בוחרים לוחם מתוך 13 דמויות פרודיות, נלחמים בשלושה סיבובים, צוברים אנרגיה מיוחדת ומפעילים מהלך סיום מצויר. קרב מהיר, קמפיין בן ארבעה קרבות, שש זירות וארבע דרגות קושי.</p>
+<p>המשחק הוא סאטירה בלבד. כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.</p>
+<p><a href="about/">מדריך למשחק, דמויות ובקרות</a> · <a href="en/" hreflang="en" lang="en">English guide</a></p>
+</main>
+<noscript><p style="position:fixed;inset:0;margin:0;padding:24px;background:#050810;color:#eef4f5;font:18px/1.6 Arial,sans-serif;text-align:center">World Fight: Election Edition דורש JavaScript ו-WebGL. הפעילו JavaScript כדי לשחק. · This browser game needs JavaScript and WebGL. <a href="about/" style="color:#7fe3df">מדריך / Guide</a></p></noscript>
+"""
+
+
+def seo_head(site_url: str, config: dict | None = None) -> str:
+    """Title, description, canonical, social cards, favicons and structured data."""
+    config = config or {}
+    url = site_url.rstrip("/") + "/"
+    author: dict = {"@type": "Person", "name": "Roee Angel"}
+    if config.get("linkedin_url"):
+        author["sameAs"] = [config["linkedin_url"]]
+    graph = [
+        {
+            "@type": "WebSite",
+            "@id": url + "#website",
+            "url": url,
+            "name": "World Fight: Election Edition",
+            "inLanguage": ["he", "en"],
+        },
+        {
+            "@type": "VideoGame",
+            "@id": url + "#game",
+            "name": "World Fight: Election Edition",
+            "alternateName": ["World Fight", "משחק הלחימה של הבחירות"],
+            "url": url,
+            "image": url + "og-image.jpg",
+            "description": SEO_DESCRIPTION,
+            "genre": ["Fighting game", "Satire", "Parody"],
+            "gamePlatform": "Web browser",
+            "applicationCategory": "Game",
+            "operatingSystem": "Any (web browser)",
+            "playMode": "SinglePlayer",
+            "inLanguage": ["he", "en"],
+            "isAccessibleForFree": True,
+            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "ILS", "availability": "https://schema.org/InStock"},
+            "author": author,
+            "isPartOf": {"@id": url + "#website"},
+        },
+    ]
+    ld = json.dumps({"@context": "https://schema.org", "@graph": graph}, ensure_ascii=False, indent=1).replace("</", "<\\/")
+    title = SEO_TITLE
+    desc = SEO_DESCRIPTION
+    return f"""<title>{title}</title>
+<meta name="description" content="{desc}">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="{url}">
+<link rel="alternate" hreflang="he" href="{url}">
+<link rel="alternate" hreflang="en" href="{url}en/">
+<link rel="alternate" hreflang="x-default" href="{url}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="World Fight: Election Edition">
+<meta property="og:locale" content="he_IL">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{desc}">
+<meta property="og:url" content="{url}">
+<meta property="og:image" content="{url}og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="לוחמי World Fight: Election Edition בעמדת קרב">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{title}">
+<meta name="twitter:description" content="{desc}">
+<meta name="twitter:image" content="{url}og-image.jpg">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<script type="application/ld+json">
+{ld}
+</script>
+<script>/* Godot renames the tab to the project name at start-up; keep the SEO title. */(() => {{ const t = {json.dumps(title, ensure_ascii=False)}; try {{ Object.defineProperty(document, "title", {{ get: () => t, set: () => {{}} }}); }} catch (error) {{}} }})();</script>
+"""
+
+
+def copy_static_site(out_dir: Path, site_url: str, today: str | None = None) -> None:
+    """Copy web/static (robots, sitemap, CNAME, icons, guide pages) next to the game."""
+    if not STATIC_DIR.is_dir():
+        return
+    copytree(STATIC_DIR, out_dir, dirs_exist_ok=True)
+    base = site_url.rstrip("/")
+    for name in ("sitemap.xml", "robots.txt"):
+        target = out_dir / name
+        if target.is_file():
+            text = target.read_text(encoding="utf-8").replace("__BUILD_DATE__", today or date.today().isoformat())
+            target.write_text(text.replace(DEFAULT_SITE_URL, base), encoding="utf-8")
+
+
 def legal_markup(version: str = DISCLAIMER_VERSION) -> str:
     return LEGAL_MARKUP.replace("__VERSION__", version)
 
@@ -531,8 +645,11 @@ def _strip(html: str) -> str:
 def patch(path: Path, config: dict | None = None) -> None:
     config = load_site_config() if config is None else config
     html = _strip(path.read_text(encoding="utf-8"))
-    head = "<!--wf:head-->" + WEB_APP_LINKS + CACHE_RETIREMENT + analytics_script(config.get("goatcounter_code", "")) + HEAD_SHELL + LEGAL_STYLE + "<!--/wf:head-->"
-    body = "<!--wf:body-->" + legal_markup() + BODY_SHELL + "<!--/wf:body-->"
+    site_url = config.get("site_url") or DEFAULT_SITE_URL
+    html = re.sub(r"<title>.*?</title>\s*", "", html, count=1, flags=re.S)
+    html = re.sub(r'<html lang="[^"]*"', '<html lang="he"', html, count=1)
+    head = "<!--wf:head-->" + seo_head(site_url, config) + SEO_STYLE + WEB_APP_LINKS + CACHE_RETIREMENT + analytics_script(config.get("goatcounter_code", "")) + HEAD_SHELL + LEGAL_STYLE + "<!--/wf:head-->"
+    body = "<!--wf:body-->" + legal_markup() + BODY_SHELL + SEO_BODY + "<!--/wf:body-->"
     html = html.replace("</head>", head + "</head>", 1)
     html = re.sub(r"<body([^>]*)>", lambda match: "<body" + match.group(1) + ">" + body, html, count=1)
     path.write_text(html, encoding="utf-8")
@@ -545,6 +662,7 @@ def patch(path: Path, config: dict | None = None) -> None:
     if ROTATE_ART.is_file():
         copyfile(ROTATE_ART, path.with_name("rotate-device-ensemble.webp"))
     path.with_name("index.service.worker.js").write_text(RETIRE_WORKER, encoding="utf-8")
+    copy_static_site(path.parent, site_url)
 
 
 if __name__ == "__main__":

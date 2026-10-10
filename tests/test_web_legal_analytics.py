@@ -74,7 +74,7 @@ class AnalyticsTests(unittest.TestCase):
 
     def test_site_config_enables_owner_analytics_and_profile(self):
         config = load_site_config()
-        self.assertEqual(set(config), {"goatcounter_code", "linkedin_url"})
+        self.assertEqual(set(config), {"goatcounter_code", "linkedin_url", "site_url"})
         self.assertEqual(config["goatcounter_code"], "roeeangel")
         self.assertTrue(config["linkedin_url"].startswith("https://www.linkedin.com/in/"))
 
