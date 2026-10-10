@@ -12,3 +12,4 @@ table{border-collapse:collapse;width:100%}
 td,th{border-bottom:1px solid #1d2b38;padding:6px 8px;text-align:start}
 .note{border-inline-start:4px solid #e8b94f;background:rgba(232,185,79,.08);padding:8px 12px;margin:20px 0}
 footer{margin-top:40px;font-size:14px;color:#9fb2b8}
+a:focus-visible{outline:3px solid #f2c35a;outline-offset:3px;border-radius:2px}
