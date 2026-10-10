@@ -128,6 +128,15 @@ func _run() -> void:
 	assert(main.enemy.is_cpu, "the CPU must fight again after tutorial confirmation")
 	assert(main.enemy.health == main.enemy.max_health() and main.player.meter == 0.0 and main.enemy.meter == 0.0, "the real round must start fresh")
 	assert(main.tracked_events.has("tutorial/complete"), "tutorial completion was not tracked")
+	# The coach panel must never cover either fighter.
+	main.tutorial.begin()
+	main.tutorial.start_practice()
+	var cam: Camera3D = main.get_viewport().get_camera_3d()
+	var panel_bottom: float = main.tutorial.get_node("CoachPanel").get_global_rect().end.y
+	for fighter in [main.player, main.enemy]:
+		var head: Vector2 = cam.unproject_position(fighter.global_position + Vector3(0, 1.8, 0))
+		assert(head.y > panel_bottom, "coach panel hides a fighter (head y %s, panel bottom %s)" % [head.y, panel_bottom])
+	main.tutorial.abort()
 	# Skip path and pause replay.
 	TutorialScript.mark_completed(false)
 	main.tutorial.begin()

@@ -16,6 +16,7 @@ enum Phase { INTRO, PRACTICE, COMPLETE }
 const SAVE_PATH := "user://tutorial.cfg"
 const CYAN := Color("#59f0ff")
 const GOLD := Color("#f2c35a")
+const PANEL_TOP := 138.0
 const DIM_ALPHA := 0.4
 const LANE_TOP := 0.2
 const LANE_BOTTOM := 0.62
@@ -79,14 +80,15 @@ func setup(main: Node, font: Font) -> void:
 	_panel.anchor_right = 0.5
 	_panel.offset_left = -330
 	_panel.offset_right = 330
-	_panel.offset_top = 412
-	_panel.offset_bottom = 544
+	# Sits in the band between the HUD and the fighters' heads so it never hides them.
+	_panel.offset_top = PANEL_TOP
+	_panel.offset_bottom = PANEL_TOP + 124
 	_title = _make_label(font, 24, GOLD, Rect2(22, 10, 470, 32))
 	_title.name = "StepTitle"
 	_text = _make_label(font, 17, Color("#e9f6f8"), Rect2(22, 44, 616, 50))
 	_text.name = "StepText"
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_key = _make_label(font, 13, Color("#9fb4ba"), Rect2(22, 100, 300, 22))
+	_key = _make_label(font, 13, Color("#9fb4ba"), Rect2(22, 94, 300, 22))
 	_key.name = "KeyHint"
 	var skip := Button.new()
 	skip.name = "SkipTutorial"
@@ -108,7 +110,7 @@ func setup(main: Node, font: Font) -> void:
 	_panel.add_child(skip)
 	for i in range(STEPS.size()):
 		var dot := Panel.new()
-		dot.position = Vector2(420 + i * 30, 107)
+		dot.position = Vector2(420 + i * 30, 101)
 		dot.size = Vector2(22, 8)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_panel.add_child(dot)
