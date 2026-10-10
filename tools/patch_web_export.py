@@ -22,7 +22,7 @@ ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-dev
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
 STATIC_DIR = Path(__file__).resolve().parents[1] / "web" / "static"
 DEFAULT_SITE_URL = "https://israel-election-fight.online"
-DISCLAIMER_VERSION = "wf-disclaimer-v2"
+DISCLAIMER_VERSION = "wf-disclaimer-v3"
 
 WEB_APP_MANIFEST = {
     "id": "./",
@@ -368,6 +368,7 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
 <ul>
 <li>הדמויות הן קריקטורות פרודיות ומוגזמות של אישי ציבור. אין במשחק תיאור של אירועים, עמדות, אמירות או מעשים אמיתיים של איש.</li>
 <li>המשחק אינו קשור, ממומן או מאושר על ידי אף אדם, מפלגה או גוף המופיעים בו.</li>
+<li>הדמויות והציורים אינם משקפים דעה פוליטית של היוצר, ואין בהם כוונה לפגוע, להסית או להעליב אדם, מפלגה או נבחר ציבור. השימוש בדמויות נעשה לצרכי סאטירה, פרודיה וביקורת פוליטית.</li>
 <li>המשחק מופץ בחינם לחלוטין – ללא פרסומות, ללא רכישות וללא מטרת רווח.</li>
 <li>נאספים נתוני שימוש אנונימיים בלבד (ללא עוגיות וללא פרטים מזהים) לשיפור המשחק.</li>
 </ul>
@@ -533,6 +534,7 @@ SEO_BODY = """<main id="wf-seo" class="wf-sr" lang="he" dir="rtl">
 <p>משחק לחימה סאטירי חינמי בסגנון קונסולה, שרץ ישירות בדפדפן בטלפון ובמחשב, בלי הורדה. בוחרים לוחם מתוך 13 דמויות פרודיות, נלחמים בשלושה סיבובים, צוברים אנרגיה מיוחדת ומפעילים מהלך סיום מצויר. קרב מהיר, קמפיין בן ארבעה קרבות, שש זירות וארבע דרגות קושי.</p>
 <p>המשחק הוא סאטירה בלבד. כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.</p>
 <p><a href="about/">מדריך למשחק, דמויות ובקרות</a> · <a href="en/" hreflang="en" lang="en">English guide</a> · <a href="terms/">תנאי שימוש</a> · <a href="privacy/">פרטיות</a> · <a href="accessibility/">נגישות</a> · <a href="licenses/">רישיונות</a></p>
+<p>© 2026 רועי אנגל. כל הזכויות שמורות ליוצר.</p>
 </main>
 <noscript><p style="position:fixed;inset:0;margin:0;padding:24px;background:#050810;color:#eef4f5;font:18px/1.6 Arial,sans-serif;text-align:center">World Fight: Election Edition דורש JavaScript ו-WebGL. הפעילו JavaScript כדי לשחק. · This browser game needs JavaScript and WebGL. <a href="about/" style="color:#7fe3df">מדריך / Guide</a></p></noscript>
 """
