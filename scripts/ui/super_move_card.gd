@@ -9,7 +9,7 @@ extends CanvasLayer
 ## pauses with the cinematic, and it removes itself through the director's
 ## presentation cleanup.
 
-const DURATION := 1.9
+const DURATION := 2.3
 const IN_TIME := 0.16
 const OUT_TIME := 0.26
 const CYAN := Color("#59f0ff")

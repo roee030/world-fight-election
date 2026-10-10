@@ -370,6 +370,13 @@ func _super_card() -> CanvasLayer:
 	add_child(card)
 	_presentation.append(card)
 	_lifetimes[card] = SuperMoveCardScript.DURATION
+	var stinger := AudioStreamPlayer.new()
+	stinger.name = "SuperCardStinger"
+	stinger.stream = load("res://assets/audio/sfx/finisher.ogg") as AudioStream
+	stinger.bus = &"SFX"
+	add_child(stinger)
+	_presentation.append(stinger)
+	stinger.play()
 	return card
 
 

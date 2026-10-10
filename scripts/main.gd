@@ -865,7 +865,6 @@ func _try_begin_finisher(attacker: GameFighter, defender: GameFighter, definitio
 	if not _finisher_director.begin(attacker, defender, match_definition, opening_in_range):
 		return false
 	match_state = MatchState.Value.FINISHER_CINEMATIC
-	_play_sfx(&"finisher")
 	_track("finisher", {"fighter": attacker.character_id, "in_range": opening_in_range})
 	round_ready = false
 	message_label.visible = false
