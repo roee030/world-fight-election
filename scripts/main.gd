@@ -3053,10 +3053,8 @@ func _on_combo_broken(who: int) -> void:
 	_track("combo_break", {"by": "player" if who == 0 else "cpu"})
 
 
-func _on_attack_started(attacker: int, move: String) -> void:
-	if round_ready:
-		_play_sfx(&"whiff", attacker)
-	if attacker == 0 and move == "special":
+func _on_attack_started(_attacker: int, move: String) -> void:
+	if _attacker == 0 and move == "special":
 		_show_special_feedback("SPECIAL ATTACK!")
 
 

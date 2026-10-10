@@ -44,6 +44,9 @@ func _run() -> void:
 	main._on_strike_landed(1, 0, "kick", true, 1)
 	for entry in ["sfx:jab_hit", "sfx:cross_hit", "sfx:kick_hit", "sfx:guard_hit"]:
 		assert(_logged(main, entry), "missing hit cue %s" % entry)
+	main.audio_manager.cue_log.clear()
+	main._on_attack_started(0, "light")
+	assert(not _logged(main, "sfx:whiff"), "attacks must not mask the selected impact audio with the generic whiff cue")
 
 	main.audio_manager.cue_log.clear()
 	main._on_meter_changed(0, 100.0)

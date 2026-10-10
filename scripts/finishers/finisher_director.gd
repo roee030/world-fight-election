@@ -50,6 +50,9 @@ var _damage_budget := 0.0
 var _celebrate_on_lethal := true
 var _dealt := 0.0
 var _lethal := false
+# The card owns the opening beat: authored finisher events begin only after it
+# has left the screen, so the first hit can never happen behind the lightbox.
+var _super_card_hold_remaining := 0.0
 
 func configure(host: Node, arena: Node3D, camera: Camera3D) -> void:
 	_host = host
@@ -74,6 +77,7 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary,
 	_celebrate_on_lethal = bool(definition.get("celebrate_on_lethal", true))
 	_dealt = 0.0
 	_lethal = false
+	_super_card_hold_remaining = 0.0
 	_opening_miss = force_opening_miss or not opening_in_range
 	active = true
 	diagnostic = ""
@@ -111,6 +115,7 @@ func begin_celebration(winner: GameFighter, loser: GameFighter, celebration_id: 
 	_lightbox = false
 	_hit_ids.clear()
 	_paused = false
+	_super_card_hold_remaining = 0.0
 	active = true
 	diagnostic = ""
 	if _camera:
@@ -155,8 +160,15 @@ func advance(delta: float) -> void:
 	if _impact_remaining > 0 and _camera:
 		_impact_remaining = maxf(0, _impact_remaining - delta)
 		if _impact_remaining == 0: _camera.position = _impact_origin
+	var timeline_delta := delta
+	if _super_card_hold_remaining > 0.0:
+		if timeline_delta <= _super_card_hold_remaining:
+			_super_card_hold_remaining -= timeline_delta
+			return
+		timeline_delta -= _super_card_hold_remaining
+		_super_card_hold_remaining = 0.0
 	var was_celebrating := _celebrating
-	for event in timeline.advance(delta):
+	for event in timeline.advance(timeline_delta):
 		if not active: break
 		_dispatch(event)
 		if _celebrating != was_celebrating: break
@@ -370,13 +382,9 @@ func _super_card() -> CanvasLayer:
 	add_child(card)
 	_presentation.append(card)
 	_lifetimes[card] = SuperMoveCardScript.DURATION
-	var stinger := AudioStreamPlayer.new()
-	stinger.name = "SuperCardStinger"
-	stinger.stream = load("res://assets/audio/sfx/finisher.ogg") as AudioStream
-	stinger.bus = &"SFX"
-	add_child(stinger)
-	_presentation.append(stinger)
-	stinger.play()
+	_super_card_hold_remaining = SuperMoveCardScript.DURATION
+	if _host != null and _host.has_method("_play_sfx"):
+		_host.call("_play_sfx", &"finisher")
 	return card
 
 
@@ -456,6 +464,7 @@ func _cleanup_presentation() -> void:
 	_lifetimes.clear()
 	_clocks.clear()
 	_impact_remaining = 0
+	_super_card_hold_remaining = 0.0
 
 func cancel() -> void:
 	var was_active := active

@@ -131,7 +131,7 @@ func play_sfx(cue: StringName, variant := -1) -> AudioStreamPlayer:
 		return null
 	var player := _available_sfx_player()
 	player.stream = stream
-	player.volume_db = -9.0 if cue in QUIET_IMPACT_CUES else (-5.0 if cue == &"finisher" else 0.0)
+	player.volume_db = -3.0 if cue in QUIET_IMPACT_CUES else (-5.0 if cue == &"finisher" else 0.0)
 	player.pitch_scale = 1.0 if variant < 0 else clampf(0.96 + float(variant % 5) * 0.02, 0.9, 1.1)
 	player.play()
 	_log_cue("sfx", cue)
