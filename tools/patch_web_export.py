@@ -101,7 +101,9 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 .wf-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;color:#f7f2e8;font-family:Arial,Helvetica,sans-serif;text-align:center}
 #world-fight-startup{z-index:9998;background:#0a121d}
 #world-fight-startup[hidden]{display:none}
-#world-fight-startup .wf-stage{position:relative;width:min(100vw,calc(100vh * 1.3896));aspect-ratio:1712/1232;background:url('loading-hero.jpg') center/100% 100% no-repeat}
+#world-fight-startup{overflow:hidden}
+#world-fight-startup::before{content:'';position:absolute;inset:-4%;background:url('loading-hero.jpg') center/cover no-repeat;filter:blur(22px) brightness(.55) saturate(1.2)}
+#world-fight-startup .wf-stage{position:relative;z-index:1;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);width:min(100vw,calc(100vh * 1.3896));aspect-ratio:1712/1232;background:url('loading-hero.jpg') center/100% 100% no-repeat}
 #world-fight-startup .wf-panel{position:absolute;inset:0;direction:rtl}
 #world-fight-startup .wf-track{position:absolute;left:17.3%;top:20.9%;width:18.3%;height:26.2%;border-radius:50%;overflow:hidden;background:rgba(10,40,60,.16);box-shadow:inset 0 0 10px rgba(0,50,70,.45)}
 #world-fight-startup .wf-fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(0deg,rgba(24,160,176,.92),rgba(110,236,232,.88));border-top:3px solid rgba(220,255,252,.95);box-shadow:0 -3px 12px rgba(150,255,250,.85);transition:height .25s}

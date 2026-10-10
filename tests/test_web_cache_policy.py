@@ -98,6 +98,14 @@ class WebCachePolicyTests(unittest.TestCase):
             self.assertIn("worldFightHeartbeat", patched)
             self.assertIn("webglcontextlost", patched)
             self.assertIn("worldFightGraphicsReset", patched)
+            # The loading bomb keeps its native 1712:1232 canvas inside a
+            # full-bleed, blurred cover background.  Do not stretch the
+            # foreground artwork to the viewport: that would turn its circular
+            # percentage gauge into an oval on phones and ultrawide displays.
+            self.assertIn("#world-fight-startup::before", patched)
+            self.assertIn("center/cover no-repeat", patched)
+            self.assertIn("aspect-ratio:1712/1232", patched)
+            self.assertIn("center/100% 100% no-repeat", patched)
             # The diagnostics GPU probe must run once and release its context.
             self.assertEqual(patched.count("getContext('webgl2')"), 1)
             self.assertIn("loseContext()", patched)
