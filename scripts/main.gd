@@ -734,7 +734,27 @@ func _replay_tutorial() -> void:
 		begin_tutorial()
 
 
-func _on_web_pause_request(_arguments: Array) -> void:
+func _notification(what: int) -> void:
+	# Phone screen lock / app switch: stop all sound; the fight pauses so the player
+	# returns to the pause screen instead of a running match.
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+			_set_focus_lost(true)
+		NOTIFICATION_APPLICATION_FOCUS_IN, NOTIFICATION_WM_WINDOW_FOCUS_IN:
+			_set_focus_lost(false)
+
+
+func _set_focus_lost(lost: bool) -> void:
+	if audio_manager: audio_manager.set_focus_muted(lost)
+	if lost and fight_live and not paused and DisplayServer.get_name() != "headless":
+		_toggle_pause()
+
+
+func _on_web_pause_request(arguments: Array) -> void:
+	# The page was hidden: silence audio. It stays muted until the page is visible.
+	if not arguments.is_empty() and str(arguments[0]) in ["hidden", "visible"]:
+		_set_focus_lost(str(arguments[0]) == "hidden")
+		return
 	# The browser left fullscreen (or the tab lost the game surface): freeze the
 	# fight until the player taps back into fullscreen and resumes.
 	if fight_live and not paused:
@@ -745,6 +765,8 @@ func _on_web_menu_action(arguments: Array) -> void:
 	if arguments.is_empty():
 		return
 	var action := str(arguments[0])
+	# The menu click is the first user gesture: browsers may have held the music back.
+	if audio_manager: audio_manager.ensure_music_playing()
 	match action:
 		"quick": _open_select("quick")
 		"campaign": _open_select("campaign")
@@ -1180,12 +1202,13 @@ func _build_hud() -> void:
 	message_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 3)
-	combo_label = _label(hud_root, "", Rect2(430, 180, 420, 48), 25, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
+	# Small readout under the player HP / Special bars, out of the fight lane.
+	combo_label = _label(hud_root, "", Rect2(10.0 + HUD_HP_BAR_X, HUD_FRAME_HEIGHT + 6.0, 190, 26), 16, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
 	combo_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	combo_label.add_theme_constant_override("shadow_offset_x", 2)
 	combo_label.add_theme_constant_override("shadow_offset_y", 3)
 	combo_label.visible = false
-	for overlay in [message_label, combo_label]:
+	for overlay in [message_label]:
 		var rect := Rect2(overlay.position, overlay.size)
 		overlay.anchor_left = 0.5
 		overlay.anchor_right = 0.5
@@ -1194,6 +1217,7 @@ func _build_hud() -> void:
 	# The combo counter and combo names use the same animated banner style.
 	combo_callout = CalloutScript.new()
 	combo_callout.setup(combo_label, _bold_font())
+	combo_callout.compact = true
 	hud_root.add_child(combo_callout)
 	combo_callout.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hud_root.move_child(combo_callout, combo_label.get_index())

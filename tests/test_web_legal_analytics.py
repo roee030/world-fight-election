@@ -36,7 +36,10 @@ class LegalGateTests(unittest.TestCase):
         self.assertIn("purely coincidental", page)
         self.assertIn(".wf-legal-open #worldFightFullscreenGate{display:none!important}", page)
         # Settings > LEGAL reopens the notice with the box unticked again.
-        self.assertIn("window.worldFightShowDisclaimer = () => {", page)
+        self.assertIn("window.worldFightShowDisclaimer = open;", page)
+        self.assertIn("window.addEventListener(name, guard, { capture: true, passive: false })", page)
+        self.assertIn("canvas.setAttribute('inert', '')", page)
+        self.assertIn("setInterval(lock, 300)", page)
         self.assertIn("check.checked = false;", page)
         # The in-game FULL button reopens the iPhone Home Screen guide.
         self.assertIn("window.worldFightShowIosInstall = () => {", page)
@@ -65,7 +68,8 @@ class AnalyticsTests(unittest.TestCase):
         self.assertIn("path: 'disclaimer/accepted'", page)
         # Exit point: reported once when the page is hidden or closed.
         self.assertIn("'leave/' + where()", page)
-        self.assertIn("addEventListener('pagehide', leave)", page)
+        self.assertIn("addEventListener('pagehide'", page)
+        self.assertIn("worldFightPauseRequest?.(hidden ? 'hidden' : 'visible')", page)
 
     def test_site_config_enables_owner_analytics_and_profile(self):
         config = load_site_config()

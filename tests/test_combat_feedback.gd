@@ -26,6 +26,8 @@ func _run() -> void:
 		return _fail("combo lane must show hits and damage only (got %s)" % main.combo_label.text)
 	if main.combo_label.position.y >= 232.0:
 		return _fail("combo lane must move above the old fighter-space origin")
+	if main.combo_label.position.y < main.HUD_FRAME_HEIGHT or main.combo_label.get_theme_font_size("font_size") > 18:
+		return _fail("combo text must be small and sit under the HP/Special bars")
 	main.player.combo_count = 4
 	main._on_combo_string(0, "PRIME-TIME COMBO", 31.0)
 	if main.combo_label.text != "4 HITS  ·  31 DMG":

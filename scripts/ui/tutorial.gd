@@ -16,6 +16,9 @@ enum Phase { INTRO, PRACTICE, COMPLETE }
 const SAVE_PATH := "user://tutorial.cfg"
 const CYAN := Color("#59f0ff")
 const GOLD := Color("#f2c35a")
+const DIM_ALPHA := 0.4
+const LANE_TOP := 0.2
+const LANE_BOTTOM := 0.62
 const STEPS := [
 	{"id": "move", "title": "MOVE", "text": "Drag the joystick left or right to walk.", "key": "A / D", "target": "stick"},
 	{"id": "jab", "title": "JAB", "text": "Tap JAB for a fast punch.", "key": "J", "target": "light"},
@@ -23,7 +26,7 @@ const STEPS := [
 	{"id": "kick", "title": "KICK", "text": "Tap KICK for a long-range kick.", "key": "U", "target": "kick"},
 	{"id": "jump", "title": "JUMP", "text": "Push the joystick up to jump.", "key": "W", "target": "stick"},
 	{"id": "guard", "title": "GUARD", "text": "Hold GUARD to block incoming hits.", "key": "S", "target": "block"},
-	{"id": "combo", "title": "COMBO", "text": "Chain JAB, JAB, CROSS fast - each hit lands while the rival still reels. Pause > MOVE LIST shows all combos.", "key": "J, J, K", "target": "light"},
+	{"id": "combo", "title": "COMBO", "text": "Chain JAB, JAB, CROSS fast - each hit lands while the rival still reels. Pause > MOVE LIST shows all combos.", "key": "J, J, K", "target": ["light", "heavy"]},
 	{"id": "special", "title": "SPECIAL ENERGY", "text": "Hits fill the gold SPECIAL ENERGY bar. At 100% the SP button lights up - tap SP for your finisher!", "key": "L", "target": "special"},
 ]
 
@@ -110,12 +113,12 @@ func setup(main: Node, font: Font) -> void:
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_panel.add_child(dot)
 		_dots.append(dot)
-	_intro = _make_gate("TutorialIntro", "LEARN THE BASICS", "A short practice round. Your rival waits while you learn the controls.", "START TUTORIAL", start_practice)
+	_intro = _make_gate("TutorialIntro", "LEARN THE BASICS", "A short practice round. Your rival waits while you learn the controls.", "START TUTORIAL", start_practice, skip_tutorial)
 	_complete = _make_gate("TutorialComplete", "TRAINING COMPLETE", "You are ready. The next round is a real fight.", "START FIGHT", confirm_completion)
 	visible = false
 
 
-func _make_gate(node_name: String, title_text: String, body_text: String, button_text: String, action: Callable) -> Panel:
+func _make_gate(node_name: String, title_text: String, body_text: String, button_text: String, action: Callable, skip_action: Callable = Callable()) -> Panel:
 	var gate := Panel.new()
 	gate.name = node_name
 	var style := StyleBoxFlat.new()
@@ -137,8 +140,11 @@ func _make_gate(node_name: String, title_text: String, body_text: String, button
 	gate.mouse_filter = Control.MOUSE_FILTER_STOP
 	var title := Label.new()
 	title.text = title_text
-	title.position = Vector2(24, 28)
-	title.size = Vector2(472, 38)
+	title.anchor_right = 1.0
+	title.offset_left = 24
+	title.offset_right = -24
+	title.offset_top = 28
+	title.offset_bottom = 66
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_override("font", _font)
 	title.add_theme_font_size_override("font_size", 28)
@@ -146,8 +152,13 @@ func _make_gate(node_name: String, title_text: String, body_text: String, button
 	gate.add_child(title)
 	var body := Label.new()
 	body.text = body_text
-	body.position = Vector2(36, 78)
-	body.size = Vector2(448, 46)
+	# Anchored to both edges so word-wrap always uses the panel width.
+	body.anchor_right = 1.0
+	body.offset_left = 40
+	body.offset_right = -40
+	body.offset_top = 76
+	body.offset_bottom = 142
+	body.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	body.add_theme_font_override("font", _font)
@@ -163,6 +174,20 @@ func _make_gate(node_name: String, title_text: String, body_text: String, button
 	button.add_theme_font_size_override("font_size", 16)
 	button.pressed.connect(action)
 	gate.add_child(button)
+	if skip_action.is_valid():
+		var skip := Button.new()
+		skip.name = "SkipTutorial"
+		skip.text = "SKIP TUTORIAL"
+		skip.position = Vector2(170, 204)
+		skip.size = Vector2(180, 34)
+		skip.focus_mode = Control.FOCUS_NONE
+		skip.add_theme_font_override("font", _font)
+		skip.add_theme_font_size_override("font_size", 13)
+		skip.add_theme_color_override("font_color", Color("#e8eef0"))
+		skip.pressed.connect(skip_action)
+		gate.add_child(skip)
+		gate.offset_top = -135
+		gate.offset_bottom = 135
 	add_child(gate)
 	gate.visible = false
 	return gate
@@ -269,7 +294,7 @@ func abort() -> void:
 
 func skip_tutorial() -> void:
 	if active:
-		host._track("tutorial_skip", {"step": current_id()})
+		host._track("tutorial_skip", {"step": "intro" if phase == Phase.INTRO else current_id()})
 		_finish(true)
 
 
@@ -350,39 +375,57 @@ func advance(delta: float) -> void:
 	queue_redraw()
 
 
-func target_rect() -> Rect2:
+func target_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
 	if phase != Phase.PRACTICE:
-		return Rect2()
+		return rects
 	var data: Dictionary = STEPS[mini(step, STEPS.size() - 1)]
-	var target := str(data.target)
-	var node: Control = host.stick if target == "stick" else host.buttons.get(target)
-	if node == null or not node.is_visible_in_tree():
-		return Rect2()
-	return Rect2(node.get_global_rect().position - get_global_rect().position, node.get_global_rect().size)
+	var targets: Array = data.target if data.target is Array else [data.target]
+	for target in targets:
+		var node: Control = host.stick if str(target) == "stick" else host.buttons.get(str(target))
+		if node == null or not node.is_visible_in_tree():
+			continue
+		rects.append(Rect2(node.get_global_rect().position - get_global_rect().position, node.get_global_rect().size))
+	return rects
+
+
+func target_rect() -> Rect2:
+	var rects := target_rects()
+	return rects[0] if not rects.is_empty() else Rect2()
 
 
 func _draw() -> void:
 	if not active:
 		return
 	var full := Rect2(Vector2.ZERO, size)
-	var rect := target_rect()
-	if rect.size == Vector2.ZERO:
-		draw_rect(full, Color(0.0, 0.01, 0.03, 0.72))
+	var dim := Color(0.0, 0.01, 0.03, DIM_ALPHA)
+	var rects := target_rects()
+	if rects.is_empty():
+		draw_rect(full, dim)
 		return
-	var hole := rect.grow(18.0).intersection(full)
-	draw_rect(Rect2(full.position, Vector2(full.size.x, hole.position.y)), Color(0.0, 0.01, 0.03, 0.72))
-	draw_rect(Rect2(Vector2(0, hole.position.y), Vector2(hole.position.x, hole.size.y)), Color(0.0, 0.01, 0.03, 0.72))
-	draw_rect(Rect2(Vector2(hole.end.x, hole.position.y), Vector2(full.end.x - hole.end.x, hole.size.y)), Color(0.0, 0.01, 0.03, 0.72))
-	draw_rect(Rect2(Vector2(0, hole.end.y), Vector2(full.size.x, full.end.y - hole.end.y)), Color(0.0, 0.01, 0.03, 0.72))
-	var center := rect.get_center()
+	# The fight lane stays clear so both fighters are always readable; the dim only
+	# covers the HUD above it and the controls below it, with a hole at the targets.
+	var lane_top := full.size.y * LANE_TOP
+	var lane_bottom := full.size.y * LANE_BOTTOM
+	draw_rect(Rect2(full.position, Vector2(full.size.x, lane_top)), dim)
+	var hole := rects[0].grow(18.0)
+	for rect in rects:
+		hole = hole.merge(rect.grow(18.0))
+	hole = hole.intersection(Rect2(0.0, lane_bottom, full.size.x, full.size.y - lane_bottom))
+	draw_rect(Rect2(Vector2(0, lane_bottom), Vector2(full.size.x, maxf(0.0, hole.position.y - lane_bottom))), dim)
+	draw_rect(Rect2(Vector2(0, hole.position.y), Vector2(hole.position.x, hole.size.y)), dim)
+	draw_rect(Rect2(Vector2(hole.end.x, hole.position.y), Vector2(full.end.x - hole.end.x, hole.size.y)), dim)
+	draw_rect(Rect2(Vector2(0, hole.end.y), Vector2(full.size.x, full.end.y - hole.end.y)), dim)
 	var pulse := 0.5 + 0.5 * sin(_clock * 6.0)
-	var radius := maxf(rect.size.x, rect.size.y) * (0.6 + 0.08 * pulse)
-	draw_arc(center, radius, 0.0, TAU, 48, Color(GOLD, 0.9), 4.0, true)
-	draw_arc(center, radius + 10.0, 0.0, TAU, 48, Color(GOLD, 0.3 * pulse), 8.0, true)
-	# Arrow from the coach panel toward the control.
-	var tip := center - Vector2(0, radius + 8.0)
-	var bob := Vector2(0, -8.0 * pulse)
-	draw_colored_polygon(PackedVector2Array([tip + bob, tip + bob + Vector2(-14, -22), tip + bob + Vector2(14, -22)]), GOLD)
+	for rect in rects:
+		var center := rect.get_center()
+		var radius := maxf(rect.size.x, rect.size.y) * (0.6 + 0.08 * pulse)
+		draw_arc(center, radius, 0.0, TAU, 48, Color(GOLD, 0.9), 4.0, true)
+		draw_arc(center, radius + 10.0, 0.0, TAU, 48, Color(GOLD, 0.3 * pulse), 8.0, true)
+		# Arrow from the coach panel toward the control.
+		var tip := center - Vector2(0, radius + 8.0)
+		var bob := Vector2(0, -8.0 * pulse)
+		draw_colored_polygon(PackedVector2Array([tip + bob, tip + bob + Vector2(-14, -22), tip + bob + Vector2(14, -22)]), GOLD)
 	if current_id() == "special" and host.player_meter_bar != null:
 		var bar: Control = host.player_meter_bar
 		var bar_rect := Rect2(bar.get_global_rect().position - get_global_rect().position, bar.get_global_rect().size).grow(6)

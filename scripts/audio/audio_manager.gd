@@ -19,6 +19,7 @@ const QUIET_IMPACT_CUES := [&"jab_hit", &"cross_hit", &"kick_hit", &"guard_hit"]
 var settings_path := "user://audio_settings.cfg"
 var _volumes := DEFAULTS.duplicate()
 var _muted := false
+var _focus_muted := false
 var music_state_change_count := 0
 var preview_count := 0
 var _music_state: StringName = &"silent"
@@ -82,14 +83,40 @@ func get_volume(category: StringName) -> float:
 
 func set_muted(value: bool, persist := true) -> void:
 	_muted = value
-	var master_index := AudioServer.get_bus_index(&"Master")
-	if master_index >= 0:
-		AudioServer.set_bus_mute(master_index, value)
+	_apply_master_mute()
 	if persist:
 		save_settings()
 
 func is_muted() -> bool:
 	return _muted
+
+## Silences everything while the game is hidden or unfocused (phone screen lock,
+## background tab) without touching the player's saved mute choice.
+func set_focus_muted(value: bool) -> void:
+	_focus_muted = value
+	_apply_master_mute()
+	if value:
+		for player in _music_players:
+			player.stream_paused = true
+	else:
+		for player in _music_players:
+			player.stream_paused = false
+		ensure_music_playing()
+
+func is_focus_muted() -> bool:
+	return _focus_muted
+
+## Restarts the current music cue when nothing is audible, e.g. the browser held the
+## audio context suspended until the first click.
+func ensure_music_playing() -> void:
+	if _focus_muted or _music_state in [&"silent", &"result"]:
+		return
+	for player in _music_players:
+		if player.playing:
+			return
+	var state := _music_state
+	_music_state = &"silent"
+	set_music_state(state)
 
 func reset_defaults() -> void:
 	_volumes = DEFAULTS.duplicate()
@@ -239,9 +266,12 @@ func _apply_all() -> void:
 	_ensure_buses()
 	for category in DEFAULTS:
 		_apply_volume(category)
+	_apply_master_mute()
+
+func _apply_master_mute() -> void:
 	var master_index := AudioServer.get_bus_index(&"Master")
 	if master_index >= 0:
-		AudioServer.set_bus_mute(master_index, _muted)
+		AudioServer.set_bus_mute(master_index, _muted or _focus_muted)
 
 func _apply_volume(category: StringName) -> void:
 	var index := AudioServer.get_bus_index(BUS_NAMES[category])

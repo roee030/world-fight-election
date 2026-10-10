@@ -362,15 +362,51 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
   const key = '__VERSION__';
   let accepted = false;
   try { accepted = localStorage.getItem(key) === 'accepted'; } catch (error) { accepted = false; }
-  if (!accepted) document.documentElement.classList.add('wf-legal-open');
+  const root = document.documentElement;
+  const box = document.getElementById('worldFightDisclaimer');
   const check = document.getElementById('worldFightDisclaimerCheck');
   const accept = document.getElementById('worldFightDisclaimerAccept');
+  // Hard gate: while the notice is open the game receives no input at all.
+  // Events outside the notice are swallowed in the capture phase before the
+  // engine sees them, the canvas is inert, and a watchdog restores the notice
+  // if anything hides it without a real acceptance.
+  const blocked = ['keydown', 'keyup', 'keypress', 'pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click', 'touchstart', 'touchend', 'wheel', 'contextmenu'];
+  const guard = (event) => {
+    if (accepted || (box && box.contains(event.target))) return;
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  };
+  for (const name of blocked) window.addEventListener(name, guard, { capture: true, passive: false });
+  const lock = () => {
+    const canvas = document.getElementById('canvas');
+    if (canvas) { if (accepted) canvas.removeAttribute('inert'); else canvas.setAttribute('inert', ''); }
+    if (!accepted) {
+      root.classList.add('wf-legal-open');
+      if (box && box.style.display) box.style.removeProperty('display');
+      if (check.checked && accept.disabled) accept.disabled = false;
+      if (!check.checked && !accept.disabled) accept.disabled = true;
+      if (document.activeElement === canvas) canvas.blur();
+    }
+  };
+  const open = () => {
+    accepted = false;
+    check.checked = false;
+    accept.disabled = true;
+    lock();
+    window.worldFightPauseRequest?.('legal');
+  };
+  if (!accepted) lock();
+  setInterval(lock, 300);
+  new MutationObserver(lock).observe(root, { attributes: true, attributeFilter: ['class'] });
+  check.checked = false;
   check.addEventListener('change', () => { accept.disabled = !check.checked; });
   const enter = (event) => {
-    if (!check.checked) return;
+    if (!check.checked || accept.disabled) return;
     event.preventDefault();
+    accepted = true;
     try { localStorage.setItem(key, 'accepted'); } catch (error) {}
-    document.documentElement.classList.remove('wf-legal-open');
+    root.classList.remove('wf-legal-open');
+    lock();
     window.worldFightTrack?.('disclaimer_accepted', { path: 'disclaimer/accepted' });
     // The accept tap is a user gesture: use it to enter fullscreen on phones.
     if (innerWidth > innerHeight && (navigator.maxTouchPoints || 0) > 0) window.requestWorldFightFullscreen?.();
@@ -379,11 +415,7 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
   accept.addEventListener('click', enter);
   accept.addEventListener('pointerup', enter);
   // Settings > LEGAL > SHOW FULL DISCLAIMER reopens the notice for reading.
-  window.worldFightShowDisclaimer = () => {
-    check.checked = false;
-    accept.disabled = true;
-    document.documentElement.classList.add('wf-legal-open');
-  };
+  window.worldFightShowDisclaimer = open;
 })();</script>"""
 
 ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
@@ -441,8 +473,15 @@ ANALYTICS_SCRIPT = """<script id="world-fight-analytics">
     lastLeave = Date.now();
     window.worldFightTrack('leave', { path: 'leave/' + where() });
   };
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') leave(); });
-  window.addEventListener('pagehide', leave);
+  // Hidden page (screen lock, tab switch): pause the fight and silence all audio.
+  const setHidden = (hidden) => window.worldFightPauseRequest?.(hidden ? 'hidden' : 'visible');
+  document.addEventListener('visibilitychange', () => {
+    const hidden = document.visibilityState === 'hidden';
+    setHidden(hidden);
+    if (hidden) leave();
+  });
+  window.addEventListener('pagehide', () => { setHidden(true); leave(); });
+  window.addEventListener('pageshow', () => setHidden(document.visibilityState === 'hidden'));
   const milestones = [1, 3, 5, 10, 20, 30, 60];
   let visibleSeconds = 0;
   setInterval(() => {

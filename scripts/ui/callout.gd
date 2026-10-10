@@ -11,9 +11,12 @@ extends Control
 const GOLD := Color("#f2c35a")
 const CYAN := Color("#59f0ff")
 const RED := Color("#ff4d5e")
+const COMPACT_SIZE := 16
 
 var label: Label
 var accent := CYAN
+## Small static readout (combo counter): fixed size, no scale punch or lightning.
+var compact := false
 var _last_text := ""
 var _was_visible := false
 var _t := 10.0
@@ -65,6 +68,10 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_bolt_timer -= delta
+	if compact:
+		label.scale = Vector2.ONE
+		queue_redraw()
+		return
 	if _t < 0.45 and _bolt_timer <= 0.0:
 		_bolt_timer = 0.05
 		_make_bolts()
@@ -78,6 +85,8 @@ func _process(delta: float) -> void:
 func _restart() -> void:
 	var style := style_for(label.text)
 	accent = style.accent
+	if compact:
+		style.size = COMPACT_SIZE
 	label.add_theme_font_size_override("font_size", int(style.size))
 	label.add_theme_color_override("font_color", Color.WHITE if accent != CYAN or int(style.size) > 30 else Color("#e8fbff"))
 	label.add_theme_color_override("font_shadow_color", Color(accent, 0.6))
@@ -95,7 +104,7 @@ func plate_rect() -> Rect2:
 	var size_px := label.get_theme_font_size("font_size")
 	var width := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x if font != null else 300.0
 	var center := label.get_global_rect().get_center() - get_global_rect().position
-	var plate_size := Vector2(minf(width + 120.0, 1100.0), float(size_px) * 1.45)
+	var plate_size := Vector2(minf(width + (36.0 if compact else 120.0), 1100.0), float(size_px) * 1.45)
 	return Rect2(center - plate_size * 0.5, plate_size)
 
 
@@ -128,6 +137,8 @@ func _draw() -> void:
 	# Accent bars on the top and bottom edges.
 	draw_line(plate[0] + Vector2(10, -6), plate[0] + Vector2(rect.size.x * 0.35, -6), Color(accent, 0.8 * appear), 3.0)
 	draw_line(plate[2] - Vector2(10, -6), plate[2] - Vector2(rect.size.x * 0.35, -6), Color(accent, 0.8 * appear), 3.0)
+	if compact:
+		return
 	var flash := maxf(0.0, 0.6 - _t * 4.0)
 	if flash > 0.0:
 		draw_colored_polygon(plate, Color(1, 1, 1, flash))

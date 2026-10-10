@@ -64,6 +64,7 @@ func _run() -> void:
 	var clock: float = main.round_clock
 	main._process(0.2)
 	assert(main.round_clock == clock, "round clock ran during the finisher")
+	assert(load("res://scripts/ui/super_move_card.gd").DURATION >= 1.8, "super-move card must hold long enough to read")
 	var card = main._finisher_director.find_child("SuperMoveCard", true, false)
 	assert(card != null and card.find_child("MoveName", true, false) != null, "finisher must open with the full-screen super-move card")
 	assert(main._fight_camera.fov == 30.0, "finisher must not zoom the camera")

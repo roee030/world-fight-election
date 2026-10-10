@@ -131,9 +131,19 @@ func _run() -> void:
 	# Skip path and pause replay.
 	TutorialScript.mark_completed(false)
 	main.tutorial.begin()
+	var intro_skip = main.tutorial.get_node("TutorialIntro").find_child("SkipTutorial", true, false)
+	assert(intro_skip != null, "the first tutorial window must offer SKIP TUTORIAL")
+	main.tutorial.skip_tutorial()
+	assert(TutorialScript.is_completed() and main.tracked_events.has("tutorial/skip-at-intro"), "intro skip must save and track")
+	TutorialScript.mark_completed(false)
+	main.tutorial.begin()
 	main.tutorial.start_practice()
 	main.tutorial.skip_tutorial()
 	assert(TutorialScript.is_completed() and main.tracked_events.has("tutorial/skip-at-move"))
+	main.tutorial.active = true
+	main.tutorial.phase = TutorialScript.Phase.PRACTICE
+	main.tutorial.step = 6
+	assert(main.tutorial.target_rects().size() == 2, "COMBO step must ring both JAB and CROSS")
 	assert(main.pause_root.find_child("HowToPlayButton", true, false) != null, "pause menu must offer HOW TO PLAY")
 	main.free()
 	print("PASS: one-time tutorial steps, frozen clock, SP finisher, saved completion, skip and replay")
