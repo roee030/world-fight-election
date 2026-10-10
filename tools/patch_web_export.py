@@ -536,7 +536,7 @@ SEO_BODY = """<main id="wf-seo" class="wf-sr" lang="he" dir="rtl">
 <p>משחק לחימה סאטירי חינמי בסגנון קונסולה, שרץ ישירות בדפדפן בטלפון ובמחשב, בלי הורדה. בוחרים לוחם מתוך 13 דמויות פרודיות, נלחמים בשלושה סיבובים, צוברים אנרגיה מיוחדת ומפעילים מהלך סיום מצויר. קרב מהיר, קמפיין בן ארבעה קרבות, שש זירות וארבע דרגות קושי.</p>
 <p>המשחק הוא סאטירה בלבד. כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.</p>
 <p><a href="about/">מדריך למשחק, דמויות ובקרות</a> · <a href="en/" hreflang="en" lang="en">English guide</a> · <a href="terms/">תנאי שימוש</a> · <a href="privacy/">פרטיות</a> · <a href="accessibility/">נגישות</a> · <a href="licenses/">רישיונות</a></p>
-<p>© 2026 רועי אנגל. כל הזכויות שמורות ליוצר.</p>
+<p>© 2026 רועי אנגל. כל הזכויות שמורות ליוצר. <a href="mailto:mr.roee.angel@gmail.com">mr.roee.angel@gmail.com</a></p>
 </main>
 <noscript><p style="position:fixed;inset:0;margin:0;padding:24px;background:#050810;color:#eef4f5;font:18px/1.6 Arial,sans-serif;text-align:center">World Fight: Election Edition דורש JavaScript ו-WebGL. הפעילו JavaScript כדי לשחק. · This browser game needs JavaScript and WebGL. <a href="about/" style="color:#7fe3df">מדריך / Guide</a></p></noscript>
 """
