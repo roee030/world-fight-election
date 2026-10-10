@@ -52,6 +52,27 @@ class SpriteSheetGeometryTests(unittest.TestCase):
                 f"{fighter_id} visibly shrinks during CROSS (area ratio={visible_area_ratio:.3f})",
             )
 
+    def test_lapid_signature_kick_keeps_fighter_scale(self) -> None:
+        """The kick must not make Lapid's body read as a smaller fighter."""
+        root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
+        jab = np.asarray(Image.open(root / "yair_lapid-4.png").getchannel("A")) > 12
+        kick = np.asarray(Image.open(root / "yair_lapid-6.png").getchannel("A")) > 12
+        visible_area_ratio = int(kick.sum()) / int(jab.sum())
+        self.assertGreaterEqual(
+            visible_area_ratio,
+            0.88,
+            "yair_lapid visibly shrinks during KICK (area ratio=%.3f)" % visible_area_ratio,
+        )
+        jab_rows = np.where(jab.any(axis=1))[0]
+        kick_rows = np.where(kick.any(axis=1))[0]
+        self.assertEqual(kick_rows[-1], jab_rows[-1], "yair_lapid KICK must use the shared floor line")
+        self.assertAlmostEqual(
+            len(kick_rows),
+            len(jab_rows),
+            delta=1,
+            msg="yair_lapid KICK must retain the JAB's head-to-floor height",
+        )
+
     def test_repaired_bibi_and_mansour_frames_have_no_remote_pose_fragments(self) -> None:
         root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"
         for fighter_id in ("bibi", "mansour_abbas"):
