@@ -65,12 +65,12 @@ class SeoShellTests(unittest.TestCase):
         self.assertEqual(again.count('id="wf-seo"'), 1)
 
     def test_static_site_files_are_published(self):
-        for name in ("robots.txt", "sitemap.xml", "CNAME", "404.html", "favicon.ico", "icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png", "og-image.jpg", "about/index.html", "en/index.html", "google5ee28a7b3ea4abc3.html"):
+        for name in ("robots.txt", "sitemap.xml", "CNAME", "404.html", "favicon.ico", "icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png", "og-image.jpg", "about/index.html", "en/index.html", "google5ee28a7b3ea4abc3.html", "terms/index.html", "privacy/index.html", "accessibility/index.html", "licenses/index.html"):
             self.assertTrue((self.out / name).is_file(), name)
         self.assertEqual((self.out / "CNAME").read_text(encoding="utf-8").strip(), "israel-election-fight.online")
         sitemap = (self.out / "sitemap.xml").read_text(encoding="utf-8")
         self.assertNotIn("__BUILD_DATE__", sitemap)
-        for path in ("/", "/about/", "/en/"):
+        for path in ("/", "/about/", "/en/", "/terms/", "/privacy/", "/accessibility/", "/licenses/"):
             self.assertIn(f"<loc>{DEFAULT_SITE_URL}{path}</loc>", sitemap)
         robots = (self.out / "robots.txt").read_text(encoding="utf-8")
         self.assertIn(f"Sitemap: {DEFAULT_SITE_URL}/sitemap.xml", robots)
@@ -96,6 +96,23 @@ class SeoShellTests(unittest.TestCase):
         self.assertIn('hreflang="en"', about)
         self.assertIn('hreflang="he"', english)
         self.assertIn('lang="en"', english)
+
+    def test_legal_pages_are_linked_from_the_disclaimer_and_guides(self):
+        for slug in ("terms", "privacy", "accessibility", "licenses"):
+            self.assertIn(f'href="{slug}/" target="_blank"', self.page)
+            for guide in ("about", "en"):
+                text = (STATIC_DIR / guide / "index.html").read_text(encoding="utf-8")
+                self.assertIn(f'href="/{slug}/"', text)
+
+    def test_legal_pages_carry_the_key_protections(self):
+        terms = (STATIC_DIR / "terms" / "index.html").read_text(encoding="utf-8")
+        for phrase in ("סאטירה ופרודיה", "אין זיקה", "אין תעמולת בחירות", "כמות שהוא", "mr.roee.angel@gmail.com", "הדין הישראלי"):
+            self.assertIn(phrase, terms)
+        self.assertIn("ללא עוגיות", (STATIC_DIR / "privacy" / "index.html").read_text(encoding="utf-8"))
+        self.assertIn("רכז נגישות", (STATIC_DIR / "accessibility" / "index.html").read_text(encoding="utf-8"))
+        licenses = (STATIC_DIR / "licenses" / "index.html").read_text(encoding="utf-8")
+        for credit in ("Alexandr Zhelanov", "Creative Commons Attribution 3.0", "Godot Engine", "Quaternius", "Kenney"):
+            self.assertIn(credit, licenses)
 
     def test_configured_site_url_is_used_everywhere(self):
         with TemporaryDirectory() as other:

@@ -17,7 +17,7 @@ from shutil import copyfile, copytree
 from typing import Mapping
 
 
-LOADING_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "main-hero-b-edited.jpg"
+LOADING_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "loading-bomb.jpg"
 ROTATE_ART = Path(__file__).resolve().parents[1] / "assets" / "ui" / "rotate-device-ensemble.webp"
 SITE_CONFIG = Path(__file__).resolve().parents[1] / "data" / "site_config.json"
 STATIC_DIR = Path(__file__).resolve().parents[1] / "web" / "static"
@@ -101,14 +101,15 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 .wf-overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:24px;color:#f7f2e8;font-family:Arial,Helvetica,sans-serif;text-align:center}
 #world-fight-startup{z-index:9998;background:#0a121d}
 #world-fight-startup[hidden]{display:none}
-#world-fight-startup .wf-stage{position:relative;width:min(100vw,calc(100vh * 1.7703));aspect-ratio:2096/1184;background:url('loading-hero.jpg') center/100% 100% no-repeat}
-#world-fight-startup .wf-panel{position:absolute;left:24%;right:24%;top:80%;height:15%;display:flex;flex-direction:column;align-items:center;justify-content:center;direction:rtl}
-#world-fight-startup .wf-track{width:100%;height:clamp(6px,1.4vmin,12px);border:1px solid rgba(102,217,212,.75);background:rgba(4,12,20,.9);transform:skewX(-18deg);box-shadow:0 0 12px rgba(60,220,255,.45)}
-#world-fight-startup .wf-fill{height:100%;width:0;background:linear-gradient(90deg,#2ab8b3,#7ff4ee);transition:width .2s}
-#world-fight-startup .wf-loading{margin-top:clamp(4px,1.2vmin,12px);color:#fff;font-family:Heebo,"Segoe UI",Arial,Helvetica,sans-serif;font-weight:900;font-size:clamp(13px,3.2vmin,30px);letter-spacing:.02em;min-height:1.3em;text-shadow:0 0 6px rgba(80,230,255,.95),0 0 18px rgba(40,200,255,.75)}
-#world-fight-startup .wf-error{display:none;max-width:420px;margin-top:6px;color:#ffb3b8;font-size:13px;line-height:1.4}
+#world-fight-startup .wf-stage{position:relative;width:min(100vw,calc(100vh * 1.3896));aspect-ratio:1712/1232;background:url('loading-hero.jpg') center/100% 100% no-repeat}
+#world-fight-startup .wf-panel{position:absolute;inset:0;direction:rtl}
+#world-fight-startup .wf-track{position:absolute;left:17.3%;top:20.9%;width:18.3%;height:26.2%;border-radius:50%;overflow:hidden;background:rgba(10,40,60,.16);box-shadow:inset 0 0 10px rgba(0,50,70,.45)}
+#world-fight-startup .wf-fill{position:absolute;left:0;right:0;bottom:0;height:0;background:linear-gradient(0deg,rgba(24,160,176,.92),rgba(110,236,232,.88));border-top:3px solid rgba(220,255,252,.95);box-shadow:0 -3px 12px rgba(150,255,250,.85);transition:height .25s}
+#world-fight-startup .wf-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;direction:ltr;color:#fff;font-family:Heebo,"Segoe UI",Arial,sans-serif;font-weight:900;font-size:clamp(16px,5.2vmin,52px);text-shadow:0 0 6px rgba(0,40,60,.95),0 2px 3px #000}
+#world-fight-startup .wf-loading{position:absolute;left:14%;width:25%;top:49.5%;text-align:center;unicode-bidi:plaintext;color:#2e1a08;font-family:Heebo,"Segoe UI",Arial,Helvetica,sans-serif;font-weight:900;font-size:clamp(10px,2.3vmin,24px);min-height:1.3em;text-shadow:0 0 5px rgba(255,240,200,.8)}
+#world-fight-startup .wf-error{display:none;position:absolute;left:14%;width:25%;top:54%;text-align:center;color:#8a0f1c;font-size:13px;line-height:1.4}
 #world-fight-startup button{margin-top:8px;min-height:44px;padding:0 28px;border:1px solid #e9bd62;background:linear-gradient(180deg,#b9792f,#80501f);color:#fff8df;font-weight:800;font-size:15px;letter-spacing:.1em}
-#world-fight-startup .wf-retry{display:none}
+#world-fight-startup .wf-retry{display:none;position:absolute;left:19%;top:60%}
 #worldFightRotateGate{display:none;z-index:10000;justify-content:flex-end;padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(30px + env(safe-area-inset-bottom,0px));background-color:#050810;background-image:linear-gradient(180deg,rgba(2,6,13,0) 42%,#050810 78%),url('rotate-device-ensemble.webp');background-position:center,center top;background-size:cover,100% auto;background-repeat:no-repeat}
 .wf-portrait #worldFightRotateGate{display:flex}
 #worldFightRotateGate .wf-rotate-card{width:min(390px,calc(100vw - 40px));max-height:60dvh;overflow:auto;border:1px solid rgba(92,218,215,.65);padding:18px 20px;background:rgba(5,14,24,.92);box-shadow:0 12px 36px rgba(0,0,0,.72)}
@@ -247,6 +248,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
     const notice = document.getElementById('status-notice');
     const fill = document.querySelector('#world-fight-startup .wf-fill');
     const label = document.querySelector('#world-fight-startup .wf-loading');
+    const pct = document.querySelector('#world-fight-startup .wf-pct');
     const error = document.querySelector('#world-fight-startup .wf-error');
     const retry = document.querySelector('#world-fight-startup .wf-retry');
     const started = Date.now();
@@ -269,12 +271,12 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
         // The game normally reports ready itself; never trap a running game.
         if (Date.now() - engineStartedAt > 10000) { window.worldFightSetReady(true); return; }
         state.stage = 'starting engine';
-        fill.style.width = '100%';
+        fill.style.height = '100%'; if (pct) pct.textContent = '100%';
         label.textContent = 'מכינים את הזירה…';
       } else if (progress && progress.max > 0) {
         const ratio = Math.min(1, progress.value / progress.max);
-        fill.style.width = `${Math.round(ratio * 100)}%`;
-        label.textContent = `טוען ${Math.round(ratio * 100)}%  ·  ${(progress.value / 1048576).toFixed(1)} / ${(progress.max / 1048576).toFixed(1)} MB` + ((Date.now() - started > 12000 && ratio < 0.6) ? '  ·  חיבור איטי' : '');
+        fill.style.height = `${Math.round(ratio * 100)}%`; if (pct) pct.textContent = `${Math.round(ratio * 100)}%`;
+        label.textContent = (Date.now() - started > 12000 && ratio < 0.6) ? 'חיבור איטי…' : `${(progress.value / 1048576).toFixed(1)} / ${(progress.max / 1048576).toFixed(1)} MB`;
       }
       renderDiagnostics();
     }, 200);
@@ -325,7 +327,7 @@ html,body{position:fixed;inset:0;width:100%;height:100%;margin:0;overflow:hidden
 </script>
 """
 
-BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-stage"><div class="wf-panel"><div class="wf-track"><div class="wf-fill"></div></div><div class="wf-loading">טוען את המשחק…</div><div class="wf-error"></div><button class="wf-retry" type="button">נסו שוב</button></div></div></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightIosGate" class="wf-overlay"><div class="wf-ios-card" dir="rtl" lang="he"><strong>למסך מלא באייפון</strong><ol><li>לחצו על כפתור השיתוף של Safari (או על ⋯ ואז שיתוף).</li><li>בחרו <b>הוספה למסך הבית</b> (Add to Home Screen) ואשרו.</li><li>פתחו את המשחק מהאייקון החדש – הוא ייפתח במסך מלא לרוחב.</li></ol><p class="wf-ios-en">Safari on iPhone cannot hide its bars for a web page. Share &gt; Add to Home Screen, then open World Fight from its icon for true full screen.</p><button id="worldFightIosPlayButton" type="button" dir="ltr">PLAY HERE · שחקו כאן</button></div></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><div id="worldFightIosInstallHint" dir="rtl">למסך מלא בלי הטאבים של Safari: לחצו על שיתוף, בחרו Add to Home Screen ופתחו את המשחק מהאייקון. אם המסך לא מסתובב, בטלו נעילת סיבוב במרכז הבקרה.</div><button id="worldFightFullscreenButton" type="button">FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
+BODY_SHELL = """<div id="world-fight-startup" class="wf-overlay"><div class="wf-stage"><div class="wf-panel"><div class="wf-track"><div class="wf-fill"></div><div class="wf-pct">0%</div></div><div class="wf-loading">טוען את המשחק…</div><div class="wf-error"></div><button class="wf-retry" type="button">נסו שוב</button></div></div></div><div id="worldFightFullscreenGate" class="wf-overlay" role="button" aria-label="Tap to play in full screen"><strong>TAP TO FIGHT</strong><span>FULL SCREEN · LANDSCAPE</span></div><div id="worldFightIosGate" class="wf-overlay"><div class="wf-ios-card" dir="rtl" lang="he"><strong>למסך מלא באייפון</strong><ol><li>לחצו על כפתור השיתוף של Safari (או על ⋯ ואז שיתוף).</li><li>בחרו <b>הוספה למסך הבית</b> (Add to Home Screen) ואשרו.</li><li>פתחו את המשחק מהאייקון החדש – הוא ייפתח במסך מלא לרוחב.</li></ol><p class="wf-ios-en">Safari on iPhone cannot hide its bars for a web page. Share &gt; Add to Home Screen, then open World Fight from its icon for true full screen.</p><button id="worldFightIosPlayButton" type="button" dir="ltr">PLAY HERE · שחקו כאן</button></div></div><div id="worldFightRotateGate" class="wf-overlay"><div class="wf-rotate-card"><strong>סובבו את הטלפון</strong><span>Rotate your phone to landscape<br>סובבו לרוחב כדי להתחיל לשחק</span><div id="worldFightIosInstallHint" dir="rtl">למסך מלא בלי הטאבים של Safari: לחצו על שיתוף, בחרו Add to Home Screen ופתחו את המשחק מהאייקון. אם המסך לא מסתובב, בטלו נעילת סיבוב במרכז הבקרה.</div><button id="worldFightFullscreenButton" type="button">FULL SCREEN</button></div></div><div id="worldFightGraphicsReset" class="wf-overlay"><strong>GRAPHICS WERE RESET</strong><span>The browser stopped the game's graphics.</span><button id="worldFightReloadButton" type="button">TAP TO RELOAD</button></div><script>window.initializeWorldFightShell()</script>"""
 
 RETIRE_WORKER = """/* Retire the previous Godot PWA worker without intercepting requests.
    It never navigates open pages: a forced reload would download the game twice. */
@@ -350,6 +352,7 @@ LEGAL_STYLE = """<style id="world-fight-legal-style">
 #worldFightDisclaimer ul{margin:0 0 10px;padding-inline-start:18px;line-height:1.5;font-size:clamp(12px,2.6vmin,15px)}
 #worldFightDisclaimer li{margin-bottom:4px}
 #worldFightDisclaimer .wf-legal-en{direction:ltr;text-align:left;color:#9fb2b8;font-size:11px;line-height:1.45;margin:8px 0 10px}
+#worldFightDisclaimer .wf-legal-links{margin:6px 0 0;font-size:12px;text-align:center}#worldFightDisclaimer .wf-legal-links a{color:#7fe3df}
 #worldFightDisclaimer label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:clamp(13px,2.7vmin,15px);font-weight:700;margin:8px 0 12px}
 #worldFightDisclaimer input[type=checkbox]{width:22px;height:22px;flex:0 0 auto;accent-color:#e8b94f;margin-top:1px}
 #worldFightDisclaimer button{width:100%;min-height:48px;border:1px solid #e9bd62;background:linear-gradient(180deg,#f6d57a,#b67d24);color:#2a1a06;font-weight:900;font-size:16px;letter-spacing:.08em;cursor:pointer}
@@ -369,6 +372,7 @@ LEGAL_MARKUP = """<div id="worldFightDisclaimer" role="dialog" aria-modal="true"
 <li>נאספים נתוני שימוש אנונימיים בלבד (ללא עוגיות וללא פרטים מזהים) לשיפור המשחק.</li>
 </ul>
 <p class="wf-legal-en">This game is satire only. Any resemblance between the characters and reality is purely coincidental, and it contains no call for or encouragement of violence in the real world. Characters are exaggerated parody caricatures of public figures; the game is not affiliated with, sponsored or endorsed by any person, party or organisation shown. It is completely free and non-commercial (no ads, no purchases). Anonymous, cookie-free usage statistics are collected to improve the game.</p>
+<p class="wf-legal-links"><a href="terms/" target="_blank" rel="noopener">תנאי שימוש</a> · <a href="privacy/" target="_blank" rel="noopener">מדיניות פרטיות</a> · <a href="accessibility/" target="_blank" rel="noopener">הצהרת נגישות</a> · <a href="licenses/" target="_blank" rel="noopener">רישיונות</a></p>
 <label><input id="worldFightDisclaimerCheck" type="checkbox"><span>קראתי והבנתי שהמשחק הוא סאטירה בלבד, ואני מסכים/ה לתנאים. · I understand this is satire and agree.</span></label>
 <button id="worldFightDisclaimerAccept" type="button" disabled>כניסה למשחק · ENTER</button>
 </div></div>
@@ -528,7 +532,7 @@ SEO_BODY = """<main id="wf-seo" class="wf-sr" lang="he" dir="rtl">
 <h1>World Fight: Election Edition – משחק לחימה סאטירי של הבחירות</h1>
 <p>משחק לחימה סאטירי חינמי בסגנון קונסולה, שרץ ישירות בדפדפן בטלפון ובמחשב, בלי הורדה. בוחרים לוחם מתוך 13 דמויות פרודיות, נלחמים בשלושה סיבובים, צוברים אנרגיה מיוחדת ומפעילים מהלך סיום מצויר. קרב מהיר, קמפיין בן ארבעה קרבות, שש זירות וארבע דרגות קושי.</p>
 <p>המשחק הוא סאטירה בלבד. כל קשר בין הדמויות למציאות הוא מקרי בהחלט, ואין בו שום קריאה או עידוד לאלימות בעולם האמיתי.</p>
-<p><a href="about/">מדריך למשחק, דמויות ובקרות</a> · <a href="en/" hreflang="en" lang="en">English guide</a></p>
+<p><a href="about/">מדריך למשחק, דמויות ובקרות</a> · <a href="en/" hreflang="en" lang="en">English guide</a> · <a href="terms/">תנאי שימוש</a> · <a href="privacy/">פרטיות</a> · <a href="accessibility/">נגישות</a> · <a href="licenses/">רישיונות</a></p>
 </main>
 <noscript><p style="position:fixed;inset:0;margin:0;padding:24px;background:#050810;color:#eef4f5;font:18px/1.6 Arial,sans-serif;text-align:center">World Fight: Election Edition דורש JavaScript ו-WebGL. הפעילו JavaScript כדי לשחק. · This browser game needs JavaScript and WebGL. <a href="about/" style="color:#7fe3df">מדריך / Guide</a></p></noscript>
 """
