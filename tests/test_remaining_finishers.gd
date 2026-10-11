@@ -19,11 +19,9 @@ func _run() -> void:
 		var attacker := GameFighter.new(); attacker.setup(fighter_id, 0, false); arena.add_child(attacker)
 		var defender := GameFighter.new(); defender.setup("bennet", 1, false); arena.add_child(defender)
 		attacker.set_physics_process(false); defender.set_physics_process(false); attacker.meter = 100; defender.health = 1
-		var sequence_definition := definition.duplicate(true)
-		sequence_definition.events = Array(sequence_definition.events).filter(func(event): return event.type != "portrait_lightbox")
 		var director := FinisherDirector.new(); arena.add_child(director); director.configure(arena, arena, camera); director.catalog = catalog; director.set_effect_density("mobile")
 		var counts := {"final": 0, "result": 0}; director.final_hit.connect(func(_who): counts.final += 1); director.result_ready.connect(func(_who): counts.result += 1)
-		assert(director.begin(attacker, defender, sequence_definition))
+		assert(director.begin(attacker, defender, definition))
 		var final_time: float = float(hits.back().at) + 0.001; director.advance(final_time)
 		assert(defender.health == 0 and counts.final == 1)
 		assert(director.temporary_actor_count() <= 12)

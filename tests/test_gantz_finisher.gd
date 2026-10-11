@@ -31,8 +31,6 @@ func _run() -> void:
 			defender.position.x = 0.6 * direction
 			attacker.meter = 100
 			defender.health = starting_health
-			var sequence_definition := definition.duplicate(true)
-			sequence_definition.events = Array(sequence_definition.events).filter(func(event): return event.type != "portrait_lightbox")
 			var director := FinisherDirector.new()
 			arena.add_child(director)
 			director.configure(arena, arena, camera)
@@ -42,7 +40,7 @@ func _run() -> void:
 			director.final_hit.connect(func(_index): counts.final += 1)
 			director.celebration_started.connect(func(_id): counts.celebration += 1)
 			director.result_ready.connect(func(_index): counts.result += 1)
-			assert(director.begin(attacker, defender, sequence_definition))
+			assert(director.begin(attacker, defender, definition))
 			var elapsed := 0.0
 			assert(is_equal_approx(float(attacker._visual.geometry.height_m), 1.96))
 			var original_frames = attacker._visual.sprite.sprite_frames
