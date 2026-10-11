@@ -13,6 +13,10 @@ func _run() -> void:
 	for id in main.PLAYABLE_IDS:
 		main._select_fighter(id)
 		if main.select_portrait.texture == null: return _fail("missing selection art for %s" % id)
+	if main.menu_root.get_node_or_null("MenuActionPanel/Bibi3DPrototypeButton") == null:
+		return _fail("Bibi 3D prototype is not reachable from the main menu")
+	if main.menu_root.get_node_or_null("MenuActionPanel/NewEngineFightButton") == null:
+		return _fail("New Engine Fight is not reachable from the main menu")
 	main._open_select("quick")
 	if not main.select_root.visible or main.menu_root.visible: return _fail("selection screen state is invalid")
 	main.free()

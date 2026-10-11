@@ -61,7 +61,9 @@ func _run() -> void:
 	var definition: Dictionary = preview.catalog.definition_for("bennet")
 	definition.implemented = true
 	definition.duration = 1.0
-	definition.events = [{"at": 0.0, "type": "portrait_lightbox"}, {"at": 0.25, "type": "hit", "id": "lab-final", "damage": 999, "final": true}, {"at": 0.5, "type": "celebration_start"}]
+	# The scrubbing fixture measures authored timeline time. SuperMoveCard hold is
+	# intentionally tested in the presentation suite rather than this fixture.
+	definition.events = [{"at": 0.25, "type": "hit", "id": "lab-final", "damage": 999, "final": true}, {"at": 0.5, "type": "celebration_start"}]
 	preview.catalog._definitions.bennet = definition
 	var celebration_id: String = definition.celebration_id
 	preview.catalog._celebrations[celebration_id] = {"implemented": true, "duration": 2.0, "events": [{"at": 1.8, "type": "result_marker"}]}

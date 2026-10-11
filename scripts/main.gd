@@ -27,6 +27,7 @@ const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const TutorialScript = preload("res://scripts/ui/tutorial.gd")
 const SoundToggleScript = preload("res://scripts/ui/sound_toggle.gd")
+const ArenaMapScript = preload("res://scripts/ui/arena_map.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
@@ -83,6 +84,7 @@ var map_select_root: Control
 var pending_mode := "quick"
 var selected_stage_id := "knesset_exterior"
 var stage_buttons: Array[Button] = []
+var stage_map: Control
 var menu_left_art: TextureRect
 var menu_right_art: TextureRect
 var select_name_label: Label
@@ -207,12 +209,12 @@ const FIGHTER_DATA := {
 }
 const PLAYABLE_IDS := ["bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid", "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich", "gadi_eisenkot", "trump", "joint_list"]
 const STAGES := [
-	{"id": "knesset_exterior", "name": "KNESSET • OUTSIDE", "subtitle": "Jerusalem · Night session", "image": "res://assets/stages/knesset-exterior-arena.png", "kind": "knesset_outside", "accent": "#cda760", "base": "#1a2634"},
-	{"id": "knesset_chamber", "name": "KNESSET • CHAMBER", "subtitle": "Inside the debating hall", "image": "res://assets/stages/knesset-chamber-arena.png", "kind": "knesset_inside", "accent": "#e2bd63", "base": "#392b22", "backdrop_y": 0.78, "backdrop_scale": 1.18, "camera_target_y": 1.42},
-	{"id": "patriots_studio", "name": "THE PATRIOTS", "subtitle": "Live studio · Red alert", "image": "res://assets/stages/patriots-studio-arena.png", "kind": "studio", "accent": "#42cafa", "base": "#102033"},
-	{"id": "friday_studio", "name": "FRIDAY STUDIO", "subtitle": "Prime time · Jerusalem", "image": "res://assets/stages/friday-studio-arena.png", "kind": "studio", "accent": "#e5b944", "base": "#132238"},
-	{"id": "hatzinor_studio", "name": "THE PIPELINE", "subtitle": "The Hatzinor newsroom", "image": "res://assets/stages/hatzinor-studio-arena.png", "kind": "studio", "accent": "#3ccafa", "base": "#101a2c"},
-	{"id": "kaplan_junction", "name": "KAPLAN JUNCTION", "subtitle": "Tel Aviv · Protest night", "image": "res://assets/stages/kaplan-junction-arena.jpg", "kind": "street", "accent": "#6eb7ff", "base": "#172637"}
+	{"id": "knesset_exterior", "name": "KNESSET • OUTSIDE", "subtitle": "Jerusalem · Night session", "image": "res://assets/stages/knesset-exterior-arena.png", "kind": "knesset_outside", "accent": "#cda760", "base": "#1a2634", "map_position": Vector2(0.55, 0.18)},
+	{"id": "knesset_chamber", "name": "KNESSET • CHAMBER", "subtitle": "Inside the debating hall", "image": "res://assets/stages/knesset-chamber-arena.png", "kind": "knesset_inside", "accent": "#e2bd63", "base": "#392b22", "backdrop_y": 0.78, "backdrop_scale": 1.18, "camera_target_y": 1.42, "map_position": Vector2(0.45, 0.30)},
+	{"id": "patriots_studio", "name": "THE PATRIOTS", "subtitle": "Live studio · Red alert", "image": "res://assets/stages/patriots-studio-arena.png", "kind": "studio", "accent": "#42cafa", "base": "#102033", "map_position": Vector2(0.58, 0.44)},
+	{"id": "friday_studio", "name": "FRIDAY STUDIO", "subtitle": "Prime time · Jerusalem", "image": "res://assets/stages/friday-studio-arena.png", "kind": "studio", "accent": "#e5b944", "base": "#132238", "map_position": Vector2(0.42, 0.57)},
+	{"id": "hatzinor_studio", "name": "THE PIPELINE", "subtitle": "The Hatzinor newsroom", "image": "res://assets/stages/hatzinor-studio-arena.png", "kind": "studio", "accent": "#3ccafa", "base": "#101a2c", "map_position": Vector2(0.55, 0.71)},
+	{"id": "kaplan_junction", "name": "KAPLAN JUNCTION", "subtitle": "Tel Aviv · Protest night", "image": "res://assets/stages/kaplan-junction-arena.jpg", "kind": "street", "accent": "#6eb7ff", "base": "#172637", "map_position": Vector2(0.30, 0.84)}
 ]
 
 
@@ -1497,6 +1499,12 @@ func _build_menu() -> void:
 	var settings := _menu_text_button(action_panel, "SETTINGS", Rect2(0, 276, 330, 52), 18)
 	settings.name = "SettingsButton"
 	settings.pressed.connect(_show_settings.bind(&"menu"))
+	var bibi_3d := _menu_text_button(action_panel, "BIBI 3D PROTOTYPE", Rect2(0, 338, 330, 52), 16)
+	bibi_3d.name = "Bibi3DPrototypeButton"
+	bibi_3d.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/bibi_3d_preview.tscn"))
+	var new_engine_fight := _menu_text_button(action_panel, "NEW ENGINE FIGHT", Rect2(0, 400, 330, 52), 16)
+	new_engine_fight.name = "NewEngineFightButton"
+	new_engine_fight.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/three_d_battle_preview.tscn"))
 	# Fighter Lab stays available to developers (scenes/character_debug.tscn)
 	# but is not a player-facing menu action. The creator card below the menu
 	# links to the creator's LinkedIn profile.
@@ -1655,10 +1663,17 @@ func _build_map_select() -> void:
 	_screen_title(design, "SELECT YOUR ", "ARENA", 18)
 	_label(design, "SIX STAGES  ·  PICK THE SETTING FOR YOUR FIGHT", Rect2(340, 70, 600, 22), 13, Color("#cfdde1"), HORIZONTAL_ALIGNMENT_CENTER)
 	_diamond(design, Vector2(640, 100), 5.0, ACCENT_CYAN)
+	stage_map = ArenaMapScript.new()
+	stage_map.name = "InteractiveArenaMap"
+	stage_map.position = Vector2(38, 116)
+	stage_map.size = Vector2(350, 450)
+	stage_map.set_stages(STAGES)
+	stage_map.stage_selected.connect(_select_stage)
+	design.add_child(stage_map)
 	for i in range(STAGES.size()):
-		var col := i % 3
-		var row := i / 3
-		var rect := Rect2(45 + col * 398, 116 + row * 242, 376, 220)
+		var col := i % 2
+		var row := i / 2
+		var rect := Rect2(414 + col * 406, 116 + row * 150, 380, 136)
 		var card := _button(design, "", rect, "#14212c", 15)
 		card.name = "StageCard_" + str(i)
 		var art := TextureRect.new()
@@ -1668,14 +1683,14 @@ func _build_map_select() -> void:
 		art.set_meta("image", str(STAGES[i].image))
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		art.position = Vector2(4, 4); art.size = Vector2(368, 172); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.position = Vector2(4, 4); art.size = Vector2(372, 93); art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(art)
-		var shade := _panel(card, Rect2(4, 150, 368, 66), Color(0.015, 0.025, 0.04, 0.91))
+		var shade := _panel(card, Rect2(4, 89, 372, 43), Color(0.015, 0.025, 0.04, 0.91))
 		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var title := _label(card, str(STAGES[i].name), Rect2(14, 154, 348, 26), 16, Color("#f5f1e8"), HORIZONTAL_ALIGNMENT_LEFT)
+		var title := _label(card, str(STAGES[i].name), Rect2(14, 94, 354, 19), 14, Color("#f5f1e8"), HORIZONTAL_ALIGNMENT_LEFT)
 		title.add_theme_font_override("font", _bold_font())
 		title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var subtitle := _label(card, str(STAGES[i].subtitle), Rect2(14, 182, 348, 20), 12, Color("#c1cbd0"), HORIZONTAL_ALIGNMENT_LEFT)
+		var subtitle := _label(card, str(STAGES[i].subtitle), Rect2(14, 112, 354, 16), 11, Color("#c1cbd0"), HORIZONTAL_ALIGNMENT_LEFT)
 		subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stage_buttons.append(card)
 		card.pressed.connect(func(id: String = str(STAGES[i].id)): _select_stage(id))
@@ -1867,6 +1882,8 @@ func _open_map_select() -> void:
 
 func _select_stage(id: String) -> void:
 	selected_stage_id = id
+	if is_instance_valid(stage_map) and stage_map.selected_stage_id != id:
+		stage_map.select_stage(id)
 	_refresh_stage_cards()
 
 

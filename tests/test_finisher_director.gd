@@ -42,7 +42,12 @@ func _run() -> void:
 		{"at": 0.3, "type": "hit", "id": "stagger", "damage": 999},
 		{"at": 0.5, "type": "hit", "id": "finish", "damage": 999, "final": true},
 		{"at": 1.0, "type": "celebration_start"}]}
-	assert(director.begin(attacker, defender, definition))
+	# This test owns timeline/lock behaviour. The full-screen SuperMoveCard's
+	# intentional hold is covered by presentation tests and would freeze the
+	# authored timeline before this test's first 0.2s advance.
+	var sequence_definition := definition.duplicate(true)
+	sequence_definition.events = Array(sequence_definition.events).filter(func(event): return event.type != "portrait_lightbox")
+	assert(director.begin(attacker, defender, sequence_definition))
 	assert(attacker.cinematic_locked and defender.cinematic_locked)
 	assert(attacker.meter == 0)
 	assert(not director.begin(attacker, defender, definition))
@@ -78,7 +83,7 @@ func _run() -> void:
 	reject.set_physics_process(false)
 	reject.health = 10
 	attacker.meter = 100
-	assert(director.begin(attacker, reject, definition))
+	assert(director.begin(attacker, reject, sequence_definition))
 	director.advance(0.2)
 	assert(not director.active and reject.health == 10 and counts.result == 1)
 	assert(not attacker.cinematic_locked and not reject.cinematic_locked)

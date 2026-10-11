@@ -22,9 +22,11 @@ func _run() -> void:
 		attacker.set_physics_process(false); defender.set_physics_process(false)
 		attacker.position.x = -0.6 * direction; defender.position.x = 0.6 * direction
 		attacker.meter = 100; defender.health = 1
+		var sequence_definition := definition.duplicate(true)
+		sequence_definition.events = Array(sequence_definition.events).filter(func(event): return event.type != "portrait_lightbox")
 		var director := FinisherDirector.new(); arena.add_child(director); director.configure(arena, arena, camera); director.catalog = catalog
 		var counts := {"final": 0, "result": 0}; director.final_hit.connect(func(_who): counts.final += 1); director.result_ready.connect(func(_who): counts.result += 1)
-		assert(director.begin(attacker, defender, definition))
+		assert(director.begin(attacker, defender, sequence_definition))
 		var elapsed := 0.0
 		for index in range(3):
 			var target: float = float(hits[index].at) + 0.001; director.advance(target - elapsed); elapsed = target
