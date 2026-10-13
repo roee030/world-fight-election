@@ -70,6 +70,7 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 |---|---|
 | `scripts/main.gd` | Screen flow, stages, HUD, rounds, pause and result presentation |
 | `scripts/fighter.gd` | Movement, attacks, damage, AI, health, special meter and reaction states |
+| `scripts/combat/combat_data.gd` | Loads and validates combat tuning data and combo-route references |
 | `scripts/fighter_visual.gd` | Fighter height, grounding, sprite clips and shadow setup |
 | `scripts/character_debug.gd` | Fighter Sprite Lab |
 | `scripts/opponent_selector.gd` | Random rival selection |
@@ -85,6 +86,12 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `tools/build_portraits.py` | Rebuilds face-focused roster portraits |
 | `tests/` | Headless Godot and Python regression tests |
 | `docs/` | Art pipeline, combat plans and future design work |
+
+## Combat tuning data
+
+Ordinary move timing, reach, lunge, base damage, input buffering, motion values and the Special Energy economy live in `data/combat.json`. Combo routes, scaling, named strings and the breaker remain in `data/combos.json`; `CombatData` validates that every combo route points to a real move.
+
+Change one value group at a time. Run `tests/test_combat_data.gd` and the closest behavior test first, then `tests/test_combat_fairness.gd`, the full Godot suite and the Python suite. Values returned by `CombatData.current()` are deep copies, so tools and tests may inspect or inject a snapshot without mutating the shared cache.
 
 ## Character art contract
 

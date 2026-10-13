@@ -142,3 +142,21 @@
 - **Verification:** 33/33 Python tests passed; all 57 Godot test scripts
   passed under isolated `APPDATA` (the engine still emits its known Windows
   certificate/teardown warnings).
+
+### Follow-up (2026-10-14): integrated upgrade spec and combat data foundation
+
+- **Upgrade contract:** `docs/superpowers/specs/2026-10-14-game-upgrade-design.md`
+  now separates game rules from engineering rules and defines the ordered
+  roadmap: combat feel, three fighter archetypes, campaign persistence,
+  Training, accessibility, then measured expansion.
+- **Data-driven combat:** ordinary move windows, reach, lunge, damage,
+  movement, the 0.34-second input buffer and Special Energy economy moved to
+  `data/combat.json`. `scripts/combat/combat_data.gd` validates the file,
+  rejects unknown fighter overrides and checks every combo route against the
+  available moves. `GameFighter` consumes a private deep-copy snapshot while
+  preserving current public constants for compatibility.
+- **Finisher tooling regression:** tests and Fight Lab seeking now account for
+  the 2.3-second super-move-card hold. Normal playback still shows the entire
+  card; the scrubber continues to represent authored timeline time.
+- **Verification:** all 60 Godot test scripts and all 46 Python tests passed.
+  The engine still emits its known Windows certificate and teardown warnings.

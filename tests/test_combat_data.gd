@@ -36,6 +36,23 @@ func _run() -> void:
 	var second: Dictionary = script.current()
 	if not is_equal_approx(float(second.moves.light.damage), 7.0):
 		return _fail("mutating returned data changed the cached combat contract")
+
+	var validator = script.new()
+	if not validator.has_method("validate_combo_routes"):
+		return _fail("combat data validator does not validate combo routes")
+	var combos_file := FileAccess.open("res://data/combos.json", FileAccess.READ)
+	var combos: Dictionary = JSON.parse_string(combos_file.get_as_text())
+	var broken_combos: Dictionary = combos.duplicate(true)
+	broken_combos.routes.light.append("unknown_attack")
+	var route_errors: PackedStringArray = script.validate_combo_routes(data, broken_combos)
+	if not _contains_error(route_errors, "unknown_attack"):
+		return _fail("validator accepted a combo route with an unknown move")
+
+	var unknown_fighter: Dictionary = data.duplicate(true)
+	unknown_fighter.fighter_speed_overrides.ghost_fighter = 3.0
+	var fighter_errors: PackedStringArray = script.validate(unknown_fighter)
+	if not _contains_error(fighter_errors, "ghost_fighter"):
+		return _fail("validator accepted an unknown fighter speed override")
 	print("PASS: combat data values, validation and copy isolation")
 	quit(0)
 

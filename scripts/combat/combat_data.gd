@@ -7,6 +7,8 @@ const MOVE_NUMBER_FIELDS := ["duration", "startup", "active", "cancel_from", "ca
 const MOTION_FIELDS := ["default_speed", "acceleration", "deceleration", "depth_speed", "depth_acceleration", "depth_deceleration", "crouch_speed_scale", "jump_velocity", "gravity", "guard_deceleration"]
 const ECONOMY_FIELDS := ["special_cost", "damage_scale", "meter_hit_base", "meter_hit_damage_scale", "meter_blocked_attacker", "meter_defender_damage_scale"]
 const KNOWN_CLIPS := ["jab", "hook", "kick"]
+const PLAYABLE_IDS := ["bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid", "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich", "gadi_eisenkot", "trump", "joint_list"]
+const COMBO_PATH := "res://data/combos.json"
 
 static var _cached: Dictionary = {}
 
@@ -42,7 +44,9 @@ static func validate(data: Dictionary) -> PackedStringArray:
 		errors.append("fighter_speed_overrides must be a dictionary")
 	else:
 		for fighter_id in data.fighter_speed_overrides:
-			if not _is_non_negative_number(data.fighter_speed_overrides[fighter_id]):
+			if str(fighter_id) not in PLAYABLE_IDS:
+				errors.append("fighter_speed_overrides.%s is not a playable fighter" % fighter_id)
+			elif not _is_non_negative_number(data.fighter_speed_overrides[fighter_id]):
 				errors.append("fighter_speed_overrides.%s must be a finite non-negative number" % fighter_id)
 	if not data.has("moves") or not data.moves is Dictionary:
 		errors.append("moves must be a dictionary")
@@ -52,6 +56,32 @@ static func validate(data: Dictionary) -> PackedStringArray:
 			errors.append("moves.%s must be a dictionary" % move_id)
 			continue
 		_validate_move(move_id, data.moves[move_id], errors)
+	var combo_file := FileAccess.open(COMBO_PATH, FileAccess.READ)
+	var combo_parsed = JSON.parse_string(combo_file.get_as_text()) if combo_file != null else null
+	if combo_parsed is Dictionary:
+		errors.append_array(validate_combo_routes(data, combo_parsed))
+	else:
+		errors.append("could not load combo routes from %s" % COMBO_PATH)
+	return errors
+
+
+static func validate_combo_routes(data: Dictionary, combos: Dictionary) -> PackedStringArray:
+	var errors := PackedStringArray()
+	if not data.has("moves") or not data.moves is Dictionary:
+		return errors
+	if not combos.has("routes") or not combos.routes is Dictionary:
+		errors.append("combos.routes must be a dictionary")
+		return errors
+	for source_move in combos.routes:
+		if str(source_move) not in data.moves:
+			errors.append("combo route source uses unknown move %s" % source_move)
+		var targets = combos.routes[source_move]
+		if not targets is Array:
+			errors.append("combo route %s must be an array" % source_move)
+			continue
+		for target_move in targets:
+			if str(target_move) not in data.moves:
+				errors.append("combo route %s uses unknown move %s" % [source_move, target_move])
 	return errors
 
 
