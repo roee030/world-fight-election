@@ -1,0 +1,80 @@
+{
+  "input_buffer_seconds": 0.34,
+  "motion": {
+    "default_speed": 3.25,
+    "acceleration": 13.0,
+    "deceleration": 18.0,
+    "depth_speed": 1.7,
+    "depth_acceleration": 12.0,
+    "depth_deceleration": 17.0,
+    "crouch_speed_scale": 0.65,
+    "jump_velocity": 7.1,
+    "gravity": 22.0,
+    "guard_deceleration": 30.0
+  },
+  "fighter_speed_overrides": {
+    "avigdor": 2.9,
+    "bibi": 3.0,
+    "yair_golan": 3.35,
+    "benny_gantz": 2.95,
+    "mansour_abbas": 2.8,
+    "gadi_eisenkot": 2.8,
+    "yair_lapid": 3.45,
+    "itamar_ben_gvir": 3.45,
+    "bezalel_smotrich": 3.45
+  },
+  "economy": {
+    "special_cost": 55.0,
+    "damage_scale": 0.6,
+    "meter_hit_base": 3.5,
+    "meter_hit_damage_scale": 0.55,
+    "meter_blocked_attacker": 2.5,
+    "meter_defender_damage_scale": 0.32
+  },
+  "moves": {
+    "light": {
+      "duration": 0.46,
+      "startup": 0.12,
+      "active": 0.09,
+      "cancel_from": 0.205,
+      "cancel_to": 0.34,
+      "damage": 7.0,
+      "reach": 1.32,
+      "lunge": 2.45,
+      "clip": "jab"
+    },
+    "heavy": {
+      "duration": 0.66,
+      "startup": 0.235,
+      "active": 0.105,
+      "cancel_from": 0.365,
+      "cancel_to": 0.51,
+      "damage": 14.0,
+      "reach": 1.58,
+      "lunge": 2.7,
+      "clip": "hook"
+    },
+    "kick": {
+      "duration": 0.72,
+      "startup": 0.25,
+      "active": 0.11,
+      "cancel_from": 0.42,
+      "cancel_to": 0.56,
+      "damage": 15.0,
+      "reach": 1.72,
+      "lunge": 2.45,
+      "clip": "kick"
+    },
+    "special": {
+      "duration": 0.84,
+      "startup": 0.28,
+      "active": 0.13,
+      "cancel_from": 0.51,
+      "cancel_to": 0.65,
+      "damage": 23.0,
+      "reach": 2.18,
+      "lunge": 2.6,
+      "clip": "kick"
+    }
+  }
+}

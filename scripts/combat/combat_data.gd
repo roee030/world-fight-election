@@ -1,0 +1,95 @@
+extends RefCounted
+class_name CombatData
+
+const DEFAULT_PATH := "res://data/combat.json"
+const REQUIRED_MOVES := ["light", "heavy", "kick", "special"]
+const MOVE_NUMBER_FIELDS := ["duration", "startup", "active", "cancel_from", "cancel_to", "damage", "reach", "lunge"]
+const MOTION_FIELDS := ["default_speed", "acceleration", "deceleration", "depth_speed", "depth_acceleration", "depth_deceleration", "crouch_speed_scale", "jump_velocity", "gravity", "guard_deceleration"]
+const ECONOMY_FIELDS := ["special_cost", "damage_scale", "meter_hit_base", "meter_hit_damage_scale", "meter_blocked_attacker", "meter_defender_damage_scale"]
+const KNOWN_CLIPS := ["jab", "hook", "kick"]
+
+static var _cached: Dictionary = {}
+
+
+static func load_data(path: String = DEFAULT_PATH) -> Dictionary:
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	if not parsed is Dictionary:
+		return {}
+	return (parsed as Dictionary).duplicate(true)
+
+
+static func current() -> Dictionary:
+	if _cached.is_empty():
+		var loaded := load_data()
+		var errors := validate(loaded)
+		assert(errors.is_empty(), "Invalid combat data: %s" % errors)
+		_cached = loaded.duplicate(true)
+	return _cached.duplicate(true)
+
+
+static func validate(data: Dictionary) -> PackedStringArray:
+	var errors := PackedStringArray()
+	if not _number_at_least(data, "input_buffer_seconds", 0.0):
+		errors.append("input_buffer_seconds must be a finite non-negative number")
+	_validate_number_section(data, "motion", MOTION_FIELDS, errors)
+	_validate_number_section(data, "economy", ECONOMY_FIELDS, errors)
+	if not data.has("fighter_speed_overrides") or not data.fighter_speed_overrides is Dictionary:
+		errors.append("fighter_speed_overrides must be a dictionary")
+	else:
+		for fighter_id in data.fighter_speed_overrides:
+			if not _is_non_negative_number(data.fighter_speed_overrides[fighter_id]):
+				errors.append("fighter_speed_overrides.%s must be a finite non-negative number" % fighter_id)
+	if not data.has("moves") or not data.moves is Dictionary:
+		errors.append("moves must be a dictionary")
+		return errors
+	for move_id in REQUIRED_MOVES:
+		if not data.moves.has(move_id) or not data.moves[move_id] is Dictionary:
+			errors.append("moves.%s must be a dictionary" % move_id)
+			continue
+		_validate_move(move_id, data.moves[move_id], errors)
+	return errors
+
+
+static func _validate_number_section(data: Dictionary, section: String, fields: Array, errors: PackedStringArray) -> void:
+	if not data.has(section) or not data[section] is Dictionary:
+		errors.append("%s must be a dictionary" % section)
+		return
+	var values: Dictionary = data[section]
+	for field in fields:
+		if not _number_at_least(values, field, 0.0):
+			errors.append("%s.%s must be a finite non-negative number" % [section, field])
+
+
+static func _validate_move(move_id: String, move: Dictionary, errors: PackedStringArray) -> void:
+	for field in MOVE_NUMBER_FIELDS:
+		if not _number_at_least(move, field, 0.0):
+			errors.append("moves.%s.%s must be a finite non-negative number" % [move_id, field])
+	if not move.has("clip") or str(move.clip) not in KNOWN_CLIPS:
+		errors.append("moves.%s.clip must be one of %s" % [move_id, KNOWN_CLIPS])
+	if not _has_valid_numbers(move, ["duration", "startup", "active", "cancel_from", "cancel_to"]):
+		return
+	var duration := float(move.duration)
+	if float(move.startup) + float(move.active) > duration:
+		errors.append("moves.%s active window exceeds duration" % move_id)
+	if float(move.cancel_from) > float(move.cancel_to) or float(move.cancel_to) > duration:
+		errors.append("moves.%s cancel window is outside duration" % move_id)
+
+
+static func _number_at_least(data: Dictionary, key: String, minimum: float) -> bool:
+	return data.has(key) and _is_non_negative_number(data[key]) and float(data[key]) >= minimum
+
+
+static func _is_non_negative_number(value) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and float(value) >= 0.0
+
+
+static func _has_valid_numbers(data: Dictionary, fields: Array) -> bool:
+	for field in fields:
+		if not data.has(field) or not _is_non_negative_number(data[field]):
+			return false
+	return true
