@@ -41,7 +41,9 @@ func _run() -> void:
 			director.celebration_started.connect(func(_id): counts.celebration += 1)
 			director.result_ready.connect(func(_index): counts.result += 1)
 			assert(director.begin(attacker, defender, definition))
-			var elapsed := 0.0
+			director.advance(0.0)
+			director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
+			var elapsed := 0.001
 			for index in range(3):
 				var target: float = float(hits[index].at) + 0.001
 				director.advance(target - elapsed)

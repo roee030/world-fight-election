@@ -25,7 +25,9 @@ func _run() -> void:
 		var director := FinisherDirector.new(); arena.add_child(director); director.configure(arena, arena, camera); director.catalog = catalog
 		var counts := {"final": 0, "result": 0}; director.final_hit.connect(func(_who): counts.final += 1); director.result_ready.connect(func(_who): counts.result += 1)
 		assert(director.begin(attacker, defender, definition))
-		var elapsed := 0.0
+		director.advance(0.0)
+		director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
+		var elapsed := 0.001
 		for index in range(3):
 			var target: float = float(hits[index].at) + 0.001; director.advance(target - elapsed); elapsed = target
 			assert(defender.health == 1 and counts.final == 0, "Money rain never KOs before the bundle")

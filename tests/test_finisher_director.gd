@@ -46,6 +46,8 @@ func _run() -> void:
 	assert(attacker.cinematic_locked and defender.cinematic_locked)
 	assert(attacker.meter == 0)
 	assert(not director.begin(attacker, defender, definition))
+	director.advance(0.0)
+	director.advance(load("res://scripts/ui/super_move_card.gd").DURATION)
 	director.advance(0.2)
 	assert(defender.health == 1, "Intermediate authored hit must preserve one health")
 	director.set_paused(true)
@@ -79,6 +81,8 @@ func _run() -> void:
 	reject.health = 10
 	attacker.meter = 100
 	assert(director.begin(attacker, reject, definition))
+	director.advance(0.0)
+	director.advance(load("res://scripts/ui/super_move_card.gd").DURATION)
 	director.advance(0.2)
 	assert(not director.active and reject.health == 10 and counts.result == 1)
 	assert(not attacker.cinematic_locked and not reject.cinematic_locked)

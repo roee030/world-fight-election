@@ -273,6 +273,12 @@ func seek(seconds: float) -> void:
 	preview(selected, outcome)
 	set_paused(true)
 	if not director.active: return
+	# The scrubber is authored-timeline time. Normal playback includes the
+	# super-move card, but seeking must first consume that presentation hold.
+	director.set_paused(false)
+	director.advance(0.0)
+	director.advance(preload("res://scripts/ui/super_move_card.gd").DURATION)
+	director.set_paused(true)
 	for _frame in range(int(floor(target / STEP))): step_frame()
 
 func set_mobile(value: bool) -> void: director.set_effect_density("mobile" if value else "desktop")

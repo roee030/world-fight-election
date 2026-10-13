@@ -41,10 +41,12 @@ func _run() -> void:
 			director.celebration_started.connect(func(_id): counts.celebration += 1)
 			director.result_ready.connect(func(_index): counts.result += 1)
 			assert(director.begin(attacker, defender, definition))
-			var elapsed := 0.0
+			director.advance(0.0)
+			director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
+			var elapsed := 0.001
 			assert(is_equal_approx(float(attacker._visual.geometry.height_m), 1.96))
 			var original_frames = attacker._visual.sprite.sprite_frames
-			director.advance(0.8)
+			director.advance(0.8 - elapsed)
 			elapsed = 0.8
 			director.set_paused(true)
 			director.advance(5)
@@ -85,6 +87,8 @@ func _run() -> void:
 			attacker.meter = 100
 			director.force_opening_miss = true
 			assert(director.begin(attacker, defender, definition))
+			director.advance(0.0)
+			director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
 			director.advance(float(hits[0].at) + 0.01)
 			assert(not director.active and defender.health == starting_health)
 			assert(counts.final == 1 and counts.result == 1 and director.temporary_actor_count() == 0)

@@ -22,7 +22,10 @@ func _run() -> void:
 		var director := FinisherDirector.new(); arena.add_child(director); director.configure(arena, arena, camera); director.catalog = catalog; director.set_effect_density("mobile")
 		var counts := {"final": 0, "result": 0}; director.final_hit.connect(func(_who): counts.final += 1); director.result_ready.connect(func(_who): counts.result += 1)
 		assert(director.begin(attacker, defender, definition))
-		var final_time: float = float(hits.back().at) + 0.001; director.advance(final_time)
+		director.advance(0.0)
+		director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
+		var elapsed := 0.001
+		var final_time: float = float(hits.back().at) + 0.001; director.advance(final_time - elapsed)
 		assert(defender.health == 0 and counts.final == 1)
 		assert(director.temporary_actor_count() <= 12)
 		director.advance(float(definition.duration) - final_time + 0.01)

@@ -41,12 +41,14 @@ func _run() -> void:
 			director.celebration_started.connect(func(_id): counts.celebration += 1)
 			director.result_ready.connect(func(_index): counts.result += 1)
 			assert(director.begin(attacker, defender, definition))
-			var elapsed := 0.0
+			director.advance(0.0)
+			director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
+			var elapsed := 0.001
 			var original_frames = attacker._visual.sprite.sprite_frames
-			director.advance(0.65)
-			elapsed = 0.65
+			director.advance(0.651 - elapsed)
+			elapsed = 0.651
 			assert(director._clocks.size() == 1 and director._clocks[0].label.text == "48:00")
-			director.advance(0.65)
+			director.advance(1.3 - elapsed)
 			elapsed = 1.3
 			var barrel = director._actors["oil_barrel"]
 			var barrel_position: Vector3 = barrel.position
@@ -98,6 +100,8 @@ func _run() -> void:
 			attacker.meter = 100
 			director.force_opening_miss = true
 			assert(director.begin(attacker, defender, definition))
+			director.advance(0.0)
+			director.advance(load("res://scripts/ui/super_move_card.gd").DURATION + 0.001)
 			director.advance(float(hits[0].at) + 0.01)
 			assert(not director.active and defender.health == starting_health)
 			assert(counts.final == 1 and counts.result == 1 and director.temporary_actor_count() == 0)
