@@ -4,6 +4,7 @@
     "default_speed": 3.25,
     "acceleration": 13.0,
     "deceleration": 18.0,
+    "idle_deceleration": 12.0,
     "depth_speed": 1.7,
     "depth_acceleration": 12.0,
     "depth_deceleration": 17.0,

@@ -4,7 +4,7 @@ class_name CombatData
 const DEFAULT_PATH := "res://data/combat.json"
 const REQUIRED_MOVES := ["light", "heavy", "kick", "special"]
 const MOVE_NUMBER_FIELDS := ["duration", "startup", "active", "cancel_from", "cancel_to", "damage", "reach", "lunge"]
-const MOTION_FIELDS := ["default_speed", "acceleration", "deceleration", "depth_speed", "depth_acceleration", "depth_deceleration", "crouch_speed_scale", "jump_velocity", "gravity", "guard_deceleration"]
+const MOTION_FIELDS := ["default_speed", "acceleration", "deceleration", "idle_deceleration", "depth_speed", "depth_acceleration", "depth_deceleration", "crouch_speed_scale", "jump_velocity", "gravity", "guard_deceleration"]
 const ECONOMY_FIELDS := ["special_cost", "damage_scale", "meter_hit_base", "meter_hit_damage_scale", "meter_blocked_attacker", "meter_defender_damage_scale"]
 const KNOWN_CLIPS := ["jab", "hook", "kick"]
 const PLAYABLE_IDS := ["bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid", "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich", "gadi_eisenkot", "trump", "joint_list"]
@@ -27,14 +27,24 @@ static func load_data(path: String = DEFAULT_PATH) -> Dictionary:
 
 static func current() -> Dictionary:
 	if _cached.is_empty():
-		var loaded := load_data()
-		var errors := validate(loaded)
-		assert(errors.is_empty(), "Invalid combat data: %s" % errors)
-		_cached = loaded.duplicate(true)
+		var loaded := load_validated()
+		if loaded.is_empty():
+			push_error("Invalid combat data; refusing to cache an unplayable combat contract")
+			return {}
+		_cached = loaded
 	return _cached.duplicate(true)
 
 
-static func validate(data: Dictionary) -> PackedStringArray:
+static func load_validated(path: String = DEFAULT_PATH) -> Dictionary:
+	return validated_data(load_data(path))
+
+
+static func validated_data(data: Dictionary, combos: Dictionary = {}) -> Dictionary:
+	var errors := validate(data, combos)
+	return {} if not errors.is_empty() else data.duplicate(true)
+
+
+static func validate(data: Dictionary, combos: Dictionary = {}) -> PackedStringArray:
 	var errors := PackedStringArray()
 	if not _number_at_least(data, "input_buffer_seconds", 0.0):
 		errors.append("input_buffer_seconds must be a finite non-negative number")
@@ -54,10 +64,16 @@ static func validate(data: Dictionary) -> PackedStringArray:
 	for move_id in REQUIRED_MOVES:
 		if not data.moves.has(move_id) or not data.moves[move_id] is Dictionary:
 			errors.append("moves.%s must be a dictionary" % move_id)
+	for move_id in data.moves:
+		if not data.moves[move_id] is Dictionary:
+			if str(move_id) not in REQUIRED_MOVES:
+				errors.append("moves.%s must be a dictionary" % move_id)
 			continue
-		_validate_move(move_id, data.moves[move_id], errors)
-	var combo_file := FileAccess.open(COMBO_PATH, FileAccess.READ)
-	var combo_parsed = JSON.parse_string(combo_file.get_as_text()) if combo_file != null else null
+		_validate_move(str(move_id), data.moves[move_id], errors)
+	var combo_parsed: Variant = combos
+	if combos.is_empty():
+		var combo_file := FileAccess.open(COMBO_PATH, FileAccess.READ)
+		combo_parsed = JSON.parse_string(combo_file.get_as_text()) if combo_file != null else null
 	if combo_parsed is Dictionary:
 		errors.append_array(validate_combo_routes(data, combo_parsed))
 	else:

@@ -53,6 +53,7 @@ var _lethal := false
 # The card owns the opening beat: authored finisher events begin only after it
 # has left the screen, so the first hit can never happen behind the lightbox.
 var _super_card_hold_remaining := 0.0
+var _authored_elapsed := 0.0
 
 func configure(host: Node, arena: Node3D, camera: Camera3D) -> void:
 	_host = host
@@ -78,6 +79,7 @@ func begin(attacker: GameFighter, defender: GameFighter, definition: Dictionary,
 	_dealt = 0.0
 	_lethal = false
 	_super_card_hold_remaining = 0.0
+	_authored_elapsed = 0.0
 	_opening_miss = force_opening_miss or not opening_in_range
 	active = true
 	diagnostic = ""
@@ -116,6 +118,7 @@ func begin_celebration(winner: GameFighter, loser: GameFighter, celebration_id: 
 	_hit_ids.clear()
 	_paused = false
 	_super_card_hold_remaining = 0.0
+	_authored_elapsed = 0.0
 	active = true
 	diagnostic = ""
 	if _camera:
@@ -168,7 +171,10 @@ func advance(delta: float) -> void:
 		timeline_delta -= _super_card_hold_remaining
 		_super_card_hold_remaining = 0.0
 	var was_celebrating := _celebrating
-	for event in timeline.advance(timeline_delta):
+	var phase_before := timeline.elapsed()
+	var events := timeline.advance(timeline_delta)
+	_authored_elapsed += timeline.elapsed() - phase_before
+	for event in events:
 		if not active: break
 		_dispatch(event)
 		if _celebrating != was_celebrating: break
@@ -446,6 +452,7 @@ func set_effect_density(value: String) -> void: effect_density = "mobile" if val
 func temporary_actor_count() -> int: return _actors.size()
 func consumed_hit_ids() -> PackedStringArray: return _hit_ids.duplicate()
 func current_event_key() -> String: return timeline.current_event_key()
+func authored_elapsed() -> float: return _authored_elapsed
 
 func _cleanup_presentation() -> void:
 	for fighter in _fighter_art:

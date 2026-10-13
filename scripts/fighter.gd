@@ -246,7 +246,7 @@ func _physics_process(delta: float) -> void:
 	if cinematic_locked:
 		return
 	if rival == null or round_over:
-		velocity.x = move_toward(velocity.x, 0.0, float(combat_data.motion.deceleration) * delta)
+		velocity.x = move_toward(velocity.x, 0.0, float(combat_data.motion.idle_deceleration) * delta)
 		if not is_on_floor(): velocity.y -= float(combat_data.motion.gravity) * delta
 		move_and_slide()
 		_clamp_to_arena()

@@ -54,6 +54,15 @@ func _run() -> void:
 		main.free()
 		return _fail("fighter ignored fixture movement speed: %.3f" % main.player.velocity.x)
 
+	main.player.round_over = true
+	main.player.velocity.x = 10.0
+	main.player._physics_process(0.1)
+	if not is_equal_approx(main.player.velocity.x, 8.8):
+		var stopped_speed: float = main.player.velocity.x
+		main.free()
+		return _fail("round-over deceleration must preserve the 12.0 baseline: %.3f" % stopped_speed)
+	main.player.round_over = false
+
 	main.player.reset_round(-0.55, 100.0, true)
 	main.enemy.reset_round(0.55, 100.0, true)
 	main.player.set_controls(0.0, false, false, false, "light")

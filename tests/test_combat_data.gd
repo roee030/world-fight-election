@@ -24,6 +24,10 @@ func _run() -> void:
 	var malformed_errors: PackedStringArray = script.validate(malformed)
 	if not _contains_error(malformed_errors, "active window"):
 		return _fail("validator accepted an active window beyond move duration")
+	if not script.validated_data(malformed).is_empty():
+		return _fail("validated loader accepted malformed numeric combat data")
+	if not script.load_validated("res://tests/fixtures/does-not-exist.json").is_empty():
+		return _fail("validated loader accepted a missing combat data file")
 
 	var missing: Dictionary = data.duplicate(true)
 	missing.erase("economy")
@@ -47,6 +51,13 @@ func _run() -> void:
 	var route_errors: PackedStringArray = script.validate_combo_routes(data, broken_combos)
 	if not _contains_error(route_errors, "unknown_attack"):
 		return _fail("validator accepted a combo route with an unknown move")
+	var extra_move: Dictionary = data.duplicate(true)
+	extra_move.moves.unknown_attack = {}
+	var extra_move_combos: Dictionary = combos.duplicate(true)
+	extra_move_combos.routes.light.append("unknown_attack")
+	var extra_move_errors: PackedStringArray = script.validate(extra_move, extra_move_combos)
+	if not _contains_error(extra_move_errors, "moves.unknown_attack"):
+		return _fail("validator accepted a malformed additional move used by a combo route")
 
 	var unknown_fighter: Dictionary = data.duplicate(true)
 	unknown_fighter.fighter_speed_overrides.ghost_fighter = 3.0

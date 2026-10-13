@@ -246,7 +246,7 @@ func _process(delta: float) -> void:
 	if not visible: return
 	if not paused and director.active:
 		var playback_delta := delta * speed * (CELEBRATION_PLAYBACK_SCALE if celebration_preview else 1.0)
-		director.advance(playback_delta); elapsed += playback_delta
+		director.advance(playback_delta); elapsed = director.authored_elapsed()
 	elif live_mode and is_instance_valid(attacker) and is_instance_valid(defender):
 		event_label.text = "RIVAL HP %d%%   •   SPECIAL ENERGY %d%%   •   %s" % [roundi(defender.health), roundi(attacker.meter), "FINISH READY" if attacker.meter >= 100.0 else "LIVE COMBAT"]
 	_update_display()
@@ -265,7 +265,7 @@ func set_paused(value: bool) -> void:
 
 func step_frame() -> void:
 	if not paused or not director.active: return
-	director.set_paused(false); director.advance(STEP); elapsed += STEP; set_paused(true)
+	director.set_paused(false); director.advance(STEP); elapsed = director.authored_elapsed(); set_paused(true)
 	_update_display()
 
 func seek(seconds: float) -> void:
