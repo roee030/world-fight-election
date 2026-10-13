@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name GameFighter
 
+const CombatDataScript = preload("res://scripts/combat/combat_data.gd")
+
 signal health_changed(who: int, value: float)
 signal meter_changed(who: int, value: float)
 signal defeated(who: int)
@@ -36,6 +38,7 @@ const METER_BLOCKED_ATTACKER := 2.5
 const METER_DEFENDER_DAMAGE_SCALE := 0.32
 const CpuBrainScript = preload("res://scripts/cpu_brain.gd")
 
+var combat_data: Dictionary = CombatDataScript.current()
 var who := 0
 var character_id := "bennet"
 var is_cpu := false
@@ -243,8 +246,8 @@ func _physics_process(delta: float) -> void:
 	if cinematic_locked:
 		return
 	if rival == null or round_over:
-		velocity.x = move_toward(velocity.x, 0.0, 12.0 * delta)
-		if not is_on_floor(): velocity.y -= 22.0 * delta
+		velocity.x = move_toward(velocity.x, 0.0, float(combat_data.motion.deceleration) * delta)
+		if not is_on_floor(): velocity.y -= float(combat_data.motion.gravity) * delta
 		move_and_slide()
 		_clamp_to_arena()
 		return
@@ -254,7 +257,7 @@ func _physics_process(delta: float) -> void:
 	if attack_request != "":
 		if stun <= 0.0 and knockdown_time <= 0.0 and recovery_time <= 0.0:
 			buffered_attack = attack_request
-			buffer_time = INPUT_BUFFER_SECONDS
+			buffer_time = float(combat_data.input_buffer_seconds)
 		attack_request = ""
 	if buffer_time > 0.0:
 		buffer_time = maxf(0.0, buffer_time - delta)
@@ -297,7 +300,7 @@ func _physics_process(delta: float) -> void:
 		if combo_timer <= 0.0 and attack_kind == "": _clear_combo()
 	if attack_kind != "":
 		attack_time = maxf(0.0, attack_time - delta)
-		var move: Dictionary = MOVES[attack_kind]
+		var move: Dictionary = combat_data.moves[attack_kind]
 		var elapsed := attack_duration - attack_time
 		if not attack_hit and elapsed >= move.startup and elapsed <= move.startup + move.active:
 			_try_hit()
@@ -308,21 +311,16 @@ func _physics_process(delta: float) -> void:
 			_start_attack(next_move, true)
 		elif attack_time <= 0.0:
 			_finish_attack()
-	var speed := 3.25
-	if character_id == "avigdor": speed = 2.9
-	elif character_id == "bibi": speed = 3.0
-	elif character_id == "yair_golan": speed = 3.35
-	elif character_id == "benny_gantz": speed = 2.95
-	elif character_id in ["mansour_abbas", "gadi_eisenkot"]: speed = 2.8
-	elif character_id in ["yair_lapid", "itamar_ben_gvir", "bezalel_smotrich"]: speed = 3.45
+	var speed := float(combat_data.fighter_speed_overrides.get(character_id, combat_data.motion.default_speed))
 	if is_cpu: speed *= 0.90 + 0.035 * cpu_level
 	var action_allowed := stun <= 0.0 and busy <= 0.0 and attack_kind == "" and knockdown_time <= 0.0 and recovery_time <= 0.0
 	var move_input := input_axis if action_allowed and not input_block else 0.0
-	if input_crouch: move_input *= 0.65
-	var acceleration := 13.0 if absf(move_input) > 0.01 else 18.0
+	if input_crouch: move_input *= float(combat_data.motion.crouch_speed_scale)
+	var acceleration := float(combat_data.motion.acceleration) if absf(move_input) > 0.01 else float(combat_data.motion.deceleration)
 	velocity.x = move_toward(velocity.x, move_input * speed, acceleration * delta)
 	var depth_input := input_depth if action_allowed and not input_block and not input_crouch else 0.0
-	velocity.z = move_toward(velocity.z, depth_input * 1.7, (12.0 if absf(depth_input) > 0.01 else 17.0) * delta)
+	var depth_acceleration := float(combat_data.motion.depth_acceleration) if absf(depth_input) > 0.01 else float(combat_data.motion.depth_deceleration)
+	velocity.z = move_toward(velocity.z, depth_input * float(combat_data.motion.depth_speed), depth_acceleration * delta)
 	if jump_crossing and not is_on_floor():
 		var lane_error := jump_lane_target_z - global_position.z
 		velocity.z = move_toward(velocity.z, clampf(lane_error * 6.0, -2.4, 2.4), 12.0 * delta)
@@ -338,13 +336,13 @@ func _physics_process(delta: float) -> void:
 		attack_lunge = 0.0
 		lunge_speed = 0.0
 	if input_jump and is_on_floor() and action_allowed:
-		velocity.y = 7.1
+		velocity.y = float(combat_data.motion.jump_velocity)
 		jump_phase = "takeoff"
 		jump_phase_time = 0.10
 		jump_crossing = absf(rival.global_position.x - global_position.x) < 1.65 and signf(rival.global_position.x - global_position.x) == signf(input_axis) and absf(rival.global_position.z - global_position.z) < 0.54
 		if jump_crossing:
 			jump_lane_target_z = clampf(rival.global_position.z + (-0.60 if who == 0 else 0.60), -arena_depth_bounds, arena_depth_bounds)
-	if not is_on_floor(): velocity.y -= 22.0 * delta
+	if not is_on_floor(): velocity.y -= float(combat_data.motion.gravity) * delta
 	elif velocity.y < 0.0: velocity.y = 0.0
 	if action_allowed and not input_block and not input_crouch and buffered_attack != "":
 		var opening_move := buffered_attack
@@ -352,7 +350,7 @@ func _physics_process(delta: float) -> void:
 		buffer_time = 0.0
 		_start_attack(opening_move)
 	if input_block and action_allowed:
-		velocity.x = move_toward(velocity.x, 0.0, 30.0 * delta)
+		velocity.x = move_toward(velocity.x, 0.0, float(combat_data.motion.guard_deceleration) * delta)
 	var grounded_before_move := is_on_floor()
 	move_and_slide()
 	_clamp_to_arena()
@@ -402,13 +400,14 @@ func _run_cpu(delta: float) -> void:
 
 
 func _start_attack(kind: String, chained: bool = false) -> void:
-	if kind == "special" and meter < SPECIAL_COST: return
-	if not MOVES.has(kind): return
+	var economy: Dictionary = combat_data.economy
+	if kind == "special" and meter < float(economy.special_cost): return
+	if not combat_data.moves.has(kind): return
 	if chained and not _can_chain_to(kind): return
 	if kind == "special":
-		meter -= SPECIAL_COST
+		meter -= float(economy.special_cost)
 		meter_changed.emit(who, meter)
-	var move: Dictionary = MOVES[kind]
+	var move: Dictionary = combat_data.moves[kind]
 	attack_kind = kind
 	attack_facing = facing
 	attack_hit = false
@@ -524,7 +523,7 @@ func _finish_attack() -> void:
 func _try_hit() -> void:
 	var dx := rival.global_position.x - global_position.x
 	var distance := absf(dx)
-	var move: Dictionary = MOVES[attack_kind]
+	var move: Dictionary = combat_data.moves[attack_kind]
 	if distance > move.reach or dx * attack_facing <= 0.0 or absf(rival.global_position.z - global_position.z) > 0.58: return
 	if absf(rival.global_position.y - global_position.y) > 0.95 and attack_kind != "special": return
 	# Ducking evades a high heavy strike; the attacker still spends its active window.
@@ -537,15 +536,15 @@ func _try_hit() -> void:
 		# Guard absorbs most of the strike, but it must still deal visible chip
 		# damage. Previously this branch only charged the attacker's meter, so a
 		# guarding CPU looked completely immune and its HP bar never moved.
-		rival.receive_hit(float(move.damage) * DAMAGE_SCALE, attack_facing, attack_kind)
-		_gain_meter(METER_BLOCKED_ATTACKER)
+		rival.receive_hit(float(move.damage) * float(combat_data.economy.damage_scale), attack_facing, attack_kind)
+		_gain_meter(float(combat_data.economy.meter_blocked_attacker))
 		rival.stun = maxf(rival.stun, 0.18)
 		rival.hit_stop = maxf(rival.hit_stop, 0.045)
 		hit_stop = maxf(hit_stop, 0.045)
 		_clear_combo()
 		strike_landed.emit(who, rival.who, attack_kind, true, combo_count)
 		return
-	var damage: float = move.damage * DAMAGE_SCALE
+	var damage: float = move.damage * float(combat_data.economy.damage_scale)
 	if character_id == "avigdor": damage *= 1.16
 	if is_cpu: damage *= 0.92 + 0.06 * cpu_level
 	if attack_kind == "special": damage *= 1.18
@@ -583,7 +582,7 @@ func _try_hit() -> void:
 	rival.hit_stop = maxf(rival.hit_stop, 0.075 if attack_kind != "light" else 0.055)
 	hit_stop = maxf(hit_stop, 0.055 if attack_kind == "light" else 0.075)
 	if attack_kind != "special":
-		_gain_meter(METER_HIT_BASE + damage * METER_HIT_DAMAGE_SCALE)
+		_gain_meter(float(combat_data.economy.meter_hit_base) + damage * float(combat_data.economy.meter_hit_damage_scale))
 	strike_landed.emit(who, rival.who, attack_kind, false, combo_count)
 
 
@@ -612,7 +611,7 @@ func receive_hit(damage: float, direction: float, kind: String) -> void:
 		attack_request = ""
 	var taken := minf(health, damage)
 	health = maxf(0.0, health - damage)
-	if taken > 0.0: _gain_meter(taken * METER_DEFENDER_DAMAGE_SCALE)
+	if taken > 0.0: _gain_meter(taken * float(combat_data.economy.meter_defender_damage_scale))
 	var defeated_now := health <= 0.0
 	if defeated_now:
 		round_over = true
