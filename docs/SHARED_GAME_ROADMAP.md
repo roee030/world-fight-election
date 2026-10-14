@@ -30,7 +30,7 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 | Combat data foundation | Complete | `docs/superpowers/plans/2026-10-14-combat-data-foundation.md` | `data/combat.json`, combat loader/tests |
 | Distinct attack presentation | First slice complete | `docs/superpowers/plans/2026-10-14-distinct-attacks-and-interactive-stages.md` | animation profiles, `SpriteMotion`, visual tests |
 | Reactive stages | First slice complete | `docs/superpowers/plans/2026-10-14-reactive-stages.md` | `scripts/stages/`, stage tests, narrow event wiring |
-| Character visual redesign | Concept review started | `docs/superpowers/specs/2026-10-14-character-visual-direction.md` | character images, sprite sheets, derived sprite frames, visual QA |
+| Character visual redesign | Full 13-fighter concept bible complete; production sprites pending approval | `docs/superpowers/specs/2026-10-14-character-visual-direction.md` | character images, sprite sheets, derived sprite frames, visual QA |
 | Compact fighter kits and combos | Next | Create a dated spec and plan before tuning | combo/kit data, loaders and focused tests |
 | Stage-specific motion and props | Planned | Extend the reactive-stage spec after review | parallax, crowds and cosmetic props behind the fight plane |
 | Campaign persistence | Planned | `docs/superpowers/specs/2026-10-14-game-upgrade-design.md` | save schema, campaign flow and tests |
@@ -51,7 +51,15 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 - Fighter asset contract: `docs/character-pipeline.md`
 - Finishers and celebrations: `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md`
 - Durable delivery handoff: `docs/superpowers/plans/2026-10-09-presentation-campaign-legal-analytics.md`
+- Full-roster character bible: `docs/superpowers/specs/2026-10-14-character-visual-direction.md`
 
 ## Next review gate
 
-Review the first fast/heavy/balanced character direction board in `docs/design/concepts/2026-10-14-fighter-archetypes-v1.png`, choose the first production fighter, and create a moving-stage concept before replacing game assets. Approved concepts then enter the existing 12-frame pipeline. In parallel, define compact kits and signature combos through the existing combat and combo engines.
+Review the complete 13-fighter direction across `docs/design/concepts/2026-10-14-fighter-archetypes-v1.png` through `v4.png`. Approve a first production trio; the recommended mix is Lapid, Gantz and Joint List because it tests a simple fast silhouette, a heavy and the roster's unusual dual silhouette. Approved concepts then enter the existing 12-frame pipeline. In parallel, define compact kits and signature combos through the existing combat and combo engines, and create the first stage-specific motion concept.
+
+## 2026-10-14 full-roster visual handoff
+
+- Every roster ID now has a named gameplay archetype, personality, silhouette, movement language, effect palette and continuity link to its existing combo and finisher.
+- Four concept boards cover all 13 fighters. Boards are review art and do not replace production sprites.
+- Public-role research is linked in the character bible. Biography only informs broad presentation themes; all combat behaviour remains fictional satire.
+- The next editor must preserve the 12-frame source contract and use the character bible as the shared visual source of truth.

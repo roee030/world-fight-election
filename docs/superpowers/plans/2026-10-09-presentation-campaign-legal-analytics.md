@@ -167,3 +167,10 @@
 - **Attack identity:** all 13 fighters have validated visual profiles for JAB, CROSS, KICK and Special. Ordinary attack clips expose at least eight display frames while `SpriteMotion` adds pause-safe 60 Hz in-between lean, lift, tilt, squash and recoil. Combat timing, reach and damage are unchanged.
 - **Reactive stages:** all six stages now respond to hits, blocks, move weight and combo strength through bounded accent-colour lights and radial glows. The response is cosmetic, deterministic, pause-safe and adds no downloaded assets.
 - **Verification:** the combined tree passed 62/62 Godot tests and 46/46 Python tests. Focused attack-identity, stage-reactivity and fairness tests were repeated after integration; 1280×720 fighter QA and 1280×720 plus 844×390 stage QA were inspected.
+
+### Follow-up (2026-10-14): full-roster character bible
+
+- **All 13 fighters defined:** `docs/superpowers/specs/2026-10-14-character-visual-direction.md` now records one gameplay archetype, combat personality, silhouette, movement language and effect palette for every roster ID, tied to the existing signature combo and finisher.
+- **Four review boards:** `docs/design/concepts/2026-10-14-fighter-archetypes-v1.png` through `v4.png` cover the full roster. They are concept direction only; no production sprite was replaced.
+- **Research boundary:** official Knesset, IDF and White House sources support broad public-career signals. The resulting attacks and archetypes are explicitly fictional satire.
+- **Next gate:** approve the first 12-pose production trio and keep all implementation inside the existing `FighterVisual`, combat and combo contracts.
