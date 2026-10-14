@@ -44,7 +44,7 @@
 - Produces: optional `res://assets/characters/transitions/<id>-<index>.png`
 
 - [x] Write failing fallback, frame-count, ownership, alpha and grounding tests.
-- [x] Add the deterministic transition-sheet slicer and generated Gantz/Joint List assets.
+- [x] Add the deterministic transition-sheet slicer and generated transition assets for all 13 fighters.
 - [x] Load supplemental frames for idle, walk, jab, cross and kick while retaining canonical contact poses.
 - [x] Run focused sprite, geometry, render-budget and combat tests.
 - [x] Inspect both fighters at 1280x720 and 844x390.
@@ -86,5 +86,5 @@
 - Modify: `README.md`
 
 - [x] Run the complete Godot and Python suites.
-- [x] Record delivered fighters, stage behaviors, controls and remaining roster transition-art batches.
+- [x] Record full-roster delivery, stage behaviors and controls in the shared roadmap.
 - [x] Commit only owned files and preserve unrelated workspace changes.

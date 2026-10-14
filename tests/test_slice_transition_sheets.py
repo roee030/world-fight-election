@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class TransitionSheetTests(unittest.TestCase):
     def test_first_transition_batch_slices_to_grounded_rgba_frames(self) -> None:
-        for fighter_id in ("bennet", "avigdor", "bibi", "benny_gantz", "joint_list"):
+        for fighter_id in ("bennet", "avigdor", "bibi", "yair_golan", "aryeh_deri", "yair_lapid", "mansour_abbas", "benny_gantz", "itamar_ben_gvir", "bezalel_smotrich", "gadi_eisenkot", "trump", "joint_list"):
             sheet = ROOT / "assets" / "characters" / "sprite-sheets" / "transitions" / f"{fighter_id.replace('_', '-')}-transitions.png"
             self.assertTrue(sheet.exists(), f"missing transition sheet for {fighter_id}")
             source = Image.open(sheet).convert("RGBA")

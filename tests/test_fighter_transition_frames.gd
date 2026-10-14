@@ -4,7 +4,7 @@ const FighterVisualScript = preload("res://scripts/fighter_visual.gd")
 
 
 func _init() -> void:
-	for fighter_id in ["bennet", "avigdor", "bibi", "benny_gantz", "joint_list"]:
+	for fighter_id in FighterVisualScript.TWELVE_FRAME_IDS:
 		assert(FighterVisualScript._has_transition_set(fighter_id), "%s complete transition batch was not detected" % fighter_id)
 		var canonical: Dictionary = FighterVisualScript._clip_map(fighter_id)
 		for clip in ["jab", "cross", "kick"]:
@@ -23,7 +23,7 @@ func _init() -> void:
 			assert(supplemental, "%s %s did not load supplemental textures" % [fighter_id, clip])
 		visual.root.free()
 
-	var fallback: Array = FighterVisualScript._clip_map("yair_golan").jab
-	assert(FighterVisualScript._presentation_sequence("yair_golan", "jab", fallback) == fallback, "missing transition art must keep canonical animation")
+	var fallback: Array = [0, 1, 4, 0]
+	assert(FighterVisualScript._presentation_sequence("missing_fighter", "jab", fallback) == fallback, "missing transition art must keep canonical animation")
 	print("PASS: optional transition art extends animation and preserves fallback")
 	quit(0)
