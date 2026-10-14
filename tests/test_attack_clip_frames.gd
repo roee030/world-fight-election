@@ -7,6 +7,7 @@ extends SceneTree
 const FighterVisualScript = preload("res://scripts/fighter_visual.gd")
 const KICK_FRAME := 6
 const PUNCH_CLIPS := ["jab", "cross", "hook"]
+const ATTACK_CLIPS := ["jab", "cross", "hook", "kick"]
 
 
 func _init() -> void:
@@ -21,6 +22,17 @@ func _init() -> void:
 			push_error("%s kick clip lost its kick frame" % id)
 			quit(1)
 			return
+		# A strike needs anticipation and recovery poses around its contact pose.
+		# Repeating idle/impact alone reads like a slideshow even when played at
+		# 60 Hz, because the silhouette only changes once in each direction.
+		for clip in ATTACK_CLIPS:
+			var sequence: Array = clips[clip]
+			var unique_frames: Dictionary = {}
+			for frame in sequence: unique_frames[frame] = true
+			if sequence.size() < 10 or unique_frames.size() < 4:
+				push_error("%s %s needs at least 10 presentation frames and 4 distinct poses: %s" % [id, clip, sequence])
+				quit(1)
+				return
 	# Every move maps to the intended clip family.
 	var moves: Dictionary = load("res://scripts/fighter.gd").MOVES
 	if str(moves.light.clip) != "jab" or str(moves.heavy.clip) not in PUNCH_CLIPS or str(moves.kick.clip) != "kick":

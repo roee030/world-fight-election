@@ -30,10 +30,10 @@ The thin gold bar under each health bar in the combat HUD is **Special Energy** 
 | Jab (`JAB`): fast, short-range combo starter | `J` / `1` |
 | Cross (`CROSS`): slower, longer-range high-damage hit | `K` / `2` |
 | Kick (`KICK`) | `U` / `4` |
-| Special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3` |
+| Special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3`, or click `SP` |
 | Pause / back | `Esc` |
 
-Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. `KICK` needs no energy; the 55% special move is keyboard-only (`L` below 100%).
+Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. Desktop fights retain the round `SP` button as a mouse control while the rest of the touch cluster stays hidden. `KICK` needs no energy; the 55% special move is keyboard-only (`L` below 100%).
 
 `SETTINGS` is available from both the main menu and pause menu. Master, Music, SFX and Voice volumes are saved between sessions, with Mute All and Reset to Defaults controls. Returning from settings opened during a fight keeps the match paused. The announcer calls Round 1, Round 2, Final Round, Fight, You Win and You Lose; licensed audio provenance and required attribution are recorded in [`assets/audio/README.md`](assets/audio/README.md).
 
@@ -93,7 +93,7 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 
 ## Combat tuning data
 
-Attack identity is separate from combat tuning. `data/fighter_animation_profiles.json` gives every roster fighter a distinct visual path for JAB, CROSS, KICK and Special. `SpriteMotion` samples those paths continuously while the source art remains on the shared 12-frame contract. These profiles may change lean, lift, tilt, squash and recoil, but never damage, reach or active windows.
+Attack identity is separate from combat tuning. `data/fighter_animation_profiles.json` gives every roster fighter a distinct visual path for JAB, CROSS, KICK and Special. `SpriteMotion` samples those paths continuously while the source art remains on the shared 12-frame contract. Each ordinary strike now plays twelve presentation steps with at least four distinct anticipation, contact and recovery poses, instead of alternating only between idle and impact. These profiles may change lean, lift, tilt, squash and recoil, but never damage, reach or active windows.
 
 Ordinary move timing, reach, lunge, base damage, input buffering, motion values and the Special Energy economy live in `data/combat.json`. Combo routes, scaling, named strings and the breaker remain in `data/combos.json`; `CombatData` validates that every combo route points to a real move.
 

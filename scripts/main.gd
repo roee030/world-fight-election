@@ -1459,7 +1459,9 @@ func _set_touch_controls_visible(value: bool) -> void:
 		stick.visible = value
 	for action in buttons:
 		if is_instance_valid(buttons[action]):
-			buttons[action].visible = value
+			# Mouse/keyboard players still need a visible, clickable finisher
+			# control. The rest of the action cluster only appears on touch layouts.
+			buttons[action].visible = value or action == "special"
 
 
 func _build_menu() -> void:

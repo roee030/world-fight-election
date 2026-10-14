@@ -14,6 +14,8 @@
 - [x] Route attack start/finish/reset through the presentation API without changing combat authority.
 - [x] Verify profile coverage, visual uniqueness, source-pose safety, motion pause and the complete combat suite.
 - [x] Inspect representative fast and heavy profiles in a 1280×720 Knesset Chamber fight; both fighters stayed grounded and fully visible.
+- [x] Replace two-pose attack snapping with twelve presentation steps and at least four distinct anticipation/contact/recovery poses per strike, while preserving the twelve-frame source contract.
+- [x] Keep a clickable `SP` control visible in desktop fights without exposing the full phone control cluster.
 
 ## Track B — interactive stages (parallel agent)
 
@@ -24,7 +26,7 @@
 
 ## Exit criteria
 
-Every fighter has a distinct validated attack-presentation signature, attack clips expose at least eight display frames, simulation/fairness stays green, and the first stage-interaction slice reacts to combat without affecting damage or timing.
+Every fighter has a distinct validated attack-presentation signature, attack clips expose twelve display steps with at least four distinct source poses, simulation/fairness stays green, desktop and phone layouts expose SP, and the first stage-interaction slice reacts to combat without affecting damage or timing.
 
 ## Next milestone — compact unique kits
 

@@ -28,7 +28,7 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 | Workstream | Status | Working document | File boundary |
 |---|---|---|---|
 | Combat data foundation | Complete | `docs/superpowers/plans/2026-10-14-combat-data-foundation.md` | `data/combat.json`, combat loader/tests |
-| Distinct attack presentation | First slice complete | `docs/superpowers/plans/2026-10-14-distinct-attacks-and-interactive-stages.md` | animation profiles, `SpriteMotion`, visual tests |
+| Distinct attack presentation | Second slice complete: 12-step strikes and desktop SP restored | `docs/superpowers/plans/2026-10-14-distinct-attacks-and-interactive-stages.md` | animation profiles, `SpriteMotion`, visual tests |
 | Reactive stages | First slice complete | `docs/superpowers/plans/2026-10-14-reactive-stages.md` | `scripts/stages/`, stage tests, narrow event wiring |
 | Character visual redesign | Production in progress: Gantz and Joint List complete; Lapid exact-scale revision pending | `docs/superpowers/plans/2026-10-14-first-production-fighter-trio.md` | character images, sprite sheets, derived sprite frames, visual QA |
 | Compact fighter kits and combos | Next | Create a dated spec and plan before tuning | combo/kit data, loaders and focused tests |
@@ -63,3 +63,10 @@ Review the complete 13-fighter direction across `docs/design/concepts/2026-10-14
 - Four concept boards cover all 13 fighters. Boards are review art and do not replace production sprites.
 - Public-role research is linked in the character bible. Biography only informs broad presentation themes; all combat behaviour remains fictional satire.
 - The next editor must preserve the 12-frame source contract and use the character bible as the shared visual source of truth.
+
+## 2026-10-14 animation and desktop-control update
+
+- Ordinary strikes now use twelve presentation steps with anticipation, contact and recovery silhouettes drawn from the shared twelve-pose source contract. Each strike uses at least four distinct source poses instead of switching only between idle and impact.
+- Walk cycles now include stance transitions and play at 12 FPS; strikes target 24 FPS while `SpriteMotion` continues the per-render-frame lean, drive, lift, squash and recoil.
+- Desktop fights retain a clickable `SP` button at the bottom-right edge. The joystick and ordinary action cluster remain touch-only; keyboard `L` / `3` continues to use the same Special Energy rules.
+- Regression coverage: `tests/test_attack_clip_frames.gd` and `tests/test_mobile_control_contract.gd`. Visual review covers 1280×720 desktop and 844×390 landscape-phone layouts.
