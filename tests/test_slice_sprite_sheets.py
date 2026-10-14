@@ -1,4 +1,5 @@
 import unittest
+import json
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -15,6 +16,29 @@ def make_cell(size: tuple[int, int], figure_box: tuple[int, int, int, int]) -> I
 
 
 class SpriteSheetGeometryTests(unittest.TestCase):
+    def test_first_production_trio_has_valid_source_contract(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        manifest_path = root / "data" / "fighter_art_manifest.json"
+        self.assertTrue(manifest_path.exists(), "production fighter art manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        expected = {
+            "yair_lapid": ("prime_time_rushdown", 1, "production_revision_pending"),
+            "benny_gantz": ("centre_control_heavy", 2, "production"),
+            "joint_list": ("dual_stance_ensemble", 2, "production"),
+        }
+        for fighter_id, (archetype, version, status) in expected.items():
+            entry = manifest["fighters"].get(fighter_id, {})
+            self.assertEqual(entry.get("version"), version)
+            self.assertEqual(entry.get("status"), status)
+            self.assertEqual(entry.get("archetype"), archetype)
+            self.assertEqual(len(entry.get("pose_order", [])), 12)
+            sheet_path = root / entry["source_sheet"]
+            sheet = Image.open(sheet_path).convert("RGBA")
+            self.assertEqual(sheet.width * 3, sheet.height * 4, f"{fighter_id} sheet is not 4x3")
+            alpha = np.asarray(sheet.getchannel("A"))
+            self.assertGreater(int((alpha == 0).sum()), 0, f"{fighter_id} sheet has no transparency")
+            self.assertEqual(len(extract_pose_cells(sheet)), 12)
+
     def test_jab_and_cross_have_materially_different_silhouettes(self) -> None:
         """A second punch must read as a new pose, not a near-duplicate jab."""
         root = Path(__file__).resolve().parents[1] / "assets" / "characters" / "sprites"

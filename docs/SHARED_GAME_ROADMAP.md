@@ -30,7 +30,7 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 | Combat data foundation | Complete | `docs/superpowers/plans/2026-10-14-combat-data-foundation.md` | `data/combat.json`, combat loader/tests |
 | Distinct attack presentation | First slice complete | `docs/superpowers/plans/2026-10-14-distinct-attacks-and-interactive-stages.md` | animation profiles, `SpriteMotion`, visual tests |
 | Reactive stages | First slice complete | `docs/superpowers/plans/2026-10-14-reactive-stages.md` | `scripts/stages/`, stage tests, narrow event wiring |
-| Character visual redesign | Full 13-fighter concept bible complete; production sprites pending approval | `docs/superpowers/specs/2026-10-14-character-visual-direction.md` | character images, sprite sheets, derived sprite frames, visual QA |
+| Character visual redesign | Production in progress: Gantz and Joint List complete; Lapid exact-scale revision pending | `docs/superpowers/plans/2026-10-14-first-production-fighter-trio.md` | character images, sprite sheets, derived sprite frames, visual QA |
 | Compact fighter kits and combos | Next | Create a dated spec and plan before tuning | combo/kit data, loaders and focused tests |
 | Stage-specific motion and props | Planned | Extend the reactive-stage spec after review | parallax, crowds and cosmetic props behind the fight plane |
 | Campaign persistence | Planned | `docs/superpowers/specs/2026-10-14-game-upgrade-design.md` | save schema, campaign flow and tests |

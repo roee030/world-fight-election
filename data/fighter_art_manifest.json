@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "pose_order": [
+    "idle_guard",
+    "walk_contact",
+    "walk_passing",
+    "crouching_guard",
+    "jab",
+    "cross",
+    "signature_kick",
+    "high_block",
+    "hit_recoil",
+    "falling_backward",
+    "grounded_knockdown",
+    "getting_up"
+  ],
+  "fighters": {
+    "yair_lapid": {
+      "version": 1,
+      "status": "production_revision_pending",
+      "archetype": "prime_time_rushdown",
+      "source_sheet": "assets/characters/sprite-sheets/new-roster/yair-lapid-sheet.png",
+      "pose_order": ["idle_guard", "walk_contact", "walk_passing", "crouching_guard", "jab", "cross", "signature_kick", "high_block", "hit_recoil", "falling_backward", "grounded_knockdown", "getting_up"]
+    },
+    "benny_gantz": {
+      "version": 2,
+      "status": "production",
+      "archetype": "centre_control_heavy",
+      "source_sheet": "assets/characters/sprite-sheets/new-roster/benny-gantz-sheet.png",
+      "pose_order": ["idle_guard", "walk_contact", "walk_passing", "crouching_guard", "jab", "cross", "signature_kick", "high_block", "hit_recoil", "falling_backward", "grounded_knockdown", "getting_up"]
+    },
+    "joint_list": {
+      "version": 2,
+      "status": "production",
+      "archetype": "dual_stance_ensemble",
+      "source_sheet": "assets/characters/sprite-sheets/new-roster/joint-list-sheet.png",
+      "pose_order": ["idle_guard", "walk_contact", "walk_passing", "crouching_guard", "jab", "cross", "signature_kick", "high_block", "hit_recoil", "falling_backward", "grounded_knockdown", "getting_up"]
+    }
+  }
+}
