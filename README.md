@@ -83,6 +83,7 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `assets/characters/*-card.png` | Canonical full character artwork |
 | `assets/characters/portraits/` | Face-focused selection and HUD portraits |
 | `assets/characters/sprites/` | Normalized transparent combat frames |
+| `assets/characters/transitions/` | Optional normalized in-between drawings; canonical frames remain the gameplay contract |
 | `assets/stages/` | Full-frame stage backplates |
 | `assets/ui/main-hero-video.ogv` | Looping, silent main-menu hero video (Godot-ready Theora) |
 | `assets/ui/main-hero-*.png` | Title-art candidates; `main-hero-b.png` is the video fallback |
@@ -93,7 +94,7 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 
 ## Combat tuning data
 
-Attack identity is separate from combat tuning. `data/fighter_animation_profiles.json` gives every roster fighter a distinct visual path for JAB, CROSS, KICK and Special. `SpriteMotion` samples those paths continuously while the source art remains on the shared 12-frame contract. Each ordinary strike now plays twelve presentation steps with at least four distinct anticipation, contact and recovery poses, instead of alternating only between idle and impact. These profiles may change lean, lift, tilt, squash and recoil, but never damage, reach or active windows.
+Attack identity is separate from combat tuning. `data/fighter_animation_profiles.json` gives every roster fighter a distinct visual path for JAB, CROSS, KICK and Special. `SpriteMotion` samples those paths continuously while the source art remains on the shared 12-frame contract. Gantz and Joint List now also ship twelve supplemental transition drawings each; the loader keeps the canonical contact poses and falls back cleanly for fighters whose transition batch is still pending. These profiles and drawings may change lean, lift, tilt, squash and recoil, but never damage, reach or active windows.
 
 Ordinary move timing, reach, lunge, base damage, input buffering, motion values and the Special Energy economy live in `data/combat.json`. Combo routes, scaling, named strings and the breaker remain in `data/combos.json`; `CombatData` validates that every combo route points to a real move.
 
@@ -167,6 +168,8 @@ The game is playable and under active visual and combat polish. The current prio
 - **Disclaimer:** the Web shell shows a Hebrew/English satire disclaimer. Play starts only after the checkbox is ticked; acceptance is stored per device (`wf-disclaimer-v1`). This text is not legal advice; have a lawyer review it.
 - **Analytics:** anonymous, cookie-free GoatCounter (`goatcounter_code` in `data/site_config.json`); dashboard https://roeeangel.goatcounter.com. See "Analytics guide" below.
 - **Combos:** chain JAB / CROSS / KICK while the rival is still reeling. Every fighter shares five named strings (ONE-TWO, QUICK CROSS, POWER LINE, HEAVY HANDS, SWEEP STRING) and has one 4-hit signature string (for example Bibi's PROTECTION DETAIL). Names, inputs, finales (knockback, knockdown, stagger), damage scaling and routes live in `data/combos.json`. Double-tap GUARD while being hit is a **combo breaker** (35% Special Energy). The pause menu shows a MOVE LIST whose inputs are chips coloured like the touch buttons. The CPU uses the same strings by level and can break your combos.
+- **Combo payoff:** completing a named string shows its authored name above the hit and damage result in the live HUD; recognition still comes only from the engine in `fighter.gd`.
+- **Living stages:** strikes pulse the arena lights and move a bounded layer chosen by stage kind: crowd/banner waves for Knesset arenas, light sweeps for studios and low dust for the street. Combo strength increases the reaction without changing combat, and pause freezes it.
 - **Sound indicator:** a SOUND / MUTED button with a speaker icon sits in the main menu (next to FULL SCREEN) and in the fight HUD (next to pause). Tapping it toggles mute and stays in sync with the Settings screen. Analytics: `sound/muted`, `sound/on`.
 - **First-fight tutorial:** the tutorial stays closed on startup and character selection, then the first fight on a device opens an explicit `LEARN THE BASICS` gate before the one-time guide: move, JAB, CROSS, KICK, jump, GUARD, combo, then Special Energy fills to 100% and the glowing SP button launches a first finisher. A dimmed Highlight Overlay leaves only the required control bright; the CPU stands still and the clock is frozen. SKIP is always available. The final SP step waits for the complete finisher sequence, then shows `TRAINING COMPLETE`; `START FIGHT` begins the fresh real round. Completion is stored in `user://tutorial.cfg`; *HOW TO PLAY* in the pause menu replays it. Analytics: `tutorial/start`, `tutorial/step-<id>`, `tutorial/complete`, `tutorial/skip-at-<id>` (shows where players drop out).
 - **QA URLs:** `?qa=fight`, `?qa=tutorial`, `?qa=finisher`, `?qa=win`, `?qa=loss`, `?qa=campaign` jump straight to those screens for screenshots.

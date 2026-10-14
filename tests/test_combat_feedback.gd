@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## The live fight space is intentionally quiet: the player sees one raised
-## combo-and-damage lane, not coaching, quality adjectives, or breaker copy.
+## combo-name-and-damage lane, not coaching, quality adjectives, or breaker copy.
 
 
 func _init() -> void:
@@ -30,8 +30,11 @@ func _run() -> void:
 		return _fail("combo text must be small and sit under the HP/Special bars")
 	main.player.combo_count = 4
 	main._on_combo_string(0, "PRIME-TIME COMBO", 31.0)
-	if main.combo_label.text != "4 HITS  ·  31 DMG":
-		return _fail("named combos must retain the same hits-and-damage lane (got %s)" % main.combo_label.text)
+	if main.combo_label.text != "PRIME-TIME COMBO\n4 HITS  ·  31 DMG":
+		return _fail("named combos must expose the authored name and retain hits/damage (got %s)" % main.combo_label.text)
+	main.combo_callout._restart()
+	if main.combo_callout.plate_rect().size.y < 40.0:
+		return _fail("named combo plate must cover both rendered text lines")
 	main.message_label.visible = false
 	main._on_combo_broken(0)
 	if main.message_label.visible:
@@ -40,5 +43,5 @@ func _run() -> void:
 	if main.message_label.visible:
 		return _fail("special coaching must not intrude into the live fight space")
 	main.free()
-	print("PASS: compact raised combo damage feedback with no live coaching text")
+	print("PASS: compact named combo damage feedback with no live coaching text")
 	quit()

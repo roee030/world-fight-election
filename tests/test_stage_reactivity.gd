@@ -29,9 +29,20 @@ func _run() -> void:
 			return _fail("stage %s did not use its authored accent" % stage.id)
 		if not is_zero_approx(left.light_energy) or not is_zero_approx(right.light_energy):
 			return _fail("configuring stage %s did not reset its pulse" % stage.id)
+		var expected_prop := "StudioSweep" if stage.kind == "studio" else ("StreetDust" if stage.kind == "street" else "CrowdWave")
+		var prop_root := reaction.get_node_or_null(expected_prop) as Node3D
+		if prop_root == null or prop_root.get_child_count() < 3:
+			return _fail("stage %s did not build its interactive %s props" % [stage.id, expected_prop])
+		if reaction.get_node_or_null("StudioSweep" if expected_prop != "StudioSweep" else "StreetDust") != null:
+			return _fail("stage %s kept props from another stage kind" % stage.id)
 
 	reaction.configure(main.STAGES[0])
+	var crowd := reaction.get_node("CrowdWave") as Node3D
+	var crowd_start := (crowd.get_child(0) as MeshInstance3D).position
 	reaction.react_to_strike("light", false, 1)
+	reaction.advance(0.08)
+	if (crowd.get_child(0) as MeshInstance3D).position.is_equal_approx(crowd_start):
+		return _fail("a strike did not move the stage-specific background prop")
 	var light_energy := (reaction.get_node("LeftPulse") as OmniLight3D).light_energy
 	var left_glow := reaction.get_node_or_null("LeftGlow") as MeshInstance3D
 	var right_glow := reaction.get_node_or_null("RightGlow") as MeshInstance3D

@@ -40,4 +40,10 @@ For additional cinematic poses, `figure_height_px` measures head-to-foot body he
 
 The slicer uses one shared scale across all poses, keeps transparent edge padding and aligns standing frames to a common foot baseline. It assigns complete connected alpha components across the full sheet instead of cropping each 4x3 cell independently, so a hand, boot, coat or accessory that crosses a grid line stays with its real pose. Remote pieces from neighbouring poses must be rejected. Do not manually stretch individual animation frames.
 
+## Optional supplemental transition sheet
+
+The canonical twelve poses above remain mandatory and authoritative for gameplay contact, guard, hit, knockdown and recovery. A production fighter may also provide `assets/characters/sprite-sheets/transitions/<id>-transitions.png`, another transparent 4x3 sheet containing idle/step, jab, cross and kick in-between drawings. Run `python tools/slice_transition_sheets.py`; it writes twelve normalized frames to `assets/characters/transitions/<id>-0.png` through `<id>-11.png` without replacing the canonical frames.
+
+`FighterVisual._presentation_sequence` uses supplemental drawings only when frame 0 exists. Missing transition art must always fall back to the canonical animation. Supplemental punches retain the canonical jab/cross contact poses, supplemental kicks retain canonical frame 6, and kick transitions must never use the crouch pose. The same alpha, padding, common-scale and foot-baseline requirements apply.
+
 In Sprite Lab, trigger JAB, CROSS, KICK, GUARD, HIT, FALL, GET UP and JUMP in both directions. Every normalized frame must keep at least 99.9% of its visible alpha in the primary silhouette and keep its lowest real foot on the shared floor line.

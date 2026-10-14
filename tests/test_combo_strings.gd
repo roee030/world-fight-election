@@ -89,6 +89,7 @@ func _run() -> void:
 		assert(peak == 4, "%s signature %s did not reach 4 hits (peak %d)" % [fighter_id, signature.name, peak])
 		var names: Array = strings_seen.map(func(s): return s.name)
 		assert(signature.name in names, "%s signature %s not recognised (saw %s)" % [fighter_id, signature.name, names])
+		assert(main.combo_label.text.contains(str(signature.name)), "%s completed but the HUD hid its authored combo name: %s" % [signature.name, main.combo_label.text])
 	# 3. Damage scaling: a 4-hit string deals less than four unscaled hits.
 	await _fresh(main, "yair_lapid")
 	strings_seen.clear()

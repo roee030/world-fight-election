@@ -102,9 +102,16 @@ func plate_rect() -> Rect2:
 	# Plate sized to the rendered text, centred on the label.
 	var font := label.get_theme_font("font")
 	var size_px := label.get_theme_font_size("font_size")
-	var width := font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x if font != null else 300.0
+	var lines := label.text.split("\n")
+	var width := 300.0
+	if font != null:
+		width = 0.0
+		for line in lines:
+			width = maxf(width, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x)
 	var center := label.get_global_rect().get_center() - get_global_rect().position
-	var plate_size := Vector2(minf(width + (36.0 if compact else 120.0), 1100.0), float(size_px) * 1.45)
+	var line_height := float(size_px) * 1.25
+	var plate_height := line_height * lines.size() + (12.0 if compact else 20.0)
+	var plate_size := Vector2(minf(width + (36.0 if compact else 120.0), 1100.0), plate_height)
 	return Rect2(center - plate_size * 0.5, plate_size)
 
 

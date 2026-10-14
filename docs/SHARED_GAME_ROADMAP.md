@@ -28,10 +28,10 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 | Workstream | Status | Working document | File boundary |
 |---|---|---|---|
 | Combat data foundation | Complete | `docs/superpowers/plans/2026-10-14-combat-data-foundation.md` | `data/combat.json`, combat loader/tests |
-| Distinct attack presentation | Second slice complete: 12-step strikes and desktop SP keyboard binding verified | `docs/superpowers/plans/2026-10-14-distinct-attacks-and-interactive-stages.md` | animation profiles, `SpriteMotion`, visual tests |
-| Reactive stages | First slice complete | `docs/superpowers/plans/2026-10-14-reactive-stages.md` | `scripts/stages/`, stage tests, narrow event wiring |
+| Distinct attack presentation | Transition-art pipeline complete; Gantz and Joint List first batch delivered | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | canonical sprites, optional transitions, visual tests |
+| Reactive stages | Second slice complete: stage-kind props react to strikes and combos | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | `scripts/stages/`, stage tests, narrow event wiring |
 | Character visual redesign | Production in progress: Gantz and Joint List complete; Lapid exact-scale revision pending | `docs/superpowers/plans/2026-10-14-first-production-fighter-trio.md` | character images, sprite sheets, derived sprite frames, visual QA |
-| Compact fighter kits and combos | Next | Create a dated spec and plan before tuning | combo/kit data, loaders and focused tests |
+| Compact fighter kits and combos | Existing strings complete and visible; per-fighter move modifiers remain next | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | combo data, existing fighter engine, HUD/tests |
 | Stage-specific motion and props | Planned | Extend the reactive-stage spec after review | parallax, crowds and cosmetic props behind the fight plane |
 | Campaign persistence | Planned | `docs/superpowers/specs/2026-10-14-game-upgrade-design.md` | save schema, campaign flow and tests |
 | Training and accessibility | Planned | `docs/superpowers/specs/2026-10-14-game-upgrade-design.md` | Training UI/runtime, Reduced Motion and tests |
@@ -71,3 +71,9 @@ Review the complete 13-fighter direction across `docs/design/concepts/2026-10-14
 - Desktop fights hide the complete touch cluster and use keyboard `L` / `3` for Special and the full-energy finisher. The round `SP` control is phone-only.
 - Kick transitions use stance and stepping poses only; the crouch pose is forbidden from kick clips so a kick cannot read as crouch-then-punch.
 - Regression coverage: `tests/test_attack_clip_frames.gd` and `tests/test_mobile_control_contract.gd`. Visual review covers 1280×720 desktop and 844×390 landscape-phone layouts.
+
+## 2026-10-14 animation, stage and combo expansion
+
+- Gantz and Joint List each have a supplemental twelve-drawing transition sheet for idle, step, jab, cross and kick movement. The remaining eleven fighters keep canonical fallback until their art batches are produced.
+- Every stage kind now owns a lightweight interactive background layer driven by the existing strike/combo signal: Knesset crowd waves, studio light sweeps and street dust. Values are capped, presentation-only and pause-safe.
+- Completing any universal or fighter signature combo now shows its authored name and the hit/damage result in the HUD. Recognition, scaling, breakers and finishers still use the single engine in `fighter.gd`.

@@ -1233,7 +1233,7 @@ func _build_hud() -> void:
 	message_label.add_theme_constant_override("shadow_offset_x", 2)
 	message_label.add_theme_constant_override("shadow_offset_y", 3)
 	# Small readout under the player HP / Special bars, out of the fight lane.
-	combo_label = _label(hud_root, "", Rect2(10.0 + HUD_HP_BAR_X, HUD_FRAME_HEIGHT + 6.0, 190, 26), 16, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
+	combo_label = _label(hud_root, "", Rect2(10.0 + HUD_HP_BAR_X, HUD_FRAME_HEIGHT + 4.0, 300, 50), 15, Color("#ffe1a0"), HORIZONTAL_ALIGNMENT_CENTER)
 	combo_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.9))
 	combo_label.add_theme_constant_override("shadow_offset_x", 2)
 	combo_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -3077,7 +3077,7 @@ func _on_combo_changed(who: int, hits: int) -> void:
 func _on_combo_string(who: int, combo_name: String, damage: float) -> void:
 	# A named combo uses the same compact lane as every other string.
 	if who != 0 or not is_instance_valid(combo_label): return
-	combo_label.text = "%d HITS  ·  %d DMG" % [player.combo_count, roundi(damage)]
+	combo_label.text = "%s\n%d HITS  ·  %d DMG" % [combo_name.to_upper(), player.combo_count, roundi(damage)]
 	combo_label.visible = true
 	combo_label_time = 1.6
 	_play_sfx(&"special")

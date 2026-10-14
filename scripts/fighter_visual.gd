@@ -112,10 +112,36 @@ static func _make_frames(character_id: String) -> SpriteFrames:
 		frames.add_animation(clip_name)
 		frames.set_animation_loop(clip_name, clip_name in ["idle", "walk_forward", "walk_back", "jump_air"])
 		frames.set_animation_speed(clip_name, _fps_for(clip_name))
-		for frame_index in clips[clip_name]:
-			var texture := load("res://assets/characters/sprites/%s-%d.png" % [character_id, frame_index]) as Texture2D
+		var sequence := _presentation_sequence(character_id, clip_name, clips[clip_name])
+		for frame_index in sequence:
+			var texture_path := "res://assets/characters/transitions/%s-%s.png" % [character_id, str(frame_index).trim_prefix("t")] if frame_index is String else "res://assets/characters/sprites/%s-%d.png" % [character_id, frame_index]
+			var texture := load(texture_path) as Texture2D
 			if texture != null: frames.add_frame(clip_name, texture)
 	return frames
+
+
+static func _presentation_sequence(character_id: String, clip_name: String, canonical: Array) -> Array:
+	# Supplemental drawings are optional. The canonical twelve-pose contract is
+	# still the complete fallback and remains authoritative for contact poses.
+	if not _has_transition_set(character_id):
+		return canonical.duplicate()
+	match clip_name:
+		"idle": return [0, "t0", 0, "t0"]
+		"walk_forward": return [0, "t1", "t2", 1, 2, "t1", 0]
+		"walk_back": return [0, "t1", 2, 1, "t2", "t1", 0]
+		"jab": return [0, "t3", "t3", "t4", 4, 4, 4, "t5", 2, 2, 1, 0]
+		"cross", "hook": return [0, "t6", "t6", "t7", 5, 5, 5, "t8", 2, 2, 1, 0]
+		"kick": return [0, 1, "t9", "t9", "t10", 6, 6, "t11", 2, 2, 1, 0]
+		_: return canonical.duplicate()
+
+
+static func _has_transition_set(character_id: String) -> bool:
+	# ResourceLoader follows imported/remapped textures in desktop and Web PCKs.
+	# Require the complete batch so a partial art drop keeps the canonical clips.
+	for index in range(12):
+		if not ResourceLoader.exists("res://assets/characters/transitions/%s-%d.png" % [character_id, index]):
+			return false
+	return true
 
 static func _clip_map(character_id: String) -> Dictionary:
 	if character_id in TWELVE_FRAME_IDS:
