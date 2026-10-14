@@ -71,6 +71,7 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `scripts/main.gd` | Screen flow, stages, HUD, rounds, pause and result presentation |
 | `scripts/fighter.gd` | Movement, attacks, damage, AI, health, special meter and reaction states |
 | `scripts/combat/combat_data.gd` | Loads and validates combat tuning data and combo-route references |
+| `data/fighter_animation_profiles.json` | Per-fighter 60 Hz attack-presentation identity; visual only |
 | `scripts/fighter_visual.gd` | Fighter height, grounding, sprite clips and shadow setup |
 | `scripts/character_debug.gd` | Fighter Sprite Lab |
 | `scripts/opponent_selector.gd` | Random rival selection |
@@ -88,6 +89,8 @@ In portrait orientation the page now shows a dedicated illustrated rotate gate: 
 | `docs/` | Art pipeline, combat plans and future design work |
 
 ## Combat tuning data
+
+Attack identity is separate from combat tuning. `data/fighter_animation_profiles.json` gives every roster fighter a distinct visual path for JAB, CROSS, KICK and Special. `SpriteMotion` samples those paths continuously while the source art remains on the shared 12-frame contract. These profiles may change lean, lift, tilt, squash and recoil, but never damage, reach or active windows.
 
 Ordinary move timing, reach, lunge, base damage, input buffering, motion values and the Special Energy economy live in `data/combat.json`. Combo routes, scaling, named strings and the breaker remain in `data/combos.json`; `CombatData` validates that every combo route points to a real move.
 

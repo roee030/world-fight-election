@@ -422,6 +422,7 @@ func _start_attack(kind: String, chained: bool = false) -> void:
 	attack_clip = clip_name
 	_visual.sprite.set_frame_and_progress(0, 0.0)
 	_visual.sprite.play()
+	_visual.motion.start_attack(kind, attack_duration)
 	_animate()
 	attack_started.emit(who, kind)
 
@@ -517,6 +518,7 @@ func _finish_attack() -> void:
 	attack_lunge = 0.0
 	buffered_attack = ""
 	buffer_time = 0.0
+	if not _visual.is_empty(): _visual.motion.clear_attack()
 	if ended_move == "special" or not connected: _clear_combo()
 
 
@@ -700,6 +702,7 @@ func reset_round(position_x: float, health_value: float = 100.0, keep_meter: boo
 	attack_request = ""
 	round_over = false
 	if not _visual.is_empty():
+		_visual.motion.clear_attack()
 		_visual.sprite.flip_h = facing < 0.0
 		_visual.motion.set_facing(facing)
 		_visual.motion.play_state("idle", true)
@@ -723,6 +726,7 @@ func knock_down_and_recover() -> void:
 	busy = knockdown_time
 	velocity = Vector3.ZERO
 	if not _visual.is_empty():
+		_visual.motion.clear_attack()
 		_visual.sprite.rotation.z = 0.0
 		_visual.sprite.position.y = float(_visual.ground_y)
 	_animate()
