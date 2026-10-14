@@ -30,10 +30,10 @@ The thin gold bar under each health bar in the combat HUD is **Special Energy** 
 | Jab (`JAB`): fast, short-range combo starter | `J` / `1` |
 | Cross (`CROSS`): slower, longer-range high-damage hit | `K` / `2` |
 | Kick (`KICK`) | `U` / `4` |
-| Special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3`, or click `SP` |
+| Special move (costs 55% energy) / `SP` finisher at 100% | `L` / `3` |
 | Pause / back | `Esc` |
 
-Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. Desktop fights retain the round `SP` button as a mouse control while the rest of the touch cluster stays hidden. `KICK` needs no energy; the 55% special move is keyboard-only (`L` below 100%).
+Phone controls follow the HUD reference: a joystick on the left (push up to jump, down to crouch) and a right-hand cluster of `JAB`, `CROSS`, `KICK`, `SP` and `GUARD`. Every button acts exactly once per tap, on press; its hit area is exactly the drawn diamond or circle, and each finger is tracked separately, so you can attack while holding the joystick. Desktop fights use the keyboard and hide the complete touch cluster; `L` / `3` activates the Special move or the `SP` finisher at full energy. `KICK` needs no energy.
 
 `SETTINGS` is available from both the main menu and pause menu. Master, Music, SFX and Voice volumes are saved between sessions, with Mute All and Reset to Defaults controls. Returning from settings opened during a fight keeps the match paused. The announcer calls Round 1, Round 2, Final Round, Fight, You Win and You Lose; licensed audio provenance and required attribution are recorded in [`assets/audio/README.md`](assets/audio/README.md).
 

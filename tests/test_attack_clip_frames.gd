@@ -5,6 +5,7 @@ extends SceneTree
 ## one K press looked like a punch and a kick.
 
 const FighterVisualScript = preload("res://scripts/fighter_visual.gd")
+const CROUCH_FRAME := 3
 const KICK_FRAME := 6
 const PUNCH_CLIPS := ["jab", "cross", "hook"]
 const ATTACK_CLIPS := ["jab", "cross", "hook", "kick"]
@@ -20,6 +21,10 @@ func _init() -> void:
 				return
 		if not KICK_FRAME in clips.kick:
 			push_error("%s kick clip lost its kick frame" % id)
+			quit(1)
+			return
+		if CROUCH_FRAME in clips.kick:
+			push_error("%s kick clip contains the crouch pose: %s" % [id, clips.kick])
 			quit(1)
 			return
 		# A strike needs anticipation and recovery poses around its contact pose.

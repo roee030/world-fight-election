@@ -15,7 +15,8 @@
 - [x] Verify profile coverage, visual uniqueness, source-pose safety, motion pause and the complete combat suite.
 - [x] Inspect representative fast and heavy profiles in a 1280×720 Knesset Chamber fight; both fighters stayed grounded and fully visible.
 - [x] Replace two-pose attack snapping with twelve presentation steps and at least four distinct anticipation/contact/recovery poses per strike, while preserving the twelve-frame source contract.
-- [x] Keep a clickable `SP` control visible in desktop fights without exposing the full phone control cluster.
+- [x] Keep the complete touch cluster hidden on desktop and verify `L` / `3` as the Special and full-energy finisher binding.
+- [x] Keep crouch frames out of kick transitions; use stance and step poses around the authored kick contact pose.
 
 ## Track B — interactive stages (parallel agent)
 
