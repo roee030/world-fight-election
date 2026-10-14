@@ -160,3 +160,10 @@
   card; the scrubber continues to represent authored timeline time.
 - **Verification:** all 60 Godot test scripts and all 46 Python tests passed.
   The engine still emits its known Windows certificate and teardown warnings.
+
+### Follow-up (2026-10-14): shared visual direction, attack identity and reactive stages
+
+- **Shared roadmap:** `docs/SHARED_GAME_ROADMAP.md` is now the common entry point for every contributor and agent. It records the Strive/Rivals/Brawlhalla-inspired direction, shared priorities, workstream status and file boundaries.
+- **Attack identity:** all 13 fighters have validated visual profiles for JAB, CROSS, KICK and Special. Ordinary attack clips expose at least eight display frames while `SpriteMotion` adds pause-safe 60 Hz in-between lean, lift, tilt, squash and recoil. Combat timing, reach and damage are unchanged.
+- **Reactive stages:** all six stages now respond to hits, blocks, move weight and combo strength through bounded accent-colour lights and radial glows. The response is cosmetic, deterministic, pause-safe and adds no downloaded assets.
+- **Verification:** the combined tree passed 62/62 Godot tests and 46/46 Python tests. Focused attack-identity, stage-reactivity and fairness tests were repeated after integration; 1280×720 fighter QA and 1280×720 plus 844×390 stage QA were inspected.

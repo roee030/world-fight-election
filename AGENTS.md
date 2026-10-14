@@ -1,6 +1,6 @@
 # Agent onboarding
 
-Read `docs/superpowers/plans/2026-10-09-presentation-campaign-legal-analytics.md` (current handoff), `README.md`, `docs/character-pipeline.md`, `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md` (including its 2026-10-08 amendment) and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
+Read `docs/SHARED_GAME_ROADMAP.md`, `docs/superpowers/plans/2026-10-09-presentation-campaign-legal-analytics.md` (current handoff), `README.md`, `docs/character-pipeline.md`, `docs/superpowers/specs/2026-10-07-finishers-celebrations-design.md` (including its 2026-10-08 amendment) and the newest plan in `docs/superpowers/plans/` before editing. This file is the durable project context; do not rely on chat history.
 
 ## Product goal
 

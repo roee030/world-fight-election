@@ -27,6 +27,7 @@ const CalloutScript = preload("res://scripts/ui/callout.gd")
 const ResultFxScript = preload("res://scripts/ui/result_fx.gd")
 const TutorialScript = preload("res://scripts/ui/tutorial.gd")
 const SoundToggleScript = preload("res://scripts/ui/sound_toggle.gd")
+const StageReactivityScript = preload("res://scripts/stages/stage_reactivity.gd")
 const ACCENT_CYAN := Color("#46dcd8")
 const ACCENT_GOLD := Color("#e8b94f")
 const CREATOR_PHOTO_PATH := "res://assets/ui/creator.png"
@@ -145,6 +146,7 @@ var buttons: Dictionary = {}
 var _input_down := {}
 var _attack_key_held := {}
 var _arena: Node3D
+var _stage_reactivity: Node3D
 var _fight_camera: Camera3D
 var camera_shake := 0.0
 var camera_home := Vector3(0, 3.6, 9.7)
@@ -1019,6 +1021,7 @@ func _build_arena() -> void:
 
 func _build_stage(stage_id: String = "") -> void:
 	for child in _arena.get_children(): child.queue_free()
+	_stage_reactivity = null
 	var old_backdrop := _fight_camera.get_node_or_null("FullFrameStageBackdrop")
 	if old_backdrop != null: old_backdrop.free()
 	var stage := _stage_data(stage_id if stage_id != "" else selected_stage_id)
@@ -1057,6 +1060,10 @@ func _build_stage(stage_id: String = "") -> void:
 	floor_shape.position.y = -0.12
 	floor_body.add_child(floor_shape)
 	_arena.add_child(floor_body)
+	_stage_reactivity = StageReactivityScript.new()
+	_stage_reactivity.name = "StageReactivity"
+	_arena.add_child(_stage_reactivity)
+	_stage_reactivity.configure(stage)
 
 
 func _apply_arena_edge() -> void:
@@ -3095,6 +3102,8 @@ func _on_strike_landed(attacker: int, defender: int, move: String, blocked: bool
 		camera_shake = 0.11
 	else:
 		camera_shake = 0.15 if move == "light" else (0.28 if move == "heavy" else 0.34)
+	if is_instance_valid(_stage_reactivity):
+		_stage_reactivity.react_to_strike(move, blocked, combo)
 
 
 func _spawn_hit_flash(victim_index: int) -> void:
