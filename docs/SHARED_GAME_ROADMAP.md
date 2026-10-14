@@ -28,7 +28,7 @@ The current one-on-one, best-of-three rules remain. The roadmap does not current
 | Workstream | Status | Working document | File boundary |
 |---|---|---|---|
 | Combat data foundation | Complete | `docs/superpowers/plans/2026-10-14-combat-data-foundation.md` | `data/combat.json`, combat loader/tests |
-| Distinct attack presentation | Transition-art pipeline complete; Gantz and Joint List first batch delivered | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | canonical sprites, optional transitions, visual tests |
+| Distinct attack presentation | Transition-art pipeline complete; 5-fighter batch delivered | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | canonical sprites, optional transitions, visual tests |
 | Reactive stages | Second slice complete: stage-kind props react to strikes and combos | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | `scripts/stages/`, stage tests, narrow event wiring |
 | Character visual redesign | Production in progress: Gantz and Joint List complete; Lapid exact-scale revision pending | `docs/superpowers/plans/2026-10-14-first-production-fighter-trio.md` | character images, sprite sheets, derived sprite frames, visual QA |
 | Compact fighter kits and combos | Existing strings complete and visible; per-fighter move modifiers remain next | `docs/superpowers/plans/2026-10-14-animation-stage-combo-expansion.md` | combo data, existing fighter engine, HUD/tests |
@@ -74,6 +74,6 @@ Review the complete 13-fighter direction across `docs/design/concepts/2026-10-14
 
 ## 2026-10-14 animation, stage and combo expansion
 
-- Gantz and Joint List each have a supplemental twelve-drawing transition sheet for idle, step, jab, cross and kick movement. The remaining eleven fighters keep canonical fallback until their art batches are produced.
+- Bennet, Avigdor, Bibi, Gantz and Joint List each have a supplemental twelve-drawing transition sheet for idle, step, jab, cross and kick movement. The remaining eight fighters keep canonical fallback until their art batches are produced.
 - Every stage kind now owns a lightweight interactive background layer driven by the existing strike/combo signal: Knesset crowd waves, studio light sweeps and street dust. Values are capped, presentation-only and pause-safe.
 - Completing any universal or fighter signature combo now shows its authored name and the hit/damage result in the HUD. Recognition, scaling, breakers and finishers still use the single engine in `fighter.gd`.
